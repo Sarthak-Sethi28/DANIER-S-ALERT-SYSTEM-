@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: danier-alert-system
+    env: python
+    plan: starter
+    autoDeploy: true
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: PYTHONDONTWRITEBYTECODE
+        value: "1"
+      - key: DEFAULT_RECIPIENT_EMAIL
+        value: alerts@danier.ca
+      - key: DATABASE_URL
+        value: sqlite:////var/data/danier_stock_alert.db
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 1 
