@@ -1,1 +1,1 @@
-export const API_BASE_URL = 'https://danier-automated-system-production.up.railway.app'; 
+export const API_BASE_URL = 'https://daniers-alert-system-production.up.railway.app'; 
