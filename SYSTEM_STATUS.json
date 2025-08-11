@@ -1,0 +1,29 @@
+{
+  "system_name": "Danier Stock Alert System",
+  "version": "2.0.0",
+  "setup_date": "2025-08-01T14:46:52.884621",
+  "status": "OPERATIONAL",
+  "email_integration": "WORKING",
+  "default_recipients": [
+    "danieralertsystem@gmail.com",
+    "sarthaksethi2803@gmail.com"
+  ],
+  "features": [
+    "Inventory file upload and processing",
+    "Key items stock alerts",
+    "Email notifications",
+    "Threshold management",
+    "Performance analysis",
+    "File comparison"
+  ],
+  "startup_commands": {
+    "simple": "./start-simple.sh",
+    "docker": "./start.sh",
+    "enterprise": "./start-enterprise.sh"
+  },
+  "urls": {
+    "frontend": "http://localhost:3000",
+    "backend": "http://localhost:8000",
+    "api_docs": "http://localhost:8000/docs"
+  }
+}

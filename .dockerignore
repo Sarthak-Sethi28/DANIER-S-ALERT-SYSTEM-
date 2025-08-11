@@ -1,0 +1,39 @@
+# Development files
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.git
+**/.gitignore
+**/README.md
+**/.env
+**/.venv
+**/venv
+**/env
+**/.pytest_cache
+**/.coverage
+
+# Node modules and build files
+**/node_modules
+**/npm-debug.log
+**/build
+**/.next
+
+# IDE files
+**/.vscode
+**/.idea
+**/*.swp
+**/*.swo
+**/*~
+
+# OS files
+**/.DS_Store
+**/Thumbs.db
+
+# Logs
+**/*.log
+
+# Test files
+**/test_*.py
+**/tests/
+**/*_test.py 
