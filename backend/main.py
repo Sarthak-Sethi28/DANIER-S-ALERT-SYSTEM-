@@ -216,6 +216,14 @@ async def upload_report(file: UploadFile = File(...)):
         print(f"🎉 UPLOAD COMPLETE: File {unique_filename} saved successfully")
         print(f"📁 File ready for processing - dashboard will load data on next request")
         
+        # Trigger background cache warm to speed up first dashboard load
+        try:
+            success_warm, _, _ = key_items_service.get_all_key_items_with_alerts(permanent_path)
+            if success_warm:
+                print("🔥 Background warm: batch alerts cached")
+        except Exception as _:
+            pass
+        
         # Return success immediately - processing will happen on first dashboard request
         return {
             "success": True,
@@ -778,7 +786,7 @@ async def get_all_key_items_with_alerts():
             }
         
         # Use ultra-fast batch processing
-        success, all_alerts, error = key_items_service.get_all_key_items_with_alerts(latest_file_path)
+        all_alerts, success, error = key_items_service.get_all_key_items_with_alerts(latest_file_path)
         
         if not success:
             raise HTTPException(status_code=400, detail=error)
