@@ -148,6 +148,11 @@ class ApiService {
     return this.makeRequest(`/inventory-files/${encodeURIComponent(filename)}/alerts`);
   }
 
+  // Per-file stats (lazy)
+  async getFileStats(filename) {
+    return this.makeRequest(`/files/stats/${encodeURIComponent(filename)}`);
+  }
+
   // Search
   async searchArticle(searchTerm) {
     return this.makeRequest(`/search/article/${encodeURIComponent(searchTerm)}`);
@@ -369,6 +374,7 @@ export const getPerformanceAnalysis = () => apiService.getPerformanceAnalysis();
 export const getFileArchive = () => apiService.getFileArchive();
 export const downloadArchiveFile = (filename) => apiService.downloadArchiveFile(filename);
 export const getFileAlerts = (filename) => apiService.getFileAlerts(filename);
+export const getFileStats = (filename) => apiService.getFileStats(filename);
 export const searchArticle = (searchTerm) => apiService.searchArticle(searchTerm);
 export const sendEmailAlert = (itemName) => apiService.sendEmailAlert(itemName);
 export const sendItemSpecificAlert = (itemName) => apiService.sendItemSpecificAlert(itemName);

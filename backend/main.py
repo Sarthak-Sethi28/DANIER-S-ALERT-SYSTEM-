@@ -1469,7 +1469,7 @@ async def get_threshold_history(item_name: str = None, limit: int = 100):
 
 @app.get("/files/list-fast")
 async def get_files_list_fast():
-    """Get just the list of uploaded files - ULTRA FAST"""
+    """Get just the list of uploaded files - ULTRA FAST, with cached stats when available"""
     try:
         uploads_dir = UPLOAD_DIR
         if not os.path.exists(uploads_dir):
@@ -1478,17 +1478,25 @@ async def get_files_list_fast():
         files = [f for f in os.listdir(uploads_dir) if f.endswith('.xlsx')]
         files.sort(key=lambda x: os.path.getmtime(os.path.join(uploads_dir, x)), reverse=True)
         
-        # Return just basic file info - no processing
+        # Return basic file info + cached stats if present (no heavy processing)
         file_list = []
         for filename in files:
             file_path = os.path.join(uploads_dir, filename)
             try:
                 stat = os.stat(file_path)
+                # Attach cached stats if available
+                file_cache_key = f"file_stats_{filename}"
+                cached_stats = None
+                if hasattr(key_items_service, '_cache') and file_cache_key in key_items_service._cache:
+                    cached_stats = key_items_service._cache[file_cache_key]
+                
                 file_list.append({
                     "filename": filename,
-                    "upload_date": stat.st_mtime,
+                    "upload_date": stat.st_mtime,  # epoch seconds
+                    "upload_date_iso_utc": datetime.utcfromtimestamp(stat.st_mtime).isoformat() + "Z",
                     "file_size": stat.st_size,
-                    "upload_date_formatted": datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M")
+                    "ki00_items_count": (cached_stats or {}).get("key_items_count"),
+                    "low_stock_count": (cached_stats or {}).get("low_stock_count")
                 })
             except Exception as e:
                 print(f"Error getting file info for {filename}: {e}")
@@ -1501,6 +1509,45 @@ async def get_files_list_fast():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving file list: {str(e)}")
+
+@app.get("/files/stats/{filename}")
+async def get_file_stats(filename: str):
+    """Compute and return stats for a single file (counts). Results are cached."""
+    try:
+        file_path = os.path.join(UPLOAD_DIR, filename)
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail=f"File {filename} not found")
+        
+        # Check cache first keyed by filename + mtime
+        mtime = os.path.getmtime(file_path)
+        cache_key = f"file_stats_{filename}"
+        cache_sig_key = f"file_stats_sig_{filename}"
+        if not hasattr(key_items_service, '_cache'):
+            key_items_service._cache = {}
+        if cache_key in key_items_service._cache and cache_sig_key in key_items_service._cache:
+            if key_items_service._cache[cache_sig_key] == mtime:
+                print(f"⚡ Using cached stats for {filename}")
+                return key_items_service._cache[cache_key]
+        
+        # Compute fresh
+        print(f"📈 Computing stats for {filename}...")
+        file_key_items = key_items_service.get_file_key_items(file_path) or []
+        low_stock_items, success, _ = key_items_service.process_key_items_inventory(file_path)
+        low_stock_count = len(low_stock_items) if success and low_stock_items else 0
+        result = {
+            "filename": filename,
+            "key_items_count": len(file_key_items),
+            "low_stock_count": low_stock_count,
+            "processed_successfully": bool(success)
+        }
+        # Cache results with signature
+        key_items_service._cache[cache_key] = result
+        key_items_service._cache[cache_sig_key] = mtime
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error computing stats: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

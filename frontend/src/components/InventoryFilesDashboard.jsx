@@ -16,6 +16,37 @@ const InventoryFilesDashboard = () => {
     fetchInventoryFiles();
   }, []);
 
+  useEffect(() => {
+    // After files are set, fetch stats lazily for those missing counts
+    const controller = new AbortController();
+    const fetchStats = async () => {
+      try {
+        const { getFileStats } = await import('../services/api');
+        const updates = await Promise.all(
+          (files || []).slice(0, 25).map(async (f) => {
+            if (f.ki00_items_count != null && f.low_stock_count != null) return null;
+            try {
+              const s = await getFileStats(f.filename);
+              return { name: f.filename, stats: s };
+            } catch (_) {
+              return null;
+            }
+          })
+        );
+        const map = new Map();
+        updates.filter(Boolean).forEach(({ name, stats }) => map.set(name, stats));
+        if (map.size > 0) {
+          setFiles((prev) => prev.map((f) => {
+            const s = map.get(f.filename);
+            return s ? { ...f, ki00_items_count: s.key_items_count, low_stock_count: s.low_stock_count } : f;
+          }));
+        }
+      } catch (_) {}
+    };
+    if (files && files.length) fetchStats();
+    return () => controller.abort();
+  }, [files.length]);
+
   const fetchInventoryFiles = async () => {
     try {
       setLoading(true);
@@ -23,7 +54,7 @@ const InventoryFilesDashboard = () => {
       const response = await getFilesListFast();
       console.log('📊 Fast fetched files:', response.files?.slice(0, 3).map(f => ({
         filename: f.filename,
-        upload_date: f.upload_date_formatted
+        upload_time_utc: f.upload_date_iso_utc
       })));
       setFiles(response.files || []);
     } catch (error) {
@@ -393,13 +424,13 @@ const InventoryFilesDashboard = () => {
                       <div className="text-sm font-medium text-gray-900">{file.filename}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{file.upload_date_formatted}</div>
+                      <div className="text-sm text-gray-900">{new Date(file.upload_date * 1000).toLocaleString()}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">-</div>
+                      <div className="text-sm text-gray-900">{file.ki00_items_count ?? '-'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">-</div>
+                      <div className="text-sm text-gray-900">{file.low_stock_count ?? '-'}</div>
                     </td>
                   </tr>
                 ))}
