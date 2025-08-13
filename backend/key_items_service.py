@@ -96,8 +96,9 @@ class KeyItemsService:
             if df is None:
                 return []
             
-            # Filter for KI00 items and get unique item names
-            ki00_items = df[df['Season Code'] == 'KI00']['Item Description'].unique()
+            # Filter for KI00 items (case/whitespace tolerant) and get unique item names
+            season_norm = df['Season Code'].astype(str).str.strip().str.upper()
+            ki00_items = df.loc[season_norm == 'KI00', 'Item Description'].unique()
             
             # Extract just the item names (before the dash)
             key_items = []
@@ -277,8 +278,9 @@ class KeyItemsService:
             
             print(f"📊 Processing {len(df)} rows of data")
             
-            # Ultra-fast KI00 filtering
-            ki00_df = df[df['Season Code'] == 'KI00'].copy()
+            # Ultra-fast KI00 filtering (normalize Season Code)
+            season_norm = df['Season Code'].astype(str).str.strip().str.upper()
+            ki00_df = df[season_norm == 'KI00'].copy()
             print(f"🎯 Found {len(ki00_df)} key item entries")
             
             # Vectorized processing for maximum speed
@@ -559,7 +561,9 @@ class KeyItemsService:
             if 'Season Code' not in df.columns:
                 return [], False, "Season Code column not found"
             
-            ki00_data = df[df['Season Code'] == 'KI00'].copy()
+            # Normalize for robustness
+            season_norm = df['Season Code'].astype(str).str.strip().str.upper()
+            ki00_data = df[season_norm == 'KI00'].copy()
             if ki00_data.empty:
                 return [], False, "No KI00 items found"
             
