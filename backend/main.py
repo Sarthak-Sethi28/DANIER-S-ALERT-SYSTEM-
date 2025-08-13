@@ -41,6 +41,8 @@ threshold_analysis_service = ThresholdAnalysisService()
 
 # Default recipient email (can be configured via environment variable)
 RECIPIENT_EMAIL = os.getenv("DEFAULT_RECIPIENT_EMAIL", "alerts@danier.ca")
+# Upload directory from env (Render persistent disk) with fallback
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
 
 def log_memory_usage():
     """Log current memory usage for monitoring"""
@@ -129,7 +131,7 @@ async def upload_report(file: UploadFile = File(...)):
         content = await file.read()
         
         # Create uploads directory if it doesn't exist
-        uploads_dir = "uploads"
+        uploads_dir = UPLOAD_DIR
         if not os.path.exists(uploads_dir):
             os.makedirs(uploads_dir)
         
@@ -215,10 +217,17 @@ async def upload_report(file: UploadFile = File(...)):
         
         print(f"🎉 UPLOAD COMPLETE: File {unique_filename} saved successfully")
         print(f"📁 File ready for processing - dashboard will load data on next request")
-        
+
+        # Clear all caches now that a new file is uploaded
+        try:
+            key_items_service.clear_all_caches()
+            comparison_service.analysis_cache.clear()
+        except Exception:
+            pass
+
         # Trigger background cache warm to speed up first dashboard load
         try:
-            success_warm, _, _ = key_items_service.get_all_key_items_with_alerts(permanent_path)
+            _, success_warm, _ = key_items_service.get_all_key_items_with_alerts(permanent_path)
             if success_warm:
                 print("🔥 Background warm: batch alerts cached")
         except Exception as _:
@@ -260,7 +269,7 @@ async def get_key_items_alerts():
         
         # If no file in database, try to find the most recent file in uploads directory
         if not latest_file_path:
-            uploads_dir = "uploads"
+            uploads_dir = UPLOAD_DIR
             if os.path.exists(uploads_dir):
                 files = [f for f in os.listdir(uploads_dir) if f.endswith('.xlsx')]
                 if files:
@@ -303,7 +312,7 @@ async def get_key_items_alerts():
 async def get_inventory_files():
     """Get all uploaded inventory files with their key items - OPTIMIZED"""
     try:
-        uploads_dir = "uploads"
+        uploads_dir = UPLOAD_DIR
         if not os.path.exists(uploads_dir):
             return {"files": []}
         
@@ -366,7 +375,7 @@ async def get_inventory_files():
 async def get_file_alerts(filename: str):
     """Get alerts for a specific inventory file"""
     try:
-        file_path = os.path.join("uploads", filename)
+        file_path = os.path.join(UPLOAD_DIR, filename)
         if not os.path.exists(file_path):
             raise HTTPException(status_code=404, detail="File not found")
         
@@ -448,7 +457,7 @@ async def test_system():
         latest_file_path = file_storage_service.get_latest_file_path(db)
         
         if not latest_file_path:
-            uploads_dir = "uploads"
+            uploads_dir = UPLOAD_DIR
             if os.path.exists(uploads_dir):
                 files = [f for f in os.listdir(uploads_dir) if f.endswith('.xlsx')]
                 if files:
@@ -492,7 +501,7 @@ async def test_system():
 async def get_upload_history():
     """Get upload history with ACTUAL current data"""
     try:
-        uploads_dir = "uploads"
+        uploads_dir = UPLOAD_DIR
         if not os.path.exists(uploads_dir):
             return {"uploads": []}
         
@@ -559,8 +568,8 @@ async def get_upload_history():
 async def get_smart_performance_analysis(file1: str, file2: str):
     """Get intelligent performance analysis between two inventory files"""
     try:
-        file1_path = os.path.join("uploads", file1)
-        file2_path = os.path.join("uploads", file2)
+        file1_path = os.path.join(UPLOAD_DIR, file1)
+        file2_path = os.path.join(UPLOAD_DIR, file2)
         
         if not os.path.exists(file1_path):
             raise HTTPException(status_code=404, detail=f"File {file1} not found")
@@ -585,8 +594,8 @@ async def get_smart_performance_analysis(file1: str, file2: str):
 async def get_smart_performance_analysis_simple(file1: str, file2: str):
     """Get simple smart performance analysis between two inventory files"""
     try:
-        file1_path = os.path.join("uploads", file1)
-        file2_path = os.path.join("uploads", file2)
+        file1_path = os.path.join(UPLOAD_DIR, file1)
+        file2_path = os.path.join(UPLOAD_DIR, file2)
         
         if not os.path.exists(file1_path):
             return {"error": f"File {file1} not found"}
@@ -697,7 +706,7 @@ async def get_file_archive():
             "recent_count": len(recent_files),
             "archive_count": len(archive_files),
             "storage_info": {
-                "upload_directory": "uploads",
+                "upload_directory": UPLOAD_DIR,
                 "total_size_mb": sum(f.get("file_size", 0) for f in files_data if "error" not in f) / (1024 * 1024)
             }
         }
@@ -709,7 +718,7 @@ async def get_file_archive():
 async def download_archive_file(filename: str):
     """Download a file from the archive"""
     try:
-        file_path = os.path.join("uploads", filename)
+        file_path = os.path.join(UPLOAD_DIR, filename)
         if not os.path.exists(file_path):
             raise HTTPException(status_code=404, detail="File not found")
         
@@ -733,17 +742,20 @@ async def get_all_key_items_with_alerts():
         finally:
             db.close()
         
-        # Self-healing: If no file in DB, try to find files in uploads directory
-        if not latest_file_path:
-            print("🔄 Self-healing: No file in database, searching uploads directory...")
-            uploads_dir = "uploads"
+        # Self-healing: If no file in DB OR path missing, try to find files in uploads directory
+        if not latest_file_path or not os.path.exists(latest_file_path):
+            if latest_file_path and not os.path.exists(latest_file_path):
+                print(f"🔄 Self-healing: DB path missing on disk: {latest_file_path}")
+            else:
+                print("🔄 Self-healing: No file in database, searching uploads directory...")
+            uploads_dir = UPLOAD_DIR
             if os.path.exists(uploads_dir):
                 files = [f for f in os.listdir(uploads_dir) if f.endswith('.xlsx')]
                 if files:
                     # Sort by modification time, get the most recent
                     files.sort(key=lambda x: os.path.getmtime(os.path.join(uploads_dir, x)), reverse=True)
                     latest_file_path = os.path.join(uploads_dir, files[0])
-                    print(f"✅ Self-healing: Found file {files[0]} in uploads directory")
+                    print(f"✅ Self-healing: Using latest file {files[0]} in uploads directory")
                     
                     # Register this file in the database
                     try:
@@ -931,6 +943,15 @@ async def clear_cache():
         print(f"❌ Clear cache error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to clear cache: {str(e)}")
 
+@app.post("/cache/clear")
+async def clear_all_caches_api():
+    try:
+        key_items_service.clear_all_caches()
+        comparison_service.analysis_cache.clear()
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Email Alert Endpoints
 @app.post("/email/send-alert")
 async def send_email_alert(
@@ -946,7 +967,7 @@ async def send_email_alert(
         latest_file = files[0]
         
         # Get all items with alerts (cached and fast)
-        success, all_alerts, error = key_items_service.get_all_key_items_with_alerts(latest_file['file_path'])
+        all_alerts, success, error = key_items_service.get_all_key_items_with_alerts(latest_file['file_path'])
         if not success:
             raise HTTPException(status_code=400, detail=error)
         
@@ -999,7 +1020,7 @@ async def send_item_specific_alert(
         latest_file = files[0]
         
         # Get low stock items for this specific item
-        success, all_alerts, error = key_items_service.get_all_key_items_with_alerts(latest_file['file_path'])
+        all_alerts, success, error = key_items_service.get_all_key_items_with_alerts(latest_file['file_path'])
         if not success:
             raise HTTPException(status_code=400, detail=error)
         
@@ -1154,7 +1175,7 @@ async def get_key_items_summary():
         # Self-healing: If no file in DB, try to find files in uploads directory
         if not latest_file_path:
             print("🔄 Self-healing: No file in database, searching uploads directory...")
-            uploads_dir = "uploads"
+            uploads_dir = UPLOAD_DIR
             if os.path.exists(uploads_dir):
                 files = [f for f in os.listdir(uploads_dir) if f.endswith('.xlsx')]
                 if files:
@@ -1204,12 +1225,12 @@ async def get_key_items_summary():
             }
         
         # Use ultra-fast batch processing with caching
-        success, all_alerts, error = key_items_service.get_all_key_items_with_alerts(latest_file_path)
+        all_alerts, success, error = key_items_service.get_all_key_items_with_alerts(latest_file_path)
         
         if not success:
             # Only fallback to fresh processing if batch fails completely
             print("🔄 Fallback: forcing fresh processing for summary")
-            success, all_alerts, error = key_items_service.force_fresh_processing(latest_file_path)
+            all_alerts, success, error = key_items_service.force_fresh_processing(latest_file_path)
             
         if not success:
             raise HTTPException(status_code=400, detail=error)
@@ -1285,10 +1306,45 @@ async def warm_caches_on_startup():
             latest_file_path = file_storage_service.get_latest_file_path(db)
         finally:
             db.close()
+        
+        # If DB path missing or not present, self-heal by scanning persistent upload dir
+        if not latest_file_path or not os.path.exists(latest_file_path):
+            if latest_file_path and not os.path.exists(latest_file_path):
+                print(f"🔄 Startup self-heal: DB path missing on disk: {latest_file_path}")
+            else:
+                print("🔄 Startup self-heal: No file in database, searching uploads directory...")
+            uploads_dir = UPLOAD_DIR
+            if os.path.exists(uploads_dir):
+                files = [f for f in os.listdir(uploads_dir) if f.endswith('.xlsx')]
+                if files:
+                    files.sort(key=lambda x: os.path.getmtime(os.path.join(uploads_dir, x)), reverse=True)
+                    latest_file_path = os.path.join(uploads_dir, files[0])
+                    print(f"✅ Startup self-heal: Using latest file {files[0]} from {uploads_dir}")
+                    # Register in DB
+                    try:
+                        db = next(get_db())
+                        try:
+                            db.query(UploadedFile).update({"is_active": False})
+                            file_size = os.path.getsize(latest_file_path)
+                            uploaded_file = UploadedFile(
+                                filename=files[0],
+                                file_path=latest_file_path,
+                                file_size=file_size,
+                                is_active=True,
+                                total_items=0,
+                                low_stock_count=0
+                            )
+                            db.add(uploaded_file)
+                            db.commit()
+                        finally:
+                            db.close()
+                    except Exception as e:
+                        print(f"⚠️ Startup self-heal DB registration failed: {e}")
+        
         if latest_file_path:
             # Warm batch alerts cache for fastest first load
-            success, _, _ = key_items_service.get_all_key_items_with_alerts(latest_file_path)
-            if success:
+            _, success_warm, _ = key_items_service.get_all_key_items_with_alerts(latest_file_path)
+            if success_warm:
                 print("🔥 Warmed batch alerts cache on startup (latest file only)")
         else:
             print("ℹ️ No active file found to warm on startup")
@@ -1303,7 +1359,7 @@ async def get_item_details(item_name: str):
         if not files:
             return {"name": item_name, "total_stock": 0, "color_totals": [], "alerts": [], "alert_count": 0}
         latest_file = files[0]
-        success, all_alerts, error = key_items_service.get_all_key_items_with_alerts(latest_file['file_path'])
+        all_alerts, success, error = key_items_service.get_all_key_items_with_alerts(latest_file['file_path'])
         if not success:
             raise HTTPException(status_code=400, detail=error)
         for it in all_alerts:

@@ -9,6 +9,9 @@ import re
 
 load_dotenv()
 
+# Resolve uploads directory once
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
+
 class KeyItemsService:
     def __init__(self):
         # Default threshold for each size (can be configured per item later)
@@ -433,7 +436,7 @@ class KeyItemsService:
         """Get alerts for specific item with aggressive caching"""
         try:
             # Find latest file
-            uploads_dir = "uploads"
+            uploads_dir = UPLOAD_DIR
             if not os.path.exists(uploads_dir):
                 return []
             
@@ -530,9 +533,18 @@ class KeyItemsService:
         """Get all key items with their alerts in a single ultra-fast batch operation"""
         try:
             # Check cache first
-            cache_key = self._get_cache_key("all_key_items_with_alerts", file_path)
+            cache_key = self._get_cache_key("all_key_items_with_alerts_v2", file_path)
             cached_result = self._get_cache(cache_key)
             if cached_result:
+                # Normalize legacy cached tuple order: (bool, list, str) → (list, bool, str)
+                if (
+                    isinstance(cached_result, tuple)
+                    and len(cached_result) == 3
+                    and isinstance(cached_result[0], bool)
+                    and isinstance(cached_result[1], list)
+                ):
+                    cached_result = (cached_result[1], cached_result[0], cached_result[2])
+                    self._set_cache(cache_key, cached_result)
                 print(f"⚡ Using cached batch alerts for: {os.path.basename(file_path)}")
                 return cached_result
 
@@ -627,7 +639,8 @@ class KeyItemsService:
                     "alert_count": len(alerts)
                 })
             
-            result = (True, all_alerts, "")
+            # Return in the documented order: (List[Dict], bool, str)
+            result = (all_alerts, True, "")
             self._set_cache(cache_key, result)
             
             print(f"⚡ Processed {len(unique_items)} items with {sum(len(item['alerts']) for item in all_alerts)} total alerts in batch mode")

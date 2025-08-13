@@ -12,8 +12,8 @@ from datetime import datetime
 import numpy as np
 
 class ThresholdAnalysisService:
-    def __init__(self, uploads_dir="uploads", threshold=10):
-        self.uploads_dir = uploads_dir
+    def __init__(self, uploads_dir=None, threshold=10):
+        self.uploads_dir = uploads_dir or os.getenv("UPLOAD_DIR", "uploads")
         self.threshold = threshold
         self.analysis_cache = {}
         
@@ -162,15 +162,15 @@ class ThresholdAnalysisService:
     
     def _detect_size_column(self, columns: List[str]) -> str:
         """Detect size column"""
-        possible_names = ['Variant Code', 'Size', 'Variant']
+        possible_names = ['Variant Code', 'Size', 'Variant Size']
         for col in columns:
             if any(name.lower() in col.lower() for name in possible_names):
                 return col
         return None
     
     def _detect_stock_column(self, columns: List[str]) -> str:
-        """Detect stock column"""
-        possible_names = ['Grand Total', 'Stock', 'Quantity', 'Available']
+        """Detect stock/quantity column"""
+        possible_names = ['Grand Total', 'Stock Level', 'Total Stock', 'Quantity']
         for col in columns:
             if any(name.lower() in col.lower() for name in possible_names):
                 return col

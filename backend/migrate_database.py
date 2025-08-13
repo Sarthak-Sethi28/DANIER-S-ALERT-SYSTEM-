@@ -41,8 +41,8 @@ def migrate_database():
                 print("❌ uploaded_files table not found - creating...")
                 Base.metadata.create_all(bind=engine)
         
-        # Create uploads directory if it doesn't exist
-        uploads_dir = "uploads"
+        # Create uploads directory if it doesn't exist (use env var)
+        uploads_dir = os.getenv("UPLOAD_DIR", "uploads")
         if not os.path.exists(uploads_dir):
             os.makedirs(uploads_dir)
             print(f"✅ Created uploads directory: {uploads_dir}")

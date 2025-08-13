@@ -16,6 +16,8 @@ services:
         value: alerts@danier.ca
       - key: DATABASE_URL
         value: sqlite:////var/data/danier_stock_alert.db
+      - key: UPLOAD_DIR
+        value: /var/data/uploads
     disk:
       name: data
       mountPath: /var/data

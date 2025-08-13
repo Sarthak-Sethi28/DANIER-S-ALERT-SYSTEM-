@@ -9,9 +9,10 @@ import json
 import time
 
 class ComparisonService:
-    def __init__(self, key_items_service, uploads_dir="uploads"):
+    def __init__(self, key_items_service, uploads_dir=None):
         self.key_items_service = key_items_service
-        self.uploads_dir = uploads_dir
+        # Allow env override, default to 'uploads'
+        self.uploads_dir = uploads_dir or os.getenv("UPLOAD_DIR", "uploads")
         # Performance caching system
         self.analysis_cache = {}
         self.cache_timestamps = {}

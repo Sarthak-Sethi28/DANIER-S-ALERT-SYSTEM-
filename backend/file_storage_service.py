@@ -6,8 +6,9 @@ from sqlalchemy.orm import Session
 from models import UploadedFile
 
 class FileStorageService:
-    def __init__(self, upload_dir: str = "uploads"):
-        self.upload_dir = upload_dir
+    def __init__(self, upload_dir: Optional[str] = None):
+        # Allow override via environment variable, fallback to 'uploads'
+        self.upload_dir = upload_dir or os.getenv("UPLOAD_DIR", "uploads")
         self._ensure_upload_dir()
     
     def _ensure_upload_dir(self):
