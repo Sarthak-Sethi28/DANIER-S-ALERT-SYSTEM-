@@ -170,6 +170,19 @@ async def upload_report(file: UploadFile = File(...)):
         print("🧹 Clearing caches for new file...")
         key_items_service.clear_all_caches()
         comparison_service.clear_all_caches()
+        # Explicitly invalidate history and file list caches as well
+        if not hasattr(key_items_service, '_cache'):
+            key_items_service._cache = {}
+        for k in [
+            'upload_history_cache',
+            'upload_history_signature',
+            'inventory_files_cache',
+            'inventory_files_signature'
+        ]:
+            try:
+                key_items_service._cache.pop(k, None)
+            except Exception:
+                pass
         
         # LIGHTWEIGHT: Quick file validation only
         try:
@@ -188,10 +201,8 @@ async def upload_report(file: UploadFile = File(...)):
             cleanup_memory()
             
         except Exception as validation_error:
-            # Clean up invalid file
-            if os.path.exists(permanent_path):
-                os.remove(permanent_path)
-            raise HTTPException(status_code=400, detail=f"Invalid file format: {str(validation_error)}")
+            print(f"❌ Validation error: {validation_error}")
+            raise HTTPException(status_code=400, detail=str(validation_error))
         
         # Database operations - LIGHTWEIGHT
         db = next(get_db())
@@ -518,7 +529,7 @@ async def test_system():
 
 @app.get("/upload-history")
 async def get_upload_history():
-    """Get upload history - OPTIMIZED for speed"""
+    """Get upload history - OPTIMIZED for speed with signature-based cache validation"""
     try:
         uploads_dir = UPLOAD_DIR
         if not os.path.exists(uploads_dir):
@@ -527,12 +538,19 @@ async def get_upload_history():
         files = [f for f in os.listdir(uploads_dir) if f.endswith('.xlsx')]
         files.sort(key=lambda x: os.path.getmtime(os.path.join(uploads_dir, x)), reverse=True)
         
-        # Use cached results if available
+        # Build a signature from filenames + mtimes to detect any change
+        current_signature = [
+            (fname, os.path.getmtime(os.path.join(uploads_dir, fname))) for fname in files
+        ]
+        
+        # Use cached results if available and signature matches
         cache_key = "upload_history_cache"
-        if hasattr(key_items_service, '_cache') and cache_key in key_items_service._cache:
+        signature_key = "upload_history_signature"
+        if hasattr(key_items_service, '_cache') and cache_key in key_items_service._cache and signature_key in key_items_service._cache:
             cached_history = key_items_service._cache[cache_key]
-            if len(cached_history) == len(files):
-                print("⚡ Using cached upload history")
+            cached_signature = key_items_service._cache[signature_key]
+            if cached_signature == current_signature:
+                print("⚡ Using cached upload history (signature matched)")
                 return {"uploads": cached_history, "total_uploads": len(cached_history)}
         
         print(f"📊 Fast processing {len(files)} files for upload history...")
@@ -580,10 +598,11 @@ async def get_upload_history():
                 })
                 continue
         
-        # Cache the results
+        # Cache the results with signature
         if not hasattr(key_items_service, '_cache'):
             key_items_service._cache = {}
         key_items_service._cache[cache_key] = history
+        key_items_service._cache[signature_key] = current_signature
         
         print(f"✅ Fast upload history: {len(history)} files processed")
         return {"uploads": history, "total_uploads": len(history)}
