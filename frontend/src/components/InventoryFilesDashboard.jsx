@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, TrendingUp, AlertTriangle, Star, XCircle, CheckCircle, Zap, Target, BarChart3 } from 'lucide-react';
-import { getEnhancedInventoryFiles, getSmartPerformanceAnalysis } from '../services/api';
+import { getFilesListFast, getSmartPerformanceAnalysis } from '../services/api';
 
 const InventoryFilesDashboard = () => {
   const [files, setFiles] = useState([]);
@@ -19,12 +19,11 @@ const InventoryFilesDashboard = () => {
   const fetchInventoryFiles = async () => {
     try {
       setLoading(true);
-      // Add timestamp to force fresh data and avoid browser cache
-      const response = await getEnhancedInventoryFiles();
-      console.log('📊 Fetched files with data:', response.files?.slice(0, 3).map(f => ({
+      // Use fast endpoint for better performance
+      const response = await getFilesListFast();
+      console.log('📊 Fast fetched files:', response.files?.slice(0, 3).map(f => ({
         filename: f.filename,
-        ki00_items: f.ki00_items_count,
-        low_stock: f.low_stock_count
+        upload_date: f.upload_date_formatted
       })));
       setFiles(response.files || []);
     } catch (error) {
@@ -394,13 +393,13 @@ const InventoryFilesDashboard = () => {
                       <div className="text-sm font-medium text-gray-900">{file.filename}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{formatDateTime(file.upload_date)}</div>
+                      <div className="text-sm text-gray-900">{file.upload_date_formatted}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{file.ki00_items_count || 0}</div>
+                      <div className="text-sm text-gray-900">-</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{file.low_stock_count || 0}</div>
+                      <div className="text-sm text-gray-900">-</div>
                     </td>
                   </tr>
                 ))}

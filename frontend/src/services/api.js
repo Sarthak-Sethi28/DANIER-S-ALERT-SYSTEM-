@@ -335,6 +335,21 @@ class ApiService {
       method: 'POST',
     });
   }
+
+  // Fast file list endpoint
+  async getFilesListFast() {
+    return this.makeRequest('/files/list-fast');
+  }
+
+  // Fast upload history endpoint
+  async getUploadHistoryFast() {
+    return this.makeRequest('/upload-history');
+  }
+
+  // Fast recipients endpoint
+  async getRecipientsFast() {
+    return this.makeRequest('/recipients');
+  }
 }
 
 // Create singleton instance
@@ -372,6 +387,9 @@ export const getThreshold = () => apiService.getThreshold();
 export const getUploadHistory = () => apiService.getUploadHistory();
 export const getTodayAlerts = () => apiService.getTodayAlerts();
 export const clearCache = () => apiService.clearCache();
+export const getFilesListFast = () => apiService.getFilesListFast();
+export const getUploadHistoryFast = () => apiService.getUploadHistoryFast();
+export const getRecipientsFast = () => apiService.getRecipientsFast();
 
 // Export the service instance for advanced usage
 export default apiService; 

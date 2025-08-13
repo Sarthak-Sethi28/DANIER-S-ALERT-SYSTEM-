@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Plus, Trash2, Edit, Users, Send, AlertCircle, CheckCircle } from 'lucide-react';
-import { getRecipients, addRecipient, deleteRecipient, updateRecipient, getEmailStatus } from '../services/api';
+import { getRecipientsFast, addRecipient, deleteRecipient, updateRecipient, getEmailStatus } from '../services/api';
 
 const Recipients = () => {
   const [recipients, setRecipients] = useState([]);
@@ -29,7 +29,7 @@ const Recipients = () => {
   const fetchRecipients = async () => {
     try {
       setLoading(true);
-      const response = await getRecipients();
+      const response = await getRecipientsFast();
       setRecipients(response.recipients || []);
       setStats(response.stats || {});
     } catch (error) {
