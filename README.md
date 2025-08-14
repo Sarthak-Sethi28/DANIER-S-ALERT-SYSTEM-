@@ -1,206 +1,142 @@
-# Inventory Monitoring Enterprise
+# Inventory Monitoring System
 
-A fully automated, Oracle-grade Inventory Monitoring & Analytics system that maintains stateful inventory tracking with automatic reorder logic, tier-based categorization, and real-time alerts.
+Enterprise-grade inventory monitoring and analytics system with automatic deployment to Render.
 
 ## 🚀 Features
 
-### Core Functionality
-- **Stateful Inventory Management**: Persistent storage of current on-hand quantities
-- **Daily Delta Processing**: Automatic ingestion of NAV sales exports
-- **Tier-Based Categorization**: 
-  - Best Sellers (top 10%) - 500 unit reorder
-  - Doing Good (next 20%) - 300 unit reorder  
-  - Making Progress (next 30%) - 200 unit reorder
-  - Okay (bottom 40%) - 100 unit reorder
-- **Automatic Reorder Logic**: When SKU falls below tier threshold, automatically restock
-- **Smart Alerting**: Immediate low-stock and demotion notifications
-- **Daily Digest**: Consolidated morning reports
-- **Interactive Dashboards**: Real-time inventory health and sales trends
+- **Real-time Inventory Tracking**: Monitor stock levels, sales history, and reorder points
+- **Automated Alerts**: Email notifications for low stock and critical items
+- **Analytics Dashboard**: Business intelligence reports and performance metrics
+- **Multi-file Upload**: Support for Excel files with automatic processing
+- **Stable Server**: Health checks and database retry logic prevent crashes
 
-### Enterprise Features
-- **Oracle-grade Reliability**: Enterprise-level error handling and monitoring
-- **Zero Manual Intervention**: Fully automated once configured
-- **Real-time Insights**: Immediate alerts and live dashboards
-- **Scalable Architecture**: Containerized microservices approach
-- **Professional UI**: Modern admin interface for configuration
+## 🛠️ Tech Stack
 
-## 🏗️ Architecture
+- **Backend**: NestJS with TypeORM and PostgreSQL
+- **Frontend**: React with TypeScript
+- **Deployment**: Render (Backend) + Vercel (Frontend)
+- **Database**: PostgreSQL with connection pooling
+- **Email**: Nodemailer with Gmail SMTP
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │   Backend API   │    │   ETL Pipeline  │
-│   React/TS      │◄──►│   NestJS/TS     │◄──►│   Python/Pandas │
-│   Recharts      │    │   TypeORM       │    │   SQLAlchemy    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         └───────────────────────┼───────────────────────┘
-                                 │
-                    ┌─────────────────┐
-                    │   Database      │
-                    │   Oracle/PostgreSQL │
-                    │   Migrations    │
-                    └─────────────────┘
-```
+## 📋 Prerequisites
 
-## 📁 Project Structure
-
-```
-Inventory_Monitoring_Enterprise/
-├── frontend/                 # React TypeScript frontend
-│   ├── src/
-│   │   ├── components/       # Reusable UI components
-│   │   ├── pages/           # Dashboard and admin pages
-│   │   ├── services/        # API integration
-│   │   ├── utils/           # Helper functions
-│   │   └── styles/          # SCSS modules
-│   └── public/              # Static assets
-├── backend/                  # NestJS API server
-│   ├── src/
-│   │   ├── controllers/     # API endpoints
-│   │   ├── services/        # Business logic
-│   │   ├── entities/        # Database models
-│   │   ├── middleware/      # Request processing
-│   │   └── config/          # Configuration
-│   └── migrations/          # Database migrations
-├── etl/                     # Data processing pipeline
-│   ├── scripts/             # Python ETL scripts
-│   ├── data/                # Data files
-│   └── logs/                # Processing logs
-├── database/                # Database management
-│   ├── migrations/          # Schema migrations
-│   └── seeds/               # Initial data
-├── infrastructure/          # DevOps configuration
-│   ├── docker/              # Container definitions
-│   ├── kubernetes/          # K8s manifests
-│   └── monitoring/          # Prometheus/Grafana
-└── docs/                    # Documentation
-```
+- Node.js 18+ 
+- PostgreSQL database
+- Gmail account for email alerts
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Node.js 18+
-- Python 3.10+
-- Docker & Docker Compose
-- Oracle Database or PostgreSQL
+### 1. Clone the Repository
+```bash
+git clone https://github.com/yourusername/inventory-monitoring-system.git
+cd inventory-monitoring-system
+```
 
-### Installation
+### 2. Backend Setup
+```bash
+cd backend
+npm install
+npm run build
+```
 
-1. **Clone and Setup**
-   ```bash
-   git clone <repository-url>
-   cd Inventory_Monitoring_Enterprise
+### 3. Frontend Setup
+```bash
+cd frontend
+npm install
+npm start
+```
+
+## 🌐 Deployment
+
+### Automatic Deployment to Render
+
+This repository is configured for automatic deployment to Render. When you push changes to the `main` branch, Render will automatically:
+
+1. **Build the application** using the `render.yaml` configuration
+2. **Deploy the backend** with health checks and database retry logic
+3. **Update the live application** without downtime
+
+### Manual Deployment Steps
+
+1. **Connect to Render**:
+   - Go to [render.com](https://render.com)
+   - Connect your GitHub account
+   - Select this repository
+   - Choose "Web Service"
+
+2. **Configure Environment Variables**:
+   ```
+   NODE_ENV=production
+   PORT=10000
+   DATABASE_HOST=your-postgres-host
+   DATABASE_PORT=5432
+   DATABASE_NAME=your-database-name
+   DATABASE_USER=your-database-user
+   DATABASE_PASSWORD=your-database-password
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASS=your-app-password
    ```
 
-2. **Environment Configuration**
-   ```bash
-   cp .env.example .env
-   # Configure database, SMTP, and other settings
-   ```
-
-3. **Database Setup**
-   ```bash
-   cd database
-   # Run migrations and seed data
-   ```
-
-4. **Start Services**
-   ```bash
-   docker-compose up -d
-   ```
-
-5. **Access Dashboard**
-   - Frontend: http://localhost:3000
-   - API: http://localhost:3001
-   - Grafana: http://localhost:3002
-
-## 📊 Dashboard Features
-
-### Inventory Health Dashboard
-- Color-coded bar chart of OnHand vs. threshold by category
-- Real-time inventory status across product families
-- Drill-down tables with filtering capabilities
-
-### Best-Seller Trends Dashboard
-- Line chart of six-month sales for current Best Sellers
-- Week-over-week comparison analytics
-- Interactive filtering by SKU, date, category
+3. **Deploy**:
+   - Render will automatically build and deploy using the `render.yaml` configuration
+   - Health checks will ensure the server stays running
 
 ## 🔧 Configuration
 
-### Admin Interface
-- Adjust tier thresholds and reorder quantities
-- Configure email recipients and schedules
-- Set up alert preferences and monitoring rules
+### Health Check Endpoints
+- `GET /` - Root health check
+- `GET /health` - Detailed health status
+- `GET /api/docs` - API documentation
 
-### ETL Pipeline
-- Configure NAV export file paths
-- Set processing schedules (default: 2 AM daily)
-- Customize validation rules and error handling
+### Database Configuration
+The system includes automatic retry logic:
+- **Retry Attempts**: 10
+- **Retry Delay**: 3 seconds
+- **Keep Connection Alive**: Enabled
 
-## 📈 Monitoring & Alerts
+## 📊 API Endpoints
 
-### Alert Types
-1. **Low-Stock Alerts**: Immediate notification when Best Sellers go below threshold
-2. **Demotion Alerts**: Notification when SKUs move to lower tiers
-3. **Daily Digest**: Consolidated morning report of all events
-4. **Error Alerts**: System failure notifications to administrators
+- `GET /api/inventory` - Get inventory data
+- `GET /api/analytics` - Get analytics reports
+- `GET /api/alerts` - Get alert history
+- `POST /api/upload` - Upload Excel files
 
-### Monitoring Stack
-- **Prometheus**: Metrics collection
-- **Grafana**: Visualization dashboards
-- **Centralized Logging**: Structured log aggregation
-- **Health Checks**: Automated system monitoring
+## 🔍 Monitoring
 
-## 🔒 Security
+### Health Checks
+The application includes comprehensive health checks that prevent server crashes:
+- Immediate response endpoints (`/` and `/health`)
+- Database connection monitoring
+- Automatic retry logic for failed connections
 
-- **Secrets Management**: Vault/Azure Key Vault integration
-- **Authentication**: JWT-based API security
-- **Data Encryption**: At-rest and in-transit encryption
-- **Access Control**: Role-based permissions
+### Logs
+Monitor your application through Render's built-in logging system.
 
-## 🚀 Deployment
+## 🛡️ Security
 
-### Development
-```bash
-npm run dev:frontend
-npm run dev:backend
-python etl/scripts/main.py
-```
+- Helmet.js for security headers
+- CORS configuration
+- Input validation with class-validator
+- Rate limiting with @nestjs/throttler
 
-### Production
-```bash
-docker-compose -f docker-compose.prod.yml up -d
-kubectl apply -f infrastructure/kubernetes/
-```
+## 📝 License
 
-## 📝 API Documentation
-
-### Core Endpoints
-- `GET /api/inventory/status` - Current inventory state
-- `GET /api/bestsellers` - Best seller analytics
-- `POST /api/config` - Update system configuration
-- `GET /api/alerts` - Alert history and status
+MIT License - see LICENSE file for details.
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests and documentation
-5. Submit a pull request
+4. Push to the branch
+5. Create a Pull Request
 
-## 📄 License
+## 📞 Support
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🆘 Support
-
-For support and questions:
-- Create an issue in the repository
-- Contact the development team
-- Check the documentation in `/docs`
+For support, please open an issue in the GitHub repository.
 
 ---
 
-**Inventory Monitoring Enterprise** - Oracle-grade inventory management, automated and intelligent. 
+**Note**: This system is configured for automatic deployment. Any changes pushed to the main branch will automatically deploy to Render within minutes. 
