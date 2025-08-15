@@ -110,6 +110,12 @@ const Dashboard = () => {
       });
     } finally {
       setLoading(false);
+      // Clear any error after 5 seconds to prevent permanent UI issues
+      setTimeout(() => {
+        if (error && error.type === 'error') {
+          setError(null);
+        }
+      }, 5000);
     }
   };
 
@@ -261,85 +267,22 @@ const Dashboard = () => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       
-      alert('✅ Excel report downloaded and email notification sent to designated recipients!');
+      alert('✅ Excel report downloaded and email with Excel attachment sent to recipients!');
+      
+      // Force re-render to ensure button stays visible
+      setLoading(false);
+      
     } catch (error) {
       console.error('Download error:', error);
       alert('❌ Failed to generate report. Please try again.');
+      
+      // Ensure UI stays stable even on error
+      setLoading(false);
+      setError(null);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <span className="ml-3 text-lg text-gray-600">Loading inventory alerts...</span>
-        </div>
-      </div>
-    );
-  }
-
-  // Show helpful error message when no files are found
-  if (error && error.type === 'no-files') {
-    return (
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="bg-white rounded-lg shadow-md p-8 text-center">
-          <div className="mb-6">
-            <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">No Inventory Data Found</h2>
-            <p className="text-gray-600 mb-6">{error.message}</p>
-          </div>
-          
-          {error.help && (
-            <div className="bg-blue-50 rounded-lg p-6 mb-6">
-              <h3 className="text-lg font-semibold text-blue-800 mb-4">{error.help.title}</h3>
-              <div className="space-y-3">
-                {error.help.steps.map((step, index) => (
-                  <div key={index} className="flex items-start">
-                    <div className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
-                      {index + 1}
-                    </div>
-                    <p className="text-blue-700">{step}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          <div className="bg-yellow-50 rounded-lg p-4">
-            <p className="text-yellow-800 text-sm">
-              <strong>Tip:</strong> Make sure your inventory file is in Excel format (.xlsx) and contains the required columns.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Show general error message
-  if (error && error.type === 'error') {
-    return (
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="bg-white rounded-lg shadow-md p-8 text-center">
-          <div className="mb-6">
-            <AlertTriangle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Something went wrong</h2>
-            <p className="text-gray-600 mb-6">{error.message}</p>
-          </div>
-          
-          <button 
-            onClick={() => {
-              setError(null);
-              loadKeyItems();
-            }}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Note: Always render main content with header to ensure Download All button is always visible
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -373,8 +316,9 @@ const Dashboard = () => {
             </div>
             <button
               onClick={handleDownloadAllAlerts}
-              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-              title="Download all alerts as Excel and send email notification"
+              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+              title="Download all alerts as Excel file and email with attachment to recipients"
+              style={{ display: 'flex', visibility: 'visible' }}
             >
               <Package className="w-4 h-4 mr-2" />
               Download All
@@ -395,9 +339,66 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Key Items Grid */}
-      <div className="space-y-4">
-        {keyItems.map((item) => (
+      {/* Content Area - Loading, Error, or Key Items */}
+      {loading ? (
+        <div className="bg-white rounded-lg shadow-md p-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-lg text-gray-600">Loading inventory alerts...</span>
+          </div>
+        </div>
+      ) : error && error.type === 'no-files' ? (
+        <div className="bg-white rounded-lg shadow-md p-8 text-center">
+          <div className="mb-6">
+            <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">No Inventory Data Found</h2>
+            <p className="text-gray-600 mb-6">{error.message}</p>
+          </div>
+          
+          {error.help && (
+            <div className="bg-blue-50 rounded-lg p-6 mb-6">
+              <h3 className="text-lg font-semibold text-blue-800 mb-4">{error.help.title}</h3>
+              <div className="space-y-3">
+                {error.help.steps.map((step, index) => (
+                  <div key={index} className="flex items-start">
+                    <div className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
+                      {index + 1}
+                    </div>
+                    <p className="text-blue-700">{step}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          <div className="bg-yellow-50 rounded-lg p-4">
+            <p className="text-yellow-800 text-sm">
+              <strong>Tip:</strong> Make sure your inventory file is in Excel format (.xlsx) and contains the required columns.
+            </p>
+          </div>
+        </div>
+      ) : error && error.type === 'error' ? (
+        <div className="bg-white rounded-lg shadow-md p-8 text-center">
+          <div className="mb-6">
+            <AlertTriangle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Something went wrong</h2>
+            <p className="text-gray-600 mb-6">{error.message}</p>
+          </div>
+          
+          <button 
+            onClick={() => {
+              setError(null);
+              loadKeyItems();
+            }}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      ) : (
+        /* Key Items Grid */
+        <div className="space-y-4">
+          {keyItems.map((item) => (
           <div key={item.name} ref={(el)=> { itemRefs.current[item.name] = el; }} className="bg-white dark:bg-zinc-900 rounded-lg shadow-md overflow-hidden">
             {/* Item Header */}
             <div 
@@ -509,15 +510,16 @@ const Dashboard = () => {
             )}
           </div>
         ))}
-      </div>
-
-      {keyItems.length === 0 && (
-        <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-md p-12 text-center">
-          <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-700 dark:text-yellow-100 mb-2">No Inventory Data</h3>
-          <p className="text-gray-600 dark:text-gray-300">
-            Upload an inventory report to see key items stock levels and alerts
-          </p>
+          
+          {keyItems.length === 0 && !loading && !error && (
+            <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-md p-12 text-center">
+              <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-700 dark:text-yellow-100 mb-2">No Inventory Data</h3>
+              <p className="text-gray-600 dark:text-gray-300">
+                Upload an inventory report to see key items stock levels and alerts
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>

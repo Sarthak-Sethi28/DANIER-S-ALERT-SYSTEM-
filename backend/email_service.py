@@ -333,28 +333,38 @@ class EmailService:
             html_part = MIMEText(html_content, 'html')
             msg.attach(html_part)
             
-            # Try Gmail SMTP with your credentials
+            # Try Gmail SMTP with your credentials and proper connection management
             smtp_user = "danieralertsystem@gmail.com"
             smtp_pass = "pojc nsir pjaw hhbq"
             
-            # Try different ports
+            # Try different ports with proper cleanup
             for port in [587, 465]:
+                server = None
                 try:
                     if port == 465:
-                        server = smtplib.SMTP_SSL('smtp.gmail.com', port, timeout=5)
+                        server = smtplib.SMTP_SSL('smtp.gmail.com', port, timeout=10)
                     else:
-                        server = smtplib.SMTP('smtp.gmail.com', port, timeout=5)
+                        server = smtplib.SMTP('smtp.gmail.com', port, timeout=10)
                         server.starttls()
                     
                     server.login(smtp_user, smtp_pass)
                     server.send_message(msg)
-                    server.quit()
                     print(f"✅ Gmail SMTP SUCCESS to {recipient}")
                     return True
                     
                 except Exception as e:
                     print(f"❌ Gmail SMTP failed port {port}: {str(e)}")
                     continue
+                finally:
+                    # Always close connection to prevent server issues
+                    if server:
+                        try:
+                            server.quit()
+                        except:
+                            try:
+                                server.close()
+                            except:
+                                pass
             
             return False
             
@@ -578,28 +588,38 @@ Generated on: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
             excel_attachment.add_header('Content-Disposition', f'attachment; filename="{filename}"')
             msg.attach(excel_attachment)
             
-            # Send email using Gmail SMTP
+            # Send email using Gmail SMTP with connection management
             smtp_user = "danieralertsystem@gmail.com"
             smtp_pass = "pojc nsir pjaw hhbq"
             
-            # Try different ports
+            # Try different ports with proper connection management
             for port in [587, 465]:
+                server = None
                 try:
                     if port == 465:
-                        server = smtplib.SMTP_SSL('smtp.gmail.com', port, timeout=10)
+                        server = smtplib.SMTP_SSL('smtp.gmail.com', port, timeout=15)
                     else:
-                        server = smtplib.SMTP('smtp.gmail.com', port, timeout=10)
+                        server = smtplib.SMTP('smtp.gmail.com', port, timeout=15)
                         server.starttls()
                     
                     server.login(smtp_user, smtp_pass)
                     server.send_message(msg)
-                    server.quit()
                     print(f"✅ Excel attachment sent successfully to {recipient}")
                     return True
                     
                 except Exception as e:
                     print(f"❌ SMTP port {port} failed: {str(e)}")
                     continue
+                finally:
+                    # Ensure connection is always closed
+                    if server:
+                        try:
+                            server.quit()
+                        except:
+                            try:
+                                server.close()
+                            except:
+                                pass
             
             print(f"❌ All SMTP attempts failed for {recipient}")
             return False

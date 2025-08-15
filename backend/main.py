@@ -1751,16 +1751,30 @@ async def error_handling_middleware(request, call_next):
     """Global error handling and memory management middleware"""
     try:
         response = await call_next(request)
+        
+        # Periodic memory cleanup for email operations
+        if "/email/" in str(request.url) or "/download-all" in str(request.url):
+            print("🧹 Post-email operation cleanup")
+            cleanup_memory()
+            
         return response
     except Exception as e:
         print(f"❌ GLOBAL ERROR on {request.url}: {e}")
+        import traceback
+        traceback.print_exc()
+        
         # Force cleanup on any unhandled error
         try:
             cleanup_memory()
         except:
             pass
-        # Re-raise to let FastAPI handle it
-        raise e
+            
+        # Return a stable error response instead of crashing
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Internal server error", "detail": str(e), "stable": True}
+        )
 
 @app.get("/key-items/details/{item_name}")
 async def get_item_details(item_name: str):
