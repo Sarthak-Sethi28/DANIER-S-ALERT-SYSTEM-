@@ -3,6 +3,9 @@
   "buildCommand": "npm run build",
   "installCommand": "npm ci",
   "outputDirectory": "build",
+  "env": {
+    "REACT_APP_API_BASE_URL": "https://danier-alert-system.onrender.com"
+  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
   ]
