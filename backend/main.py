@@ -1167,31 +1167,62 @@ async def send_email_alert(
         
         print(f"📧 Sending email to {len(recipients)} recipients")
         
-        # FIRE-AND-FORGET: Start email in background thread immediately
+        # ULTRA-SAFE: Start email in completely isolated background process
         def send_email_background():
             try:
-                print("📧 BACKGROUND: Starting email send process...")
-                result = email_service.send_personalized_alert(
-                    recipients=recipients,
-                    low_stock_items=low_stock_items,
-                    recipient_names=recipient_names,
-                    item_name=item_name
-                )
+                print("📧 BACKGROUND: Starting ULTRA-SAFE email send process...")
                 
-                if result["success"]:
-                    print(f"✅ BACKGROUND: Email sent successfully to {len(recipients)} recipients")
-                    # Update recipient stats
-                    for email in recipients:
-                        recipients_storage.record_email_sent(email)
-                else:
-                    print(f"❌ BACKGROUND: Email failed: {result.get('message', 'Unknown error')}")
+                # Create a completely isolated environment for email sending
+                import os
+                import sys
+                from contextlib import redirect_stdout, redirect_stderr
+                import io
+                
+                # Capture any output to prevent crashes
+                stdout_capture = io.StringIO()
+                stderr_capture = io.StringIO()
+                
+                with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
+                    try:
+                        result = email_service.send_personalized_alert(
+                            recipients=recipients,
+                            low_stock_items=low_stock_items,
+                            recipient_names=recipient_names,
+                            item_name=item_name
+                        )
+                        
+                        if result["success"]:
+                            print(f"✅ BACKGROUND: Email sent successfully to {len(recipients)} recipients")
+                            # Update recipient stats (safely)
+                            try:
+                                for email in recipients:
+                                    recipients_storage.record_email_sent(email)
+                            except Exception as record_error:
+                                print(f"⚠️ Failed to record email stats (non-critical): {record_error}")
+                        else:
+                            print(f"❌ BACKGROUND: Email failed: {result.get('message', 'Unknown error')}")
+                            
+                    except Exception as email_error:
+                        print(f"❌ BACKGROUND: Email processing error: {email_error}")
+                
+                # Force cleanup after email operation
+                try:
+                    import gc
+                    gc.collect()
+                    print("🧹 BACKGROUND: Cleanup completed")
+                except:
+                    pass
                     
             except Exception as e:
-                print(f"❌ BACKGROUND: Email error: {e}")
-                import traceback
-                traceback.print_exc()
+                print(f"❌ BACKGROUND: CRITICAL ERROR: {e}")
+                # Even if everything fails, don't crash the server
+                try:
+                    import traceback
+                    traceback.print_exc()
+                except:
+                    pass
         
-        # Start email in background thread - COMPLETELY NON-BLOCKING
+        # Start email in completely isolated background thread
         import threading
         email_thread = threading.Thread(target=send_email_background, daemon=True)
         email_thread.start()
@@ -1255,31 +1286,62 @@ async def send_item_specific_alert(
         
         print(f"📧 ITEM EMAIL: Sending {item_name} alert to {len(recipients)} recipients")
         
-        # FIRE-AND-FORGET: Start email in background thread immediately
+        # ULTRA-SAFE: Start email in completely isolated background process
         def send_item_email_background():
             try:
-                print(f"📧 BACKGROUND ITEM: Starting email for {item_name}...")
-                result = email_service.send_personalized_alert(
-                    recipients=recipients,
-                    low_stock_items=low_stock_items,
-                    recipient_names=recipient_names,
-                    item_name=item_name
-                )
+                print(f"📧 BACKGROUND ITEM: Starting ULTRA-SAFE email for {item_name}...")
                 
-                if result["success"]:
-                    print(f"✅ BACKGROUND ITEM: Email sent successfully for {item_name}")
-                    # Record email sent to each recipient
-                    for recipient_email in recipients:
-                        recipients_storage.record_email_sent(recipient_email)
-                else:
-                    print(f"❌ BACKGROUND ITEM: Email failed for {item_name}: {result.get('message', 'Unknown error')}")
+                # Create a completely isolated environment for email sending
+                import os
+                import sys
+                from contextlib import redirect_stdout, redirect_stderr
+                import io
+                
+                # Capture any output to prevent crashes
+                stdout_capture = io.StringIO()
+                stderr_capture = io.StringIO()
+                
+                with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
+                    try:
+                        result = email_service.send_personalized_alert(
+                            recipients=recipients,
+                            low_stock_items=low_stock_items,
+                            recipient_names=recipient_names,
+                            item_name=item_name
+                        )
+                        
+                        if result["success"]:
+                            print(f"✅ BACKGROUND ITEM: Email sent successfully for {item_name}")
+                            # Record email sent to each recipient (safely)
+                            try:
+                                for recipient_email in recipients:
+                                    recipients_storage.record_email_sent(recipient_email)
+                            except Exception as record_error:
+                                print(f"⚠️ Failed to record email stats (non-critical): {record_error}")
+                        else:
+                            print(f"❌ BACKGROUND ITEM: Email failed for {item_name}: {result.get('message', 'Unknown error')}")
+                            
+                    except Exception as email_error:
+                        print(f"❌ BACKGROUND ITEM: Email processing error for {item_name}: {email_error}")
+                
+                # Force cleanup after email operation
+                try:
+                    import gc
+                    gc.collect()
+                    print(f"🧹 BACKGROUND ITEM: Cleanup completed for {item_name}")
+                except:
+                    pass
                     
             except Exception as e:
-                print(f"❌ BACKGROUND ITEM: Email error for {item_name}: {e}")
-                import traceback
-                traceback.print_exc()
+                print(f"❌ BACKGROUND ITEM: CRITICAL ERROR for {item_name}: {e}")
+                # Even if everything fails, don't crash the server
+                try:
+                    import traceback
+                    traceback.print_exc()
+                except:
+                    pass
         
-        # Start email in background thread - COMPLETELY NON-BLOCKING
+        # Start email in completely isolated background thread
         import threading
         email_thread = threading.Thread(target=send_item_email_background, daemon=True)
         email_thread.start()

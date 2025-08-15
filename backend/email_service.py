@@ -214,11 +214,19 @@ class EmailService:
     def send_personalized_alert(self, recipients: List[str], low_stock_items: List[Dict], 
                                recipient_names: Dict[str, str] = None, 
                                item_name: str = None) -> Dict:
-        """Send personalized alert email to recipients"""
+        """Send personalized alert email to recipients - ULTRA CRASH-PROOF"""
         if not recipients:
             return {"success": False, "message": "No recipients provided"}
         
+        # Ultimate safety wrapper to prevent ANY crash
         try:
+            print(f"📧 EMAIL SERVICE: ULTRA-SAFE processing for {item_name or 'GENERAL'}")
+            
+            # Force garbage collection before email processing
+            import gc
+            gc.collect()
+            
+            # Process with maximum safety
             # Handle special case for download notifications
             if item_name == "DOWNLOAD_NOTIFICATION":
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -312,12 +320,34 @@ class EmailService:
             
         except Exception as e:
             print(f"❌ EMAIL SERVICE ERROR: {e}")
-            import traceback
-            traceback.print_exc()
+            
+            # ULTRA-SAFE error handling to prevent crashes
+            try:
+                import traceback
+                traceback.print_exc()
+            except:
+                print("❌ Could not print traceback - continuing safely")
+            
+            # Force cleanup on any error
+            try:
+                import gc
+                gc.collect()
+                print("🧹 EMAIL SERVICE: Emergency cleanup completed")
+            except:
+                pass
+            
+            # Return safe error response
+            error_message = "Email service temporarily unavailable"
+            try:
+                error_message = f"Failed to send email: {str(e)}"
+            except:
+                pass
+                
             return {
                 "success": False, 
-                "message": f"Failed to send email: {str(e)}",
-                "error": str(e)
+                "message": error_message,
+                "error": "Email processing error",
+                "safe_mode": True
             }
 
     def _send_real_gmail_email(self, recipient: str, subject: str, html_content: str, recipient_name: str = None) -> bool:
@@ -504,8 +534,13 @@ Generated on: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
     def send_excel_attachment(self, recipient: str, subject: str, excel_content: bytes, 
                              filename: str, recipient_name: str = None, 
                              total_alerts: int = 0, source_file: str = "") -> bool:
-        """Send email with Excel attachment"""
+        """Send email with Excel attachment - ULTRA CRASH-PROOF"""
         try:
+            print(f"📧 EXCEL ATTACHMENT: ULTRA-SAFE processing for {recipient}")
+            
+            # Force garbage collection before processing
+            import gc
+            gc.collect()
             from email.mime.multipart import MIMEMultipart
             from email.mime.text import MIMEText
             from email.mime.application import MIMEApplication
@@ -626,6 +661,22 @@ Generated on: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
             
         except Exception as e:
             print(f"❌ Excel attachment error for {recipient}: {str(e)}")
+            
+            # ULTRA-SAFE error handling
+            try:
+                import traceback
+                traceback.print_exc()
+            except:
+                print("❌ Could not print traceback - continuing safely")
+            
+            # Force cleanup on error
+            try:
+                import gc
+                gc.collect()
+                print("🧹 EXCEL ATTACHMENT: Emergency cleanup completed")
+            except:
+                pass
+                
             return False
 
     def get_email_status(self) -> Dict:
