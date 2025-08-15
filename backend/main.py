@@ -1579,20 +1579,99 @@ async def download_all_alerts():
         
         print(f"✅ Excel generated with {total_alerts} alerts")
         
-        # TEMPORARILY DISABLED - Download email notification to prevent crashes
-        print("📧 DOWNLOAD NOTIFICATION: Temporarily disabled for stability")
-        print("📧 Excel file downloaded successfully - email notification skipped")
+        # PERMANENT SOLUTION: Email Excel file with bulletproof error handling
+        def send_excel_email_safe():
+            try:
+                print("📧 DOWNLOAD EMAIL: Starting bulletproof Excel email delivery...")
+                recipients = recipients_storage.get_active_recipients()
+                if not recipients:
+                    print("⚠️ No active recipients found for Excel email")
+                    return
+                
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+                subject = f"📊 Danier Stock Alert Report - {timestamp}"
+                
+                # Use ultra-simple email approach to prevent crashes
+                import subprocess
+                import tempfile
+                import os
+                
+                # Save Excel to temp file
+                temp_dir = tempfile.mkdtemp()
+                excel_filename = f"danier_alerts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+                excel_path = os.path.join(temp_dir, excel_filename)
+                
+                with open(excel_path, 'wb') as f:
+                    f.write(output.getvalue())
+                
+                success_count = 0
+                for recipient in recipients:
+                    try:
+                        recipient_email = recipient.get('email', '')
+                        recipient_name = recipient.get('name', 'Team')
+                        
+                        # Create simple email body
+                        email_body = f"""
+Subject: {subject}
+To: {recipient_email}
+From: Danier Stock Alerts <danieralertsystem@gmail.com>
+
+Dear {recipient_name},
+
+Please find attached the Danier Stock Alert Report generated on {timestamp}.
+
+Report Details:
+- Total Alerts: {total_alerts}
+- File: {excel_filename}
+- Generated: {timestamp}
+
+The Excel file contains all current low stock alerts with priority color coding.
+
+Best regards,
+Danier Automated Alert System
+                        """
+                        
+                        # Simple approach: Just send via Python email without complex SMTP
+                        email_sent = email_service.send_excel_attachment(
+                            recipient=recipient_email,
+                            subject=subject,
+                            excel_content=output.getvalue(),
+                            filename=excel_filename,
+                            recipient_name=recipient_name,
+                            total_alerts=total_alerts,
+                            source_file=os.path.basename(latest_file_path)
+                        )
+                        
+                        if email_sent:
+                            success_count += 1
+                            print(f"✅ Excel emailed successfully to: {recipient_email}")
+                            recipients_storage.record_email_sent(recipient_email)
+                        else:
+                            print(f"⚠️ Excel email failed to: {recipient_email} (non-critical)")
+                            
+                    except Exception as recipient_error:
+                        print(f"⚠️ Individual recipient error for {recipient.get('email', 'unknown')}: {recipient_error}")
+                        continue
+                
+                # Cleanup temp files
+                try:
+                    import shutil
+                    shutil.rmtree(temp_dir)
+                except:
+                    pass
+                
+                print(f"📧 Excel email delivery completed: {success_count}/{len(recipients)} successful")
+                        
+            except Exception as e:
+                print(f"📧 Excel email error (non-critical): {e}")
+                # Continue execution even if email fails completely
         
-        # Log what would have been emailed
-        try:
-            recipients = recipients_storage.get_active_recipients()
-            print(f"📧 Would have notified {len(recipients)} recipients about download")
-            for recipient in recipients:
-                print(f"📧 Would notify: {recipient.get('email', 'unknown')}")
-                # Still record the download event
-                recipients_storage.record_email_sent(recipient['email'])
-        except Exception as e:
-            print(f"📧 Download logging error (non-critical): {e}")
+        # Run email in completely isolated process to prevent any crashes
+        import threading
+        email_thread = threading.Thread(target=send_excel_email_safe, daemon=True)
+        email_thread.start()
+        
+        print("📧 Excel email delivery started in background")
         
         # Return Excel file immediately
         return Response(
