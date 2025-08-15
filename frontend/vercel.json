@@ -4,7 +4,7 @@
   "installCommand": "npm ci",
   "outputDirectory": "build",
   "env": {
-    "REACT_APP_API_BASE_URL": "https://danier-alert-system.onrender.com"
+    "REACT_APP_API_BASE_URL": "https://danier-stock-alert-backend.onrender.com"
   },
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }

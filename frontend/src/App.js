@@ -109,7 +109,7 @@ function App() {
         {/* Main Content */}
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<UploadPage />} />
             <Route path="/upload" element={<UploadPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/search" element={<SearchBar />} />
@@ -129,8 +129,8 @@ function Navigation() {
   const location = useLocation();
   
   const navItems = [
-    { to: "/dashboard", icon: <BarChart3 className="w-5 h-5" />, label: "Dashboard", priority: true },
-    { to: "/upload", icon: <Upload className="w-5 h-5" />, label: "Upload Report" },
+    { to: "/upload", icon: <Upload className="w-5 h-5" />, label: "Upload Report", priority: true },
+    { to: "/dashboard", icon: <BarChart3 className="w-5 h-5" />, label: "Dashboard" },
     { to: "/thresholds", icon: <AlertTriangle className="w-5 h-5" />, label: "Thresholds" },
     { to: "/key-items", icon: <Package className="w-5 h-5" />, label: "Key Items" },
     { to: "/recipients", icon: <Users className="w-5 h-5" />, label: "Recipients" },
@@ -146,14 +146,14 @@ function Navigation() {
               key={item.to}
               to={item.to}
               className={`flex items-center px-3 py-2 text-sm font-medium transition-colors duration-200 ${
-                (location.pathname === item.to || (location.pathname === '/' && item.to === '/dashboard'))
+                (location.pathname === item.to || (location.pathname === '/' && item.to === '/upload'))
                   ? 'text-danier-dark bg-yellow-300 dark:bg-zinc-800 dark:text-yellow-200'
                   : 'text-white hover:text-danier-dark hover:bg-yellow-200 dark:text-yellow-200 dark:hover:bg-zinc-800'
               } ${item.priority ? 'border-2 border-yellow-400 rounded-md' : ''}`}
             >
               {item.icon}
               <span className="ml-2">{item.label}</span>
-              {item.priority && <span className="ml-2 text-xs bg-blue-500 text-white px-1 rounded">HOME</span>}
+              {item.priority && <span className="ml-2 text-xs bg-red-500 text-white px-1 rounded">START</span>}
             </Link>
           ))}
         </div>

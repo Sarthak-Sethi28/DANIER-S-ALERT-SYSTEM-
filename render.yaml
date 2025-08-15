@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: danier-alert-system
+    name: danier-stock-alert-backend
     env: python
     plan: starter
     autoDeploy: true
