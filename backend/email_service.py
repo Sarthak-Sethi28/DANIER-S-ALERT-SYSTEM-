@@ -491,6 +491,123 @@ Generated on: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
         except Exception as e:
             print(f"Error updating recipient stats: {e}")
 
+    def send_excel_attachment(self, recipient: str, subject: str, excel_content: bytes, 
+                             filename: str, recipient_name: str = None, 
+                             total_alerts: int = 0, source_file: str = "") -> bool:
+        """Send email with Excel attachment"""
+        try:
+            from email.mime.multipart import MIMEMultipart
+            from email.mime.text import MIMEText
+            from email.mime.application import MIMEApplication
+            
+            # Create message
+            msg = MIMEMultipart()
+            msg['Subject'] = subject
+            msg['From'] = "Danier Stock Alerts <danieralertsystem@gmail.com>"
+            msg['To'] = recipient
+            
+            # Create HTML body
+            html_body = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Stock Alert Report</title>
+                <style>
+                    body {{ font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }}
+                    .header {{ background-color: #e74c3c; color: white; padding: 20px; text-align: center; border-radius: 8px; }}
+                    .content {{ padding: 20px; background-color: #f9f9f9; border-radius: 8px; margin-top: 10px; }}
+                    .highlight {{ color: #e74c3c; font-weight: bold; }}
+                    .success {{ color: #27ae60; font-weight: bold; }}
+                    .attachment {{ background-color: #fff; padding: 15px; border-left: 4px solid #e74c3c; margin: 15px 0; }}
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h2>📊 Danier Stock Alert Report</h2>
+                    <p>Complete Stock Analysis - {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
+                </div>
+                <div class="content">
+                    <p>Dear {recipient_name or 'Team'},</p>
+                    
+                    <p>Please find attached the complete stock alert report for your review.</p>
+                    
+                    <div class="attachment">
+                        <h3>📎 Attachment Details</h3>
+                        <ul>
+                            <li><strong>File:</strong> {filename}</li>
+                            <li><strong>Total Alerts:</strong> <span class="highlight">{total_alerts}</span></li>
+                            <li><strong>Source:</strong> {source_file}</li>
+                            <li><strong>Generated:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</li>
+                        </ul>
+                    </div>
+                    
+                    <p>The Excel file contains:</p>
+                    <ul>
+                        <li>✅ Complete low stock alerts</li>
+                        <li>✅ Priority color coding (Critical/High/Medium)</li>
+                        <li>✅ Detailed item information</li>
+                        <li>✅ Stock levels and thresholds</li>
+                    </ul>
+                    
+                    <p><strong>Next Steps:</strong></p>
+                    <ol>
+                        <li>Review the attached Excel file</li>
+                        <li>Check critical and high priority items first</li>
+                        <li>Take appropriate action for restocking</li>
+                    </ol>
+                    
+                    <p class="success">Thank you for using the Danier Automated Alert System!</p>
+                    
+                    <hr>
+                    <p style="font-size: 12px; color: #666;">
+                        This is an automated email from the Danier Stock Alert System.<br>
+                        Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+                    </p>
+                </div>
+            </body>
+            </html>
+            """
+            
+            # Add HTML content
+            html_part = MIMEText(html_body, 'html')
+            msg.attach(html_part)
+            
+            # Add Excel attachment
+            excel_attachment = MIMEApplication(excel_content, _subtype='vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            excel_attachment.add_header('Content-Disposition', f'attachment; filename="{filename}"')
+            msg.attach(excel_attachment)
+            
+            # Send email using Gmail SMTP
+            smtp_user = "danieralertsystem@gmail.com"
+            smtp_pass = "pojc nsir pjaw hhbq"
+            
+            # Try different ports
+            for port in [587, 465]:
+                try:
+                    if port == 465:
+                        server = smtplib.SMTP_SSL('smtp.gmail.com', port, timeout=10)
+                    else:
+                        server = smtplib.SMTP('smtp.gmail.com', port, timeout=10)
+                        server.starttls()
+                    
+                    server.login(smtp_user, smtp_pass)
+                    server.send_message(msg)
+                    server.quit()
+                    print(f"✅ Excel attachment sent successfully to {recipient}")
+                    return True
+                    
+                except Exception as e:
+                    print(f"❌ SMTP port {port} failed: {str(e)}")
+                    continue
+            
+            print(f"❌ All SMTP attempts failed for {recipient}")
+            return False
+            
+        except Exception as e:
+            print(f"❌ Excel attachment error for {recipient}: {str(e)}")
+            return False
+
     def get_email_status(self) -> Dict:
         """Get email service status"""
         return {

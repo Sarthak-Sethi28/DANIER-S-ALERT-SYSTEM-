@@ -1612,46 +1612,47 @@ async def download_all_alerts():
         
         print(f"✅ Excel generated with {total_alerts} alerts")
         
-        # Send email notification with IMMEDIATE FIRE-AND-FORGET
+        # Send email notification with Excel file attachment - FIRE-AND-FORGET
         def send_notification_background():
             try:
-                print("📧 Starting background email notification...")
+                print("📧 Starting background email with Excel attachment...")
                 recipients = recipients_storage.get_active_recipients()
                 if not recipients:
                     print("⚠️ No active recipients found for notification")
                     return
                     
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-                subject = f"Danier Stock Alert Report Downloaded - {timestamp}"
-                body = f"""
-                <h2>📊 Stock Alert Report Generated & Downloaded</h2>
-                <p>A comprehensive stock alert report has been successfully generated and downloaded.</p>
-                <ul>
-                    <li><strong>Total Alerts:</strong> {total_alerts}</li>
-                    <li><strong>Source File:</strong> {os.path.basename(latest_file_path)}</li>
-                    <li><strong>Generated:</strong> {timestamp}</li>
-                    <li><strong>Download Status:</strong> ✅ Complete</li>
-                </ul>
-                <p>The Excel report contains all current low stock alerts with priority color coding.</p>
-                <p><strong>Danier Automated Alert System</strong></p>
-                """
+                subject = f"📊 Danier Stock Alert Report - {timestamp}"
                 
+                # Send Excel file with email
                 success_count = 0
-                recipient_emails = [r['email'] for r in recipients]
-                recipient_names = {r['email']: r['name'] for r in recipients}
+                for recipient in recipients:
+                    try:
+                        recipient_name = recipient.get('name', recipient['email'])
+                        
+                        # Send email with Excel attachment
+                        email_sent = email_service.send_excel_attachment(
+                            recipient=recipient['email'],
+                            subject=subject,
+                            excel_content=output.getvalue(),
+                            filename=f"danier_alerts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+                            recipient_name=recipient_name,
+                            total_alerts=total_alerts,
+                            source_file=os.path.basename(latest_file_path)
+                        )
+                        
+                        if email_sent:
+                            success_count += 1
+                            print(f"✅ Excel report emailed to: {recipient['email']}")
+                            # Record email sent
+                            recipients_storage.record_email_sent(recipient['email'])
+                        else:
+                            print(f"❌ Failed to email Excel to: {recipient['email']}")
+                            
+                    except Exception as e:
+                        print(f"❌ Failed to send Excel to {recipient.get('email', 'unknown')}: {e}")
                 
-                # Use the email service's send_personalized_alert method for consistency
-                result = email_service.send_personalized_alert(
-                    recipients=recipient_emails,
-                    low_stock_items=[],  # No specific alerts, just notification
-                    recipient_names=recipient_names,
-                    item_name="DOWNLOAD_NOTIFICATION"
-                )
-                
-                if result.get("success"):
-                    print(f"✅ Download notification sent to {len(recipient_emails)} recipients")
-                else:
-                    print(f"❌ Download notification failed: {result.get('message', 'Unknown error')}")
+                print(f"📧 Excel email notifications completed: {success_count}/{len(recipients)} sent")
                         
             except Exception as e:
                 print(f"❌ Background email notification error: {e}")
