@@ -187,11 +187,12 @@ class ApiService {
     }
   }
 
-  async sendItemSpecificAlert(itemName) {
-    return this.makeRequest(`/email/send-item-alert/${encodeURIComponent(itemName)}`, {
-      method: 'POST',
-    });
-  }
+  // Individual item email alerts disabled per user request
+  // async sendItemSpecificAlert(itemName) {
+  //   return this.makeRequest(`/email/send-item-alert/${encodeURIComponent(itemName)}`, {
+  //     method: 'POST',
+  //   });
+  // }
 
   async getEmailStatus() {
     return this.makeRequest('/email/status');
@@ -377,7 +378,8 @@ export const getFileAlerts = (filename) => apiService.getFileAlerts(filename);
 export const getFileStats = (filename) => apiService.getFileStats(filename);
 export const searchArticle = (searchTerm) => apiService.searchArticle(searchTerm);
 export const sendEmailAlert = (itemName) => apiService.sendEmailAlert(itemName);
-export const sendItemSpecificAlert = (itemName) => apiService.sendItemSpecificAlert(itemName);
+// Individual item email alerts disabled per user request
+// export const sendItemSpecificAlert = (itemName) => apiService.sendItemSpecificAlert(itemName);
 export const getEmailStatus = () => apiService.getEmailStatus();
 export const getRecipients = () => apiService.getRecipients();
 export const addRecipient = (email, name, department) => apiService.addRecipient(email, name, department);

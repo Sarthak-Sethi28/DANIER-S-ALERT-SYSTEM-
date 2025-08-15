@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getSpecificKeyItemAlerts, getAllKeyItemsWithAlerts, sendItemSpecificAlert } from '../services/api';
-import { ChevronDown, ChevronUp, AlertTriangle, Package, Mail, RefreshCw, Send, Search as SearchIcon } from 'lucide-react';
+import { getSpecificKeyItemAlerts, getAllKeyItemsWithAlerts } from '../services/api';
+import { ChevronDown, ChevronUp, AlertTriangle, Package, Mail, RefreshCw, Search as SearchIcon } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
 // Add new API call for key items alerts
@@ -221,22 +221,7 @@ const Dashboard = () => {
     return { color: 'text-yellow-600', bg: 'bg-yellow-50', label: 'MEDIUM' };
   };
 
-  const handleSendEmail = async (itemName, e) => {
-    e.stopPropagation(); // Prevent expanding the item
-    
-    // Immediate fast popup - NO RELOAD, fire-and-forget
-    alert(`✅ Email alert for ${itemName} is being sent in background. No need to wait!`);
-    
-    // Fire in background without blocking UI or causing reloads
-    try {
-      sendItemSpecificAlert(itemName).catch((err) => {
-        console.log('Background email error (non-blocking):', err);
-      });
-    } catch (error) {
-      console.log('Email send error (non-blocking):', error);
-    }
-    // NO dashboard reload, NO waiting - just continue
-  };
+
 
   const handleDownloadAllAlerts = async () => {
     try {
@@ -428,18 +413,9 @@ const Dashboard = () => {
                 </div>
                 <div className="flex items-center">
                   {item.low_stock_count > 0 && (
-                    <>
-                      <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium mr-4">
-                        {item.low_stock_count} alerts
-                      </span>
-                      <button
-                        onClick={(e) => handleSendEmail(item.name, e)}
-                        className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-colors mr-4"
-                        title="Send email alert for this item"
-                      >
-                        <Send className="w-4 h-4" />
-                      </button>
-                    </>
+                    <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium mr-4">
+                      {item.low_stock_count} alerts
+                    </span>
                   )}
                   {expandedItems[item.name] ? (
                     <ChevronUp className="w-5 h-5 text-gray-400" />
