@@ -398,4 +398,58 @@ export const getUploadHistoryFast = () => apiService.getUploadHistoryFast();
 export const getRecipientsFast = () => apiService.getRecipientsFast();
 
 // Export the service instance for advanced usage
-export default apiService; 
+export default apiService;
+
+// Heartbeat: keep backend warm and detect drops
+let __heartbeatTimer = null;
+export function startHeartbeat(intervalMs = 30000) {  // Increased to every 30 seconds
+  try {
+    if (__heartbeatTimer) clearInterval(__heartbeatTimer);
+    
+    const safePing = async () => {
+      try {
+        // Ultra-lightweight ping with shorter timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);  // Reduced to 2s
+        
+        const res = await fetch(`${API_BASE_URL}/health`, { 
+          method: 'GET', 
+          signal: controller.signal,
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (res.ok) {
+          // Success - server is alive
+          console.log('💓 Heartbeat: Server alive');
+        } else {
+          console.warn('⚠️ Heartbeat: Server responded but not OK');
+        }
+      } catch (error) {
+        console.warn('❤️‍🩹 Heartbeat: Connection issue (will retry)');
+      }
+    };
+    
+    // Immediate ping then regular interval
+    safePing();
+    __heartbeatTimer = setInterval(safePing, Math.max(10000, intervalMs));
+    
+    console.log(`💓 Heartbeat started: pinging every ${intervalMs/1000}s`);
+    
+  } catch (error) {
+    console.error('💔 Heartbeat setup failed:', error);
+  }
+  
+  // Return stop function
+  return () => {
+    if (__heartbeatTimer) {
+      clearInterval(__heartbeatTimer);
+      __heartbeatTimer = null;
+      console.log('💓 Heartbeat stopped');
+    }
+  };
+} 

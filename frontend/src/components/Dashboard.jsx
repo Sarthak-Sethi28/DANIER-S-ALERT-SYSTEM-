@@ -44,23 +44,21 @@ const Dashboard = () => {
   // Auto-refresh when component becomes visible (e.g., returning from upload)
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        console.log('🔄 Dashboard visible - refreshing data...');
-        loadKeyItems();
-      }
+      // REMOVED: No auto-refresh on visibility change to prevent disruptions
+      console.log('🔄 Dashboard visible - staying on current data to prevent disruptions');
     };
 
     const handleFocus = () => {
-      console.log('🔄 Dashboard focused - refreshing data...');
-      loadKeyItems();
+      // REMOVED: No auto-refresh on focus to prevent disruptions  
+      console.log('🔄 Dashboard focused - staying on current data to prevent disruptions');
     };
 
     const handleThresholdsUpdated = () => {
-      console.log('🔄 Thresholds updated - refreshing dashboard...');
-      loadKeyItems();
+      // Only refresh if user explicitly requests it
+      console.log('🔄 Thresholds updated - manual refresh required');
     };
 
-    // Listen for page visibility changes and window focus
+    // Keep listeners but don't auto-refresh
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleFocus);
     window.addEventListener('thresholdsUpdated', handleThresholdsUpdated);
@@ -220,14 +218,53 @@ const Dashboard = () => {
   const handleSendEmail = async (itemName, e) => {
     e.stopPropagation(); // Prevent expanding the item
     
-    // Immediate fast popup
-    alert(`Creating email for ${itemName}... It will be sent within ~10 seconds.`);
-    // Fire and continue without blocking UI
+    // Immediate fast popup - NO RELOAD, fire-and-forget
+    alert(`✅ Email alert for ${itemName} is being sent in background. No need to wait!`);
+    
+    // Fire in background without blocking UI or causing reloads
     try {
-      sendItemSpecificAlert(itemName).catch(() => {/* no-op background */});
+      sendItemSpecificAlert(itemName).catch((err) => {
+        console.log('Background email error (non-blocking):', err);
+      });
     } catch (error) {
-      console.error('Error sending email:', error);
-      // Swallow, background already launched
+      console.log('Email send error (non-blocking):', error);
+    }
+    // NO dashboard reload, NO waiting - just continue
+  };
+
+  const handleDownloadAllAlerts = async () => {
+    try {
+      // Show immediate feedback
+      alert('📊 Generating Excel report and sending email notification... This may take a moment.');
+      
+      // Call backend to generate Excel and send email
+      const response = await fetch(`${API_BASE_URL}/alerts/download-all`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate report');
+      }
+      
+      // Download the Excel file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `danier_alerts_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      alert('✅ Excel report downloaded and email notification sent to designated recipients!');
+    } catch (error) {
+      console.error('Download error:', error);
+      alert('❌ Failed to generate report. Please try again.');
     }
   };
 
@@ -334,6 +371,14 @@ const Dashboard = () => {
                 className="text-xs px-2 py-1 bg-blue-600 text-white rounded-md disabled:opacity-50"
               >Go</button>
             </div>
+            <button
+              onClick={handleDownloadAllAlerts}
+              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              title="Download all alerts as Excel and send email notification"
+            >
+              <Package className="w-4 h-4 mr-2" />
+              Download All
+            </button>
             <button
               onClick={loadKeyItems}
               disabled={loading}

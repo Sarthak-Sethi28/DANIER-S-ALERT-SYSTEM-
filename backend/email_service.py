@@ -219,18 +219,52 @@ class EmailService:
             return {"success": False, "message": "No recipients provided"}
         
         try:
-            # Create personalized HTML content
-            html_content = self.create_personalized_alert_email(
-                low_stock_items, 
-                recipient_names.get(recipients[0]) if recipient_names else None,
-                item_name
-            )
-            
-            # Personalize subject
-            if item_name:
-                subject = f"⚠️ Low Stock Alert - {item_name} - Danier Inventory"
+            # Handle special case for download notifications
+            if item_name == "DOWNLOAD_NOTIFICATION":
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+                subject = f"📊 Danier Stock Alert Report Downloaded - {timestamp}"
+                html_content = f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Report Downloaded</title>
+                    <style>
+                        body {{ font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }}
+                        .header {{ background-color: #e74c3c; color: white; padding: 20px; text-align: center; }}
+                        .content {{ padding: 20px; background-color: #f9f9f9; }}
+                        .success {{ color: #27ae60; font-weight: bold; }}
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h2>📊 Stock Alert Report Downloaded</h2>
+                    </div>
+                    <div class="content">
+                        <p>A comprehensive stock alert report has been successfully generated and downloaded.</p>
+                        <ul>
+                            <li><strong>Generated:</strong> {timestamp}</li>
+                            <li><strong>Download Status:</strong> <span class="success">✅ Complete</span></li>
+                        </ul>
+                        <p>The Excel report contains all current low stock alerts with priority color coding.</p>
+                        <p><strong>Danier Automated Alert System</strong></p>
+                    </div>
+                </body>
+                </html>
+                """
             else:
-                subject = f"⚠️ Low Stock Alert - Danier Inventory - {datetime.now().strftime('%Y-%m-%d')}"
+                # Create personalized HTML content for regular alerts
+                html_content = self.create_personalized_alert_email(
+                    low_stock_items, 
+                    recipient_names.get(recipients[0]) if recipient_names else None,
+                    item_name
+                )
+                
+                # Personalize subject
+                if item_name and item_name != "DOWNLOAD_NOTIFICATION":
+                    subject = f"⚠️ Low Stock Alert - {item_name} - Danier Inventory"
+                else:
+                    subject = f"⚠️ Low Stock Alert - Danier Inventory - {datetime.now().strftime('%Y-%m-%d')}"
             
             # Try to send real email using Gmail SMTP
             sent_count = 0
@@ -250,7 +284,8 @@ class EmailService:
                 
                 # Create backup email file
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                email_filename = f"email_alert_{item_name or 'GENERAL'}_{timestamp}_{recipient.replace('@', '_at_')}.html"
+                safe_item_name = (item_name or 'GENERAL').replace('/', '_').replace('\\', '_')
+                email_filename = f"email_alert_{safe_item_name}_{timestamp}_{recipient.replace('@', '_at_')}.html"
                 email_filepath = os.path.join(self.emails_dir, email_filename)
                 
                 # Save email content to file
@@ -276,6 +311,9 @@ class EmailService:
             }
             
         except Exception as e:
+            print(f"❌ EMAIL SERVICE ERROR: {e}")
+            import traceback
+            traceback.print_exc()
             return {
                 "success": False, 
                 "message": f"Failed to send email: {str(e)}",

@@ -1,14 +1,14 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Upload, BarChart3, Users, Settings, Package, Database, Search, AlertTriangle } from 'lucide-react';
+import { Upload, BarChart3, Users, Settings, Package, Search, AlertTriangle } from 'lucide-react';
 import UploadPage from './components/UploadPage';
 import Dashboard from './components/Dashboard';
 import Recipients from './components/Recipients';
 import SettingsPage from './components/Settings';
 import KeyItemsDashboard from './components/KeyItemsDashboard';
-import InventoryFilesDashboard from './components/InventoryFilesDashboard';
 import SearchBar from './components/SearchBar';
 import ThresholdManager from './components/ThresholdManager';
+import { startHeartbeat } from './services/api';
 
 function App() {
   const [dark, setDark] = React.useState(() => {
@@ -24,6 +24,12 @@ function App() {
     if (dark) root.classList.add('dark'); else root.classList.remove('dark');
     localStorage.setItem('theme', dark ? 'dark' : 'light');
   }, [dark]);
+
+  // Start lightweight heartbeat to keep backend warm
+  React.useEffect(() => {
+    const stop = startHeartbeat(60000);
+    return () => { try { stop && stop(); } catch (_) {} };
+  }, []);
 
   return (
     <Router>
@@ -65,7 +71,6 @@ function App() {
             <Route path="/recipients" element={<Recipients />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/key-items" element={<KeyItemsDashboard />} />
-            <Route path="/inventory-files" element={<InventoryFilesDashboard />} />
           </Routes>
         </main>
       </div>
@@ -82,7 +87,6 @@ function Navigation() {
     { to: "/dashboard", icon: <BarChart3 className="w-5 h-5" />, label: "Dashboard" },
     { to: "/thresholds", icon: <AlertTriangle className="w-5 h-5" />, label: "Thresholds" },
     { to: "/key-items", icon: <Package className="w-5 h-5" />, label: "Key Items" },
-    { to: "/inventory-files", icon: <Database className="w-5 h-5" />, label: "Multi-File" },
     { to: "/recipients", icon: <Users className="w-5 h-5" />, label: "Recipients" },
     { to: "/settings", icon: <Settings className="w-5 h-5" />, label: "Settings" }
   ];

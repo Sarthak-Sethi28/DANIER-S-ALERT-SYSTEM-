@@ -1,30 +1,23 @@
 services:
   - type: web
-    name: inventory-monitoring-backend
-    env: node
-    plan: free
-    buildCommand: cd backend && npm install && npm run build
-    startCommand: cd backend && npm run start:prod
+    name: danier-alert-system
+    env: python
+    plan: starter
+    autoDeploy: true
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1 --timeout-keep-alive 600
     envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 10000
-      - key: DATABASE_HOST
-        sync: false
-      - key: DATABASE_PORT
-        sync: false
-      - key: DATABASE_NAME
-        sync: false
-      - key: DATABASE_USER
-        sync: false
-      - key: DATABASE_PASSWORD
-        sync: false
-      - key: SMTP_HOST
-        sync: false
-      - key: SMTP_PORT
-        sync: false
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASS
-        sync: false 
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: PYTHONDONTWRITEBYTECODE
+        value: "1"
+      - key: DEFAULT_RECIPIENT_EMAIL
+        value: alerts@danier.ca
+      - key: DATABASE_URL
+        value: sqlite:////var/data/danier_stock_alert.db
+      - key: UPLOAD_DIR
+        value: /var/data/uploads
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 1

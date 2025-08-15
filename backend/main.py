@@ -1,13 +1,15 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Form
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Form, BackgroundTasks
+from fastapi.responses import FileResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import tempfile
 import os
 import gc
+import asyncio
 import psutil
 from datetime import datetime
 import pandas as pd
+import threading
 
 from database import get_db, engine, init_db
 from models import Base, Recipient, UploadedFile, ThresholdOverride, ThresholdHistory
@@ -38,6 +40,41 @@ email_service = EmailService()
 file_storage_service = FileStorageService()
 comparison_service = ComparisonService(key_items_service)
 threshold_analysis_service = ThresholdAnalysisService()
+
+# In-memory guard to prevent duplicate warming jobs
+STATS_WARM_IN_PROGRESS = set()
+
+def warm_file_stats(file_path: str, filename: str):
+    try:
+        mtime = os.path.getmtime(file_path)
+        cache_key = f"file_stats_{filename}"
+        cache_sig_key = f"file_stats_sig_{filename}"
+        if not hasattr(key_items_service, '_cache'):
+            key_items_service._cache = {}
+        # If already up-to-date, skip
+        if cache_key in key_items_service._cache and cache_sig_key in key_items_service._cache:
+            if key_items_service._cache[cache_sig_key] == mtime:
+                return
+        # Compute fresh stats (heavy) in background thread
+        file_key_items = key_items_service.get_file_key_items(file_path) or []
+        low_stock_items, success, _ = key_items_service.process_key_items_inventory(file_path)
+        low_stock_count = len(low_stock_items) if success and low_stock_items else 0
+        result = {
+            "filename": filename,
+            "key_items_count": len(file_key_items),
+            "low_stock_count": low_stock_count,
+            "processed_successfully": bool(success)
+        }
+        key_items_service._cache[cache_key] = result
+        key_items_service._cache[cache_sig_key] = mtime
+    except Exception:
+        # Swallow errors in background
+        pass
+    finally:
+        try:
+            STATS_WARM_IN_PROGRESS.discard(filename)
+        except Exception:
+            pass
 
 # Default recipient email (can be configured via environment variable)
 RECIPIENT_EMAIL = os.getenv("DEFAULT_RECIPIENT_EMAIL", "alerts@danier.ca")
@@ -255,11 +292,10 @@ async def upload_report(file: UploadFile = File(...)):
         except Exception:
             pass
 
-        # Trigger background cache warm to speed up first dashboard load
+        # Trigger background cache warm to speed up first dashboard load (non-blocking)
         try:
-            _, success_warm, _ = key_items_service.get_all_key_items_with_alerts(permanent_path)
-            if success_warm:
-                print("🔥 Background warm: batch alerts cached")
+            asyncio.create_task(asyncio.to_thread(key_items_service.get_all_key_items_with_alerts, permanent_path))
+            print("🔥 Scheduled background warm of batch alerts after upload")
         except Exception as _:
             pass
         
@@ -287,13 +323,16 @@ async def upload_report(file: UploadFile = File(...)):
 
 @app.get("/key-items/alerts")
 async def get_key_items_alerts():
-    """Get current key items alerts from the latest uploaded file"""
+    """Get current key items alerts from the latest uploaded file - OPTIMIZED"""
     try:
         print("🔍 DASHBOARD REQUEST: Getting key items alerts...")
         
-        # Get the latest uploaded file path
+        # Get the latest uploaded file path with DB cleanup
         db = next(get_db())
-        latest_file_path = file_storage_service.get_latest_file_path(db)
+        try:
+            latest_file_path = file_storage_service.get_latest_file_path(db)
+        finally:
+            db.close()
         
         print(f"📁 Latest file path: {latest_file_path}")
         
@@ -315,16 +354,54 @@ async def get_key_items_alerts():
                 "message": "No inventory file found. Please upload an inventory file first."
             }
         
-        # Always use fresh processing for dashboard alerts to ensure accuracy
-        print("🔄 DASHBOARD: Using fresh processing for latest file...")
-        low_stock_items, success, error_message = key_items_service.force_fresh_processing(latest_file_path)
+        # Use CACHED batch processing for speed - this prevents memory issues
+        print("⚡ DASHBOARD: Using ultra-fast cached batch processing...")
+        all_alerts, success, error_message = key_items_service.get_all_key_items_with_alerts(latest_file_path)
         
         if not success:
-            raise HTTPException(status_code=400, detail=error_message)
+            # Only fallback to fresh processing if cache completely fails
+            print("🔄 DASHBOARD FALLBACK: Cache failed, using fresh processing...")
+            low_stock_items, success, error_message = key_items_service.force_fresh_processing(latest_file_path)
+            if not success:
+                raise HTTPException(status_code=400, detail=error_message)
+            
+            # Get file-specific key items and summary for fallback
+            file_key_items = key_items_service.get_file_key_items(latest_file_path)
+            summary = key_items_service.get_key_items_summary(latest_file_path)
+            
+            # Force cleanup after fresh processing
+            cleanup_memory()
+            
+            return {
+                "key_items_tracked": file_key_items,
+                "threshold": key_items_service.default_size_threshold,
+                "low_stock_items": low_stock_items,
+                "summary": summary,
+                "source_file": os.path.basename(latest_file_path),
+                "total_ki00_items_detected": len(file_key_items)
+            }
         
-        # Get file-specific key items and summary
-        file_key_items = key_items_service.get_file_key_items(latest_file_path)
-        summary = key_items_service.get_key_items_summary(latest_file_path)
+        # Convert batch alerts to old format for compatibility
+        low_stock_items = []
+        file_key_items = []
+        total_items = 0
+        
+        for item in all_alerts:
+            item_name = item.get("name", "")
+            if item_name:
+                file_key_items.append(item_name)
+                alerts = item.get("alerts", [])
+                low_stock_items.extend(alerts)
+                total_items += len(alerts)
+        
+        # Simple summary from batch data
+        summary = {
+            "total_key_items": len(file_key_items),
+            "total_low_stock_alerts": len(low_stock_items),
+            "processing_mode": "cached_batch"
+        }
+        
+        print(f"✅ DASHBOARD: Returned {len(low_stock_items)} alerts from {len(file_key_items)} items")
         
         return {
             "key_items_tracked": file_key_items,
@@ -336,6 +413,9 @@ async def get_key_items_alerts():
         }
         
     except Exception as e:
+        print(f"❌ DASHBOARD ERROR: {e}")
+        # Force cleanup on error
+        cleanup_memory()
         raise HTTPException(status_code=500, detail=f"Error retrieving alerts: {str(e)}")
 
 @app.get("/inventory-files")
@@ -779,9 +859,11 @@ async def download_archive_file(filename: str):
 
 @app.get("/key-items/batch-alerts")
 async def get_all_key_items_with_alerts():
-    """Ultra-fast batch alerts with self-healing file detection"""
+    """Ultra-fast batch alerts with self-healing file detection and memory optimization"""
     try:
-        # Use DB to get latest active file path
+        print("⚡ BATCH ALERTS: Starting request...")
+        
+        # Use DB to get latest active file path with immediate cleanup
         db = next(get_db())
         try:
             latest_file_path = file_storage_service.get_latest_file_path(db)
@@ -803,7 +885,7 @@ async def get_all_key_items_with_alerts():
                     latest_file_path = os.path.join(uploads_dir, files[0])
                     print(f"✅ Self-healing: Using latest file {files[0]} in uploads directory")
                     
-                    # Register this file in the database
+                    # Register this file in the database with error handling
                     try:
                         db = next(get_db())
                         try:
@@ -843,20 +925,34 @@ async def get_all_key_items_with_alerts():
                 }
             }
         
-        # Use ultra-fast batch processing
+        # Use ultra-fast batch processing with memory management
+        print("⚡ BATCH ALERTS: Using cached batch processing...")
         all_alerts, success, error = key_items_service.get_all_key_items_with_alerts(latest_file_path)
         
         if not success:
+            print(f"❌ BATCH ALERTS: Cache failed, error: {error}")
+            # Force memory cleanup before error
+            cleanup_memory()
             raise HTTPException(status_code=400, detail=error)
+        
+        print(f"✅ BATCH ALERTS: Returned {len(all_alerts)} items successfully")
+        
+        # Optional memory cleanup for large results
+        if len(all_alerts) > 50:
+            print("🧹 BATCH ALERTS: Large result set, triggering cleanup...")
+            cleanup_memory()
             
         return {
             "key_items": all_alerts,
             "file": os.path.basename(latest_file_path),
             "total_items": len(all_alerts),
-            "cached": True
+            "cached": True,
+            "memory_optimized": True
         }
     except Exception as e:
-        print(f"⚠️  Error in batch alerts: {str(e)}")
+        print(f"❌ BATCH ALERTS ERROR: {str(e)}")
+        # Force cleanup on any error
+        cleanup_memory()
         return {"key_items": [], "error": str(e)}
 
 @app.get("/search/article/{search_term}")
@@ -984,10 +1080,46 @@ async def clear_cache():
     """Clear all processing caches to force fresh data"""
     try:
         key_items_service.clear_all_caches()
+        comparison_service.clear_all_caches()
+        cleanup_memory()
         return {"success": True, "message": "All caches cleared successfully"}
     except Exception as e:
         print(f"❌ Clear cache error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to clear cache: {str(e)}")
+
+@app.post("/warm-cache")
+async def warm_cache():
+    """Warm up caches for better performance after email operations"""
+    try:
+        print("🔥 WARMING CACHE: Starting cache warm-up...")
+        
+        # Get latest file
+        db = next(get_db())
+        try:
+            latest_file_path = file_storage_service.get_latest_file_path(db)
+        finally:
+            db.close()
+            
+        if not latest_file_path:
+            return {"success": False, "message": "No file to warm cache for"}
+        
+        # Warm cache in background
+        def warm_cache_background():
+            try:
+                print("🔥 BACKGROUND WARM: Starting cache warming...")
+                key_items_service.get_all_key_items_with_alerts(latest_file_path)
+                print("✅ BACKGROUND WARM: Cache warmed successfully")
+            except Exception as e:
+                print(f"❌ BACKGROUND WARM: Cache warming failed: {e}")
+        
+        import threading
+        warm_thread = threading.Thread(target=warm_cache_background, daemon=True)
+        warm_thread.start()
+        
+        return {"success": True, "message": "Cache warming started in background"}
+    except Exception as e:
+        print(f"❌ Warm cache error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to warm cache: {str(e)}")
 
 @app.post("/cache/clear")
 async def clear_all_caches_api():
@@ -1003,8 +1135,10 @@ async def clear_all_caches_api():
 async def send_email_alert(
     item_name: str = Form(None)
 ):
-    """Send personalized email alert to all active recipients"""
+    """Send personalized email alert to all active recipients - NON-BLOCKING"""
     try:
+        print(f"📧 EMAIL REQUEST: Starting email alert for item: {item_name or 'ALL'}")
+        
         # Get latest file for alerts
         files = comparison_service.get_all_uploaded_files()
         if not files:
@@ -1031,33 +1165,62 @@ async def send_email_alert(
             recipients = [r['email'] for r in active_recipients]
             recipient_names = {r['email']: r['name'] for r in active_recipients}
         
-        result = email_service.send_personalized_alert(
-            recipients=recipients,
-            low_stock_items=low_stock_items,
-            recipient_names=recipient_names,
-            item_name=item_name
-        )
+        print(f"📧 Sending email to {len(recipients)} recipients")
         
-        if result["success"]:
-            return {
-                "success": True,
-                "message": f"Email alert sent to {len(recipients)} recipients",
-                "recipients": recipients,
-                "items_count": len(low_stock_items),
-                "item_name": item_name
-            }
-        else:
-            raise HTTPException(status_code=500, detail=result["message"])
+        # FIRE-AND-FORGET: Start email in background thread immediately
+        def send_email_background():
+            try:
+                print("📧 BACKGROUND: Starting email send process...")
+                result = email_service.send_personalized_alert(
+                    recipients=recipients,
+                    low_stock_items=low_stock_items,
+                    recipient_names=recipient_names,
+                    item_name=item_name
+                )
+                
+                if result["success"]:
+                    print(f"✅ BACKGROUND: Email sent successfully to {len(recipients)} recipients")
+                    # Update recipient stats
+                    for email in recipients:
+                        recipients_storage.record_email_sent(email)
+                else:
+                    print(f"❌ BACKGROUND: Email failed: {result.get('message', 'Unknown error')}")
+                    
+            except Exception as e:
+                print(f"❌ BACKGROUND: Email error: {e}")
+                import traceback
+                traceback.print_exc()
+        
+        # Start email in background thread - COMPLETELY NON-BLOCKING
+        import threading
+        email_thread = threading.Thread(target=send_email_background, daemon=True)
+        email_thread.start()
+        
+        print("📧 Email started in background - returning immediately")
+        
+        # Return immediately without waiting for email to complete
+        return {
+            "success": True,
+            "message": f"Email alert is being sent to {len(recipients)} recipients in the background",
+            "recipients": recipients,
+            "items_count": len(low_stock_items),
+            "item_name": item_name,
+            "processing_status": "background",
+            "note": "Email is being processed in the background. Check the server logs for delivery status."
+        }
             
     except Exception as e:
+        print(f"❌ EMAIL REQUEST ERROR: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/email/send-item-alert/{item_name}")
 async def send_item_specific_alert(
     item_name: str
 ):
-    """Send alert for a specific item to all active recipients"""
+    """Send alert for a specific item to all active recipients - NON-BLOCKING"""
     try:
+        print(f"📧 ITEM EMAIL REQUEST: Starting email alert for item: {item_name}")
+        
         # Get the latest file for alerts
         files = comparison_service.get_all_uploaded_files()
         if not files:
@@ -1090,32 +1253,54 @@ async def send_item_specific_alert(
             recipients = [r['email'] for r in active_recipients]
             recipient_names = {r['email']: r['name'] for r in active_recipients}
         
-        result = email_service.send_personalized_alert(
-            recipients=recipients,
-            low_stock_items=low_stock_items,
-            recipient_names=recipient_names,
-            item_name=item_name
-        )
+        print(f"📧 ITEM EMAIL: Sending {item_name} alert to {len(recipients)} recipients")
         
-        # Record email sent to each recipient
-        if result["success"]:
-            for recipient_email in recipients:
-                recipients_storage.record_email_sent(recipient_email)
+        # FIRE-AND-FORGET: Start email in background thread immediately
+        def send_item_email_background():
+            try:
+                print(f"📧 BACKGROUND ITEM: Starting email for {item_name}...")
+                result = email_service.send_personalized_alert(
+                    recipients=recipients,
+                    low_stock_items=low_stock_items,
+                    recipient_names=recipient_names,
+                    item_name=item_name
+                )
+                
+                if result["success"]:
+                    print(f"✅ BACKGROUND ITEM: Email sent successfully for {item_name}")
+                    # Record email sent to each recipient
+                    for recipient_email in recipients:
+                        recipients_storage.record_email_sent(recipient_email)
+                else:
+                    print(f"❌ BACKGROUND ITEM: Email failed for {item_name}: {result.get('message', 'Unknown error')}")
+                    
+            except Exception as e:
+                print(f"❌ BACKGROUND ITEM: Email error for {item_name}: {e}")
+                import traceback
+                traceback.print_exc()
         
-        if result["success"]:
-            return {
-                "success": True,
-                "message": f"Email alert sent to {len(recipients)} recipients",
-                "recipients": recipients,
-                "items_count": len(low_stock_items),
-                "item_name": item_name
-            }
-        else:
-            raise HTTPException(status_code=500, detail=result["message"])
+        # Start email in background thread - COMPLETELY NON-BLOCKING
+        import threading
+        email_thread = threading.Thread(target=send_item_email_background, daemon=True)
+        email_thread.start()
+        
+        print(f"📧 ITEM EMAIL: {item_name} email started in background - returning immediately")
+        
+        # Return immediately without waiting for email to complete
+        return {
+            "success": True,
+            "message": f"Email alert for {item_name} is being sent to {len(recipients)} recipients in the background",
+            "recipients": recipients,
+            "items_count": len(low_stock_items),
+            "item_name": item_name,
+            "processing_status": "background",
+            "note": "Email is being processed in the background. Check the server logs for delivery status."
+        }
             
     except HTTPException as e:
         raise e
     except Exception as e:
+        print(f"❌ ITEM EMAIL REQUEST ERROR for {item_name}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/email/status")
@@ -1339,63 +1524,242 @@ async def get_item_options(item_name: str):
     except Exception as e:
         return {"colors": [], "sizes": [], "color_to_sizes": {}, "size_to_colors": {}, "error": str(e)}
 
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
-
-@app.on_event("startup")
-async def warm_caches_on_startup():
+@app.post("/alerts/download-all")
+async def download_all_alerts():
+    """Generate Excel report of all alerts and send email notification - ULTRA STABLE"""
     try:
-        # Fast startup: warm only the latest active file from DB, avoid scanning all uploads
+        print("📊 Starting download all alerts - non-blocking mode")
+        
+        # Get the latest file path with error handling
         db = next(get_db())
         try:
             latest_file_path = file_storage_service.get_latest_file_path(db)
         finally:
             db.close()
-        
-        # If DB path missing or not present, self-heal by scanning persistent upload dir
+            
         if not latest_file_path or not os.path.exists(latest_file_path):
-            if latest_file_path and not os.path.exists(latest_file_path):
-                print(f"🔄 Startup self-heal: DB path missing on disk: {latest_file_path}")
-            else:
-                print("🔄 Startup self-heal: No file in database, searching uploads directory...")
-            uploads_dir = UPLOAD_DIR
-            if os.path.exists(uploads_dir):
-                files = [f for f in os.listdir(uploads_dir) if f.endswith('.xlsx')]
-                if files:
-                    files.sort(key=lambda x: os.path.getmtime(os.path.join(uploads_dir, x)), reverse=True)
-                    latest_file_path = os.path.join(uploads_dir, files[0])
-                    print(f"✅ Startup self-heal: Using latest file {files[0]} from {uploads_dir}")
-                    # Register in DB
-                    try:
-                        db = next(get_db())
-                        try:
-                            db.query(UploadedFile).update({"is_active": False})
-                            file_size = os.path.getsize(latest_file_path)
-                            uploaded_file = UploadedFile(
-                                filename=files[0],
-                                file_path=latest_file_path,
-                                file_size=file_size,
-                                is_active=True,
-                                total_items=0,
-                                low_stock_count=0
-                            )
-                            db.add(uploaded_file)
-                            db.commit()
-                        finally:
-                            db.close()
-                    except Exception as e:
-                        print(f"⚠️ Startup self-heal DB registration failed: {e}")
+            raise HTTPException(status_code=404, detail="No inventory file found")
         
-        if latest_file_path:
-            # Warm batch alerts cache for fastest first load
-            _, success_warm, _ = key_items_service.get_all_key_items_with_alerts(latest_file_path)
-            if success_warm:
-                print("🔥 Warmed batch alerts cache on startup (latest file only)")
-        else:
-            print("ℹ️ No active file found to warm on startup")
+        # Get all alerts using CACHED data (no heavy processing)
+        all_alerts, success, error = key_items_service.get_all_key_items_with_alerts(latest_file_path)
+        
+        if not success:
+            raise HTTPException(status_code=400, detail=error)
+        
+        # Create Excel file efficiently
+        import io
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill
+        
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Low Stock Alerts"
+        
+        # Headers
+        headers = ["Item Name", "Color", "Size", "Current Stock", "Required Threshold", "Shortage", "Priority"]
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="CCE5FF", end_color="CCE5FF", fill_type="solid")
+        
+        # Data rows
+        row = 2
+        total_alerts = 0
+        for item in all_alerts:
+            item_name = item.get("name", "")
+            alerts = item.get("alerts", [])
+            
+            for alert in alerts:
+                shortage = alert.get("shortage", 0)
+                priority = "CRITICAL" if shortage >= 10 else "HIGH" if shortage >= 5 else "MEDIUM"
+                
+                ws.cell(row=row, column=1, value=item_name)
+                ws.cell(row=row, column=2, value=alert.get("color", ""))
+                ws.cell(row=row, column=3, value=alert.get("size", ""))
+                ws.cell(row=row, column=4, value=alert.get("stock_level", 0))
+                ws.cell(row=row, column=5, value=alert.get("required_threshold", 0))
+                ws.cell(row=row, column=6, value=f"-{shortage}")
+                ws.cell(row=row, column=7, value=priority)
+                
+                # Color coding for priority
+                if priority == "CRITICAL":
+                    for col in range(1, 8):
+                        ws.cell(row=row, column=col).fill = PatternFill(start_color="FFE5E5", end_color="FFE5E5", fill_type="solid")
+                elif priority == "HIGH":
+                    for col in range(1, 8):
+                        ws.cell(row=row, column=col).fill = PatternFill(start_color="FFF0E5", end_color="FFF0E5", fill_type="solid")
+                
+                row += 1
+                total_alerts += 1
+        
+        # Auto-adjust column widths efficiently
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Save to memory
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        print(f"✅ Excel generated with {total_alerts} alerts")
+        
+        # Send email notification with IMMEDIATE FIRE-AND-FORGET
+        def send_notification_background():
+            try:
+                print("📧 Starting background email notification...")
+                recipients = recipients_storage.get_active_recipients()
+                if not recipients:
+                    print("⚠️ No active recipients found for notification")
+                    return
+                    
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+                subject = f"Danier Stock Alert Report Downloaded - {timestamp}"
+                body = f"""
+                <h2>📊 Stock Alert Report Generated & Downloaded</h2>
+                <p>A comprehensive stock alert report has been successfully generated and downloaded.</p>
+                <ul>
+                    <li><strong>Total Alerts:</strong> {total_alerts}</li>
+                    <li><strong>Source File:</strong> {os.path.basename(latest_file_path)}</li>
+                    <li><strong>Generated:</strong> {timestamp}</li>
+                    <li><strong>Download Status:</strong> ✅ Complete</li>
+                </ul>
+                <p>The Excel report contains all current low stock alerts with priority color coding.</p>
+                <p><strong>Danier Automated Alert System</strong></p>
+                """
+                
+                success_count = 0
+                recipient_emails = [r['email'] for r in recipients]
+                recipient_names = {r['email']: r['name'] for r in recipients}
+                
+                # Use the email service's send_personalized_alert method for consistency
+                result = email_service.send_personalized_alert(
+                    recipients=recipient_emails,
+                    low_stock_items=[],  # No specific alerts, just notification
+                    recipient_names=recipient_names,
+                    item_name="DOWNLOAD_NOTIFICATION"
+                )
+                
+                if result.get("success"):
+                    print(f"✅ Download notification sent to {len(recipient_emails)} recipients")
+                else:
+                    print(f"❌ Download notification failed: {result.get('message', 'Unknown error')}")
+                        
+            except Exception as e:
+                print(f"❌ Background email notification error: {e}")
+                import traceback
+                traceback.print_exc()
+        
+        # Start email in background thread - COMPLETELY NON-BLOCKING
+        import threading
+        email_thread = threading.Thread(target=send_notification_background, daemon=True)
+        email_thread.start()
+        
+        print("📧 Email notification started in background")
+        
+        # Return Excel file immediately
+        return Response(
+            content=output.getvalue(),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename=danier_alerts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            }
+        )
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"⚠️ Startup warm failed: {e}")
+        print(f"❌ Download all alerts error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate report: {str(e)}")
+
+@app.get("/health")
+async def health():
+    try:
+        # Quick memory check
+        memory_mb = 0
+        try:
+            process = psutil.Process()
+            memory_info = process.memory_info()
+            memory_mb = memory_info.rss / 1024 / 1024
+        except:
+            pass
+        
+        return {
+            "status": "ok", 
+            "memory_mb": round(memory_mb, 1),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+@app.on_event("startup")
+async def warm_caches_on_startup():
+    """ULTRA-MINIMAL startup - zero heavy processing to prevent restarts"""
+    try:
+        print("🚀 MINIMAL STARTUP - No processing to ensure stability")
+        
+        # Just check database connectivity - NO file processing
+        try:
+            db = next(get_db())
+            db.close()
+            print("✅ Database connection verified")
+        except Exception as e:
+            print(f"⚠️ Database warning: {e}")
+        
+        # Ensure upload directory exists
+        uploads_dir = UPLOAD_DIR
+        if not os.path.exists(uploads_dir):
+            try:
+                os.makedirs(uploads_dir)
+                print(f"✅ Created uploads directory: {uploads_dir}")
+            except Exception as e:
+                print(f"⚠️ Upload directory warning: {e}")
+        
+        # Ensure emails directory exists
+        emails_dir = "emails"
+        if not os.path.exists(emails_dir):
+            try:
+                os.makedirs(emails_dir)
+                print(f"✅ Created emails directory: {emails_dir}")
+            except Exception as e:
+                print(f"⚠️ Emails directory warning: {e}")
+        
+        # Clear any stale cache on startup
+        try:
+            if hasattr(key_items_service, '_cache'):
+                key_items_service._cache.clear()
+            print("✅ Cleared stale caches")
+        except Exception as e:
+            print(f"⚠️ Cache clear warning: {e}")
+        
+        print("✅ MINIMAL STARTUP COMPLETE - Server ready, no heavy processing")
+        
+    except Exception as e:
+        print(f"⚠️ Startup warning (non-critical): {e}")
+
+@app.middleware("http")
+async def error_handling_middleware(request, call_next):
+    """Global error handling and memory management middleware"""
+    try:
+        response = await call_next(request)
+        return response
+    except Exception as e:
+        print(f"❌ GLOBAL ERROR on {request.url}: {e}")
+        # Force cleanup on any unhandled error
+        try:
+            cleanup_memory()
+        except:
+            pass
+        # Re-raise to let FastAPI handle it
+        raise e
 
 @app.get("/key-items/details/{item_name}")
 async def get_item_details(item_name: str):
@@ -1480,7 +1844,7 @@ async def get_files_list_fast():
         
         # Return basic file info + cached stats if present (no heavy processing)
         file_list = []
-        for filename in files:
+        for idx, filename in enumerate(files):
             file_path = os.path.join(uploads_dir, filename)
             try:
                 stat = os.stat(file_path)
@@ -1498,6 +1862,11 @@ async def get_files_list_fast():
                     "ki00_items_count": (cached_stats or {}).get("key_items_count"),
                     "low_stock_count": (cached_stats or {}).get("low_stock_count")
                 })
+
+                # Opportunistically warm stats in background for top 10 files if missing
+                if idx < 10 and not cached_stats and filename not in STATS_WARM_IN_PROGRESS:
+                    STATS_WARM_IN_PROGRESS.add(filename)
+                    threading.Thread(target=warm_file_stats, args=(file_path, filename), daemon=True).start()
             except Exception as e:
                 print(f"Error getting file info for {filename}: {e}")
                 continue
@@ -1511,8 +1880,10 @@ async def get_files_list_fast():
         raise HTTPException(status_code=500, detail=f"Error retrieving file list: {str(e)}")
 
 @app.get("/files/stats/{filename}")
-async def get_file_stats(filename: str):
-    """Compute and return stats for a single file (counts). Results are cached."""
+def get_file_stats(filename: str):
+    """Return cached stats for a file if available; otherwise enqueue a background warm-up and return a lightweight placeholder.
+    This avoids heavy synchronous computation that can block the event loop and cause client disconnects.
+    """
     try:
         file_path = os.path.join(UPLOAD_DIR, filename)
         if not os.path.exists(file_path):
@@ -1526,24 +1897,20 @@ async def get_file_stats(filename: str):
             key_items_service._cache = {}
         if cache_key in key_items_service._cache and cache_sig_key in key_items_service._cache:
             if key_items_service._cache[cache_sig_key] == mtime:
-                print(f"⚡ Using cached stats for {filename}")
                 return key_items_service._cache[cache_key]
         
-        # Compute fresh
-        print(f"📈 Computing stats for {filename}...")
-        file_key_items = key_items_service.get_file_key_items(file_path) or []
-        low_stock_items, success, _ = key_items_service.process_key_items_inventory(file_path)
-        low_stock_count = len(low_stock_items) if success and low_stock_items else 0
-        result = {
+        # If not cached, schedule background warm-up once and return placeholder
+        if filename not in STATS_WARM_IN_PROGRESS:
+            STATS_WARM_IN_PROGRESS.add(filename)
+            threading.Thread(target=warm_file_stats, args=(file_path, filename), daemon=True).start()
+        
+        return {
             "filename": filename,
-            "key_items_count": len(file_key_items),
-            "low_stock_count": low_stock_count,
-            "processed_successfully": bool(success)
+            "key_items_count": None,
+            "low_stock_count": None,
+            "processed_successfully": False,
+            "warmup_in_progress": True
         }
-        # Cache results with signature
-        key_items_service._cache[cache_key] = result
-        key_items_service._cache[cache_sig_key] = mtime
-        return result
     except HTTPException:
         raise
     except Exception as e:

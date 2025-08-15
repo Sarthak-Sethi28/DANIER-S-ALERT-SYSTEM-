@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FileText, TrendingUp, AlertTriangle, Star, XCircle, CheckCircle, Zap, Target, BarChart3 } from 'lucide-react';
 import { getFilesListFast, getSmartPerformanceAnalysis } from '../services/api';
 
@@ -11,51 +11,74 @@ const InventoryFilesDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [activeTab, setActiveTab] = useState('analysis');
+  const inFlightStats = useRef(new Set());
+  const statsCache = useRef(new Map());
+  const fetchStatsTimeout = useRef(null);
 
   useEffect(() => {
     fetchInventoryFiles();
   }, []);
 
   useEffect(() => {
-    // After files are set, fetch stats lazily for those missing counts
     const controller = new AbortController();
+    let cancelled = false;
+
     const fetchStats = async () => {
       try {
         const { getFileStats } = await import('../services/api');
-        const updates = await Promise.all(
-          (files || []).slice(0, 25).map(async (f) => {
-            if (f.ki00_items_count != null && f.low_stock_count != null) return null;
-            try {
-              const s = await getFileStats(f.filename);
-              return { name: f.filename, stats: s };
-            } catch (_) {
-              return null;
-            }
-          })
-        );
-        const map = new Map();
-        updates.filter(Boolean).forEach(({ name, stats }) => map.set(name, stats));
-        if (map.size > 0) {
-          setFiles((prev) => prev.map((f) => {
-            const s = map.get(f.filename);
-            return s ? { ...f, ki00_items_count: s.key_items_count, low_stock_count: s.low_stock_count } : f;
-          }));
+        // Only consider the first 15 files to minimize load
+        const toFetch = (files || []).slice(0, 15).filter((f) => {
+          if (f.ki00_items_count != null && f.low_stock_count != null) return false;
+          if (statsCache.current.has(f.filename)) return false;
+          if (inFlightStats.current.has(f.filename)) return false;
+          return true;
+        });
+        if (toFetch.length === 0) return;
+
+        // Throttle batch requests with very small concurrency
+        const batchSize = 3;
+        for (let i = 0; i < toFetch.length; i += batchSize) {
+          const batch = toFetch.slice(i, i + batchSize);
+          batch.forEach((f) => inFlightStats.current.add(f.filename));
+          const results = await Promise.all(
+            batch.map(async (f) => {
+              try {
+                const s = await getFileStats(f.filename);
+                return { name: f.filename, stats: s };
+              } catch (_) {
+                return null;
+              }
+            })
+          );
+          results.filter(Boolean).forEach(({ name, stats }) => statsCache.current.set(name, stats));
+          if (!cancelled && results.some(Boolean)) {
+            setFiles((prev) => prev.map((f) => {
+              const s = statsCache.current.get(f.filename);
+              return s && s.key_items_count != null && s.low_stock_count != null
+                ? { ...f, ki00_items_count: s.key_items_count, low_stock_count: s.low_stock_count }
+                : f;
+            }));
+          }
+          batch.forEach((f) => inFlightStats.current.delete(f.filename));
+          // Longer delay between batches to ease server load
+          await new Promise((r) => setTimeout(r, 600));
         }
       } catch (_) {}
     };
-    if (files && files.length) fetchStats();
-    return () => controller.abort();
+
+    // Debounce stats fetching to avoid spikes on rapid navigation
+    if (fetchStatsTimeout.current) clearTimeout(fetchStatsTimeout.current);
+    fetchStatsTimeout.current = setTimeout(() => {
+      if (files && files.length) fetchStats();
+    }, 500);
+
+    return () => { cancelled = true; controller.abort(); if (fetchStatsTimeout.current) clearTimeout(fetchStatsTimeout.current); };
   }, [files.length]);
 
   const fetchInventoryFiles = async () => {
     try {
       setLoading(true);
-      // Use fast endpoint for better performance
       const response = await getFilesListFast();
-      console.log('📊 Fast fetched files:', response.files?.slice(0, 3).map(f => ({
-        filename: f.filename,
-        upload_time_utc: f.upload_date_iso_utc
-      })));
       setFiles(response.files || []);
     } catch (error) {
       console.error('Error fetching files:', error);
@@ -63,8 +86,6 @@ const InventoryFilesDashboard = () => {
       setLoading(false);
     }
   };
-
-
 
   const runSmartAnalysis = async () => {
     if (!selectedFile1 || !selectedFile2) {
@@ -99,7 +120,6 @@ const InventoryFilesDashboard = () => {
       'TOP_SALES': { color: 'bg-purple-100 text-purple-800', icon: '🏆' },
       'WORST': { color: 'bg-red-100 text-red-800', icon: '📉' }
     };
-    
     const badge = badges[category] || { color: 'bg-gray-100 text-gray-800', icon: '📊' };
     return (
       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}>
@@ -138,8 +158,6 @@ const InventoryFilesDashboard = () => {
             Intelligent business insights and actionable recommendations for your inventory performance
           </p>
         </div>
-
-
 
         {/* File Selection */}
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
