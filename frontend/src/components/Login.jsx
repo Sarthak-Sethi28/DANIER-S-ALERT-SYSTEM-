@@ -45,12 +45,12 @@ const Login = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-elegant dark:bg-gradient-dark-elegant flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-brand dark:bg-gradient-brand-dark flex items-center justify-center px-4">
       <div className="max-w-md w-full space-y-8 animate-fade-in">
         {/* Elegant Header */}
         <div className="text-center">
           <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 bg-gradient-luxury rounded-xl shadow-luxury flex items-center justify-center">
+            <div className="w-16 h-16 bg-brand-accent rounded-xl shadow-luxury flex items-center justify-center">
               <Crown className="w-8 h-8 text-white" />
             </div>
           </div>
@@ -64,20 +64,20 @@ const Login = ({ onLogin }) => {
           {/* Features */}
           <div className="mt-6 bg-white/60 dark:bg-neutral-800/60 backdrop-blur-sm border border-neutral-200 dark:border-neutral-700 rounded-xl p-4 shadow-elegant">
             <div className="flex items-center justify-center space-x-2 mb-3">
-              <Shield className="w-4 h-4 text-danier-gold" />
+              <Shield className="w-4 h-4 text-brand-accent" />
               <span className="font-semibold text-neutral-700 dark:text-neutral-300">Enterprise Features</span>
             </div>
             <div className="grid grid-cols-1 gap-2 text-sm text-neutral-600 dark:text-neutral-400">
               <div className="flex items-center space-x-2">
-                <div className="w-1.5 h-1.5 bg-danier-gold rounded-full"></div>
+                <div className="w-1.5 h-1.5 bg-brand-accent rounded-full"></div>
                 <span>Multi-user access</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-1.5 h-1.5 bg-danier-gold rounded-full"></div>
+                <div className="w-1.5 h-1.5 bg-brand-accent rounded-full"></div>
                 <span>Real-time synchronization</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="w-1.5 h-1.5 bg-danier-gold rounded-full"></div>
+                <div className="w-1.5 h-1.5 bg-brand-accent rounded-full"></div>
                 <span>Advanced analytics</span>
               </div>
             </div>
@@ -102,7 +102,7 @@ const Login = ({ onLogin }) => {
                     name="username"
                     type="text"
                     required
-                    className="pl-10 w-full px-3 py-3 bg-neutral-50 dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-600 placeholder-neutral-500 dark:placeholder-neutral-400 text-neutral-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-danier-gold/50 focus:border-danier-gold transition-colors duration-200"
+                    className="pl-10 w-full px-3 py-3 bg-neutral-50 dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-600 placeholder-neutral-500 dark:placeholder-neutral-400 text-neutral-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-accent/40 focus:border-brand-accent transition-colors duration-200"
                     placeholder="Enter your username"
                     value={credentials.username}
                     onChange={(e) => handleInputChange('username', e.target.value)}
@@ -124,7 +124,7 @@ const Login = ({ onLogin }) => {
                     name="password"
                     type="password"
                     required
-                    className="pl-10 w-full px-3 py-3 bg-neutral-50 dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-600 placeholder-neutral-500 dark:placeholder-neutral-400 text-neutral-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-danier-gold/50 focus:border-danier-gold transition-colors duration-200"
+                    className="pl-10 w-full px-3 py-3 bg-neutral-50 dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-600 placeholder-neutral-500 dark:placeholder-neutral-400 text-neutral-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-accent/40 focus:border-brand-accent transition-colors duration-200"
                     placeholder="Enter your password"
                     value={credentials.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
@@ -143,7 +143,7 @@ const Login = ({ onLogin }) => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="btn-elegant w-full flex justify-center items-center space-x-2 py-3 px-4 bg-gradient-luxury text-white rounded-lg font-semibold shadow-luxury disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-elegant"
+                className="btn-elegant w-full flex justify-center items-center space-x-2 py-3 px-4 bg-brand-accent text-white rounded-lg font-semibold shadow-luxury disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-elegant"
               >
                 {isLoading ? (
                   <>

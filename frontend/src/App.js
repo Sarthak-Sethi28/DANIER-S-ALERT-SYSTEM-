@@ -64,14 +64,14 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gradient-elegant dark:bg-gradient-dark-elegant">
+      <div className="min-h-screen bg-gradient-brand dark:bg-gradient-brand-dark">
         {/* Elegant Header */}
         <header className="bg-white/95 dark:bg-neutral-900/95 backdrop-blur-sm border-b border-neutral-200 dark:border-neutral-700 shadow-sophisticated">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               {/* Brand Section */}
               <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 bg-gradient-luxury rounded-lg shadow-luxury flex items-center justify-center">
+                <div className="w-10 h-10 bg-brand-accent/90 rounded-lg shadow-luxury flex items-center justify-center">
                   <Crown className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -194,9 +194,9 @@ function Navigation() {
                 to={item.to}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors duration-200 whitespace-nowrap ${
                   isActive
-                    ? 'bg-danier-gold text-white shadow-luxury'
+                    ? 'bg-brand-accent text-white shadow-luxury'
                     : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                } ${item.priority ? 'ring-2 ring-danier-gold/30 ring-offset-1' : ''}`}
+                } ${item.priority ? 'ring-2 ring-brand-accent/30 ring-offset-1' : ''}`}
               >
                 {item.icon}
                 <span className="text-sm">{item.label}</span>
