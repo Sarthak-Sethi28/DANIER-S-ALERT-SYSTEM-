@@ -13,7 +13,7 @@ import {
   FileText, 
   Sparkles, 
   Zap,
-  CloudUpload,
+  Cloud,
   FileCheck,
   Loader2
 } from 'lucide-react';
@@ -211,7 +211,7 @@ const UploadPage = () => {
         <div className="flex items-center justify-center mb-4">
           <div className="relative">
             <div className="w-16 h-16 bg-gradient-gold rounded-2xl shadow-gold flex items-center justify-center animate-float">
-              <CloudUpload className="w-8 h-8 text-white" />
+              <Cloud className="w-8 h-8 text-white" />
             </div>
             <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full animate-pulse flex items-center justify-center">
               <Sparkles className="w-3 h-3 text-white" />
@@ -390,7 +390,7 @@ const UploadPage = () => {
             </div>
           ) : (
             <div className="flex items-center justify-center space-x-3">
-              <CloudUpload className="w-6 h-6" />
+              <Upload className="w-6 h-6" />
               <span>Upload & Process Report</span>
               <Sparkles className="w-5 h-5" />
             </div>

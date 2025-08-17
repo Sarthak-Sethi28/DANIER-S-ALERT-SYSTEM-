@@ -140,7 +140,7 @@ code {
   @apply bg-white/90 backdrop-blur-xl border border-white/60;
   @apply shadow-fashion-3d rounded-3xl;
   @apply transition-all duration-500 ease-out;
-  @apply hover:shadow-luxury hover:-translate-y-2 hover:scale-102;
+  @apply hover:shadow-luxury hover:-translate-y-2 hover:scale-105;
   transform-style: preserve-3d;
   perspective: 1500px;
   position: relative;
@@ -169,7 +169,7 @@ code {
   @apply bg-slate-800/90 backdrop-blur-xl border border-slate-700/60;
   @apply shadow-fashion-3d rounded-3xl;
   @apply transition-all duration-500 ease-out;
-  @apply hover:shadow-luxury hover:-translate-y-2 hover:scale-102;
+  @apply hover:shadow-luxury hover:-translate-y-2 hover:scale-105;
   transform-style: preserve-3d;
   perspective: 1500px;
   position: relative;

@@ -5,7 +5,7 @@ import {
   Phone, 
   Crown, 
   Sparkles, 
-  Diamond,
+  Gem,
   Star,
   Heart,
   Shield,
@@ -41,7 +41,7 @@ const HelpPage = () => {
     },
     {
       title: 'System Features',
-      icon: <Diamond className="w-6 h-6" />,
+      icon: <Gem className="w-6 h-6" />,
       color: 'from-fashion-sapphire to-fashion-emerald',
       items: [
         'Real-time inventory intelligence',
