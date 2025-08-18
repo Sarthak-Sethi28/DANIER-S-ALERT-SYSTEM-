@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getSpecificKeyItemAlerts, getAllKeyItemsWithAlerts } from '../services/api';
+import { getSpecificKeyItemAlerts, getAllKeyItemsWithAlerts, sendEmailAlert } from '../services/api';
 import { 
   ChevronDown, 
   ChevronUp, 
@@ -45,6 +45,7 @@ const Dashboard = () => {
   const [searching, setSearching] = useState(false);
   const itemRefs = useRef({});
   const [error, setError] = useState(null);
+  const [emailStatusByItem, setEmailStatusByItem] = useState({});
 
   const scrollToItem = (name) => {
     const el = itemRefs.current[name];
@@ -294,6 +295,22 @@ const Dashboard = () => {
       // Ensure UI stays stable even on error
       setLoading(false);
       setError(null);
+    }
+  };
+
+  const handleSendItemEmail = async (itemName) => {
+    try {
+      setEmailStatusByItem(prev => ({ ...prev, [itemName]: 'sending' }));
+      await sendEmailAlert(itemName);
+      setEmailStatusByItem(prev => ({ ...prev, [itemName]: 'sent' }));
+      setTimeout(() => {
+        setEmailStatusByItem(prev => ({ ...prev, [itemName]: undefined }));
+      }, 3000);
+    } catch (e) {
+      setEmailStatusByItem(prev => ({ ...prev, [itemName]: 'error' }));
+      setTimeout(() => {
+        setEmailStatusByItem(prev => ({ ...prev, [itemName]: undefined }));
+      }, 4000);
     }
   };
 
@@ -595,10 +612,27 @@ const Dashboard = () => {
                           <AlertTriangle className="w-6 h-6" />
                           <span>Low Stock Details - {item.name}</span>
                         </h4>
-                        <div className="flex items-center space-x-2 bg-blue-100 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200 px-3 py-2 rounded-xl">
+                        <button
+                          onClick={() => handleSendItemEmail(item.name)}
+                          className={`flex items-center space-x-2 px-3 py-2 rounded-xl border transition-colors ${
+                            emailStatusByItem[item.name] === 'sending'
+                              ? 'bg-blue-200 dark:bg-blue-900/40 border-blue-300 dark:border-blue-800 text-blue-900 dark:text-blue-100'
+                              : emailStatusByItem[item.name] === 'sent'
+                              ? 'bg-emerald-100 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
+                              : emailStatusByItem[item.name] === 'error'
+                              ? 'bg-red-100 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200'
+                              : 'bg-blue-100 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200'
+                          }`}
+                          title="Send email to recipients for this item"
+                        >
                           <Mail className="w-4 h-4" />
-                          <span className="text-sm font-medium">Email Alerts Active</span>
-                        </div>
+                          <span className="text-sm font-medium">
+                            {emailStatusByItem[item.name] === 'sending' && 'Sending...'}
+                            {emailStatusByItem[item.name] === 'sent' && 'Email Sent'}
+                            {emailStatusByItem[item.name] === 'error' && 'Failed, try again'}
+                            {!emailStatusByItem[item.name] && 'Email Alerts Active'}
+                          </span>
+                        </button>
                       </div>
                       <div className="overflow-hidden rounded-2xl border border-white/50 dark:border-slate-700/50">
                         <div className="overflow-x-auto">

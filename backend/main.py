@@ -1285,10 +1285,14 @@ async def send_email_alert(
         if not success:
             raise HTTPException(status_code=400, detail=error)
         
-        # Flatten alerts across all items
-        low_stock_items = []
-        for item in all_alerts:
-            low_stock_items.extend(item.get('alerts', []))
+        # Flatten alerts across all items, filter by item if provided
+        if item_name:
+            target = next((it for it in all_alerts if it.get('name') == item_name), None)
+            low_stock_items = list(target.get('alerts', [])) if target else []
+        else:
+            low_stock_items = []
+            for item in all_alerts:
+                low_stock_items.extend(item.get('alerts', []))
         
         # Recipients
         active_recipients = recipients_storage.get_active_recipients()
@@ -1296,48 +1300,41 @@ async def send_email_alert(
             recipients = ["danieralertsystem@gmail.com"]
             recipient_names = {"danieralertsystem@gmail.com": "Danier Stock Alert System"}
         else:
-            recipients = [r['email'] for r in active_recipients]
-            recipient_names = {r['email']: r['name'] for r in active_recipients}
+            recipients = [r['email'] for r in active_recipients if r.get('active', True)]
+            recipient_names = {r['email']: r.get('name') for r in active_recipients}
         
-        print(f"📧 Sending email to {len(recipients)} recipients")
+        print(f"📧 Preparing background email to {len(recipients)} recipients | items: {len(low_stock_items)} | item={item_name or 'ALL'}")
         
-        # SIMPLIFIED APPROACH: Just log and continue - no actual email processing to prevent crashes
-        print(f"📧 EMAIL LOGGED: General email request logged successfully")
-        print(f"📧 RECIPIENTS: Would send to {recipients}")
-        print(f"📧 ALERTS COUNT: {len(low_stock_items)} items")
-        print(f"📧 ITEM: {item_name or 'GENERAL'}")
+        # Background send for speed and stability
+        def _send_background():
+            try:
+                email_service.send_personalized_alert(
+                    recipients=recipients,
+                    low_stock_items=low_stock_items,
+                    recipient_names=recipient_names,
+                    item_name=item_name or None
+                )
+            except Exception as e:
+                print(f"❌ BACKGROUND EMAIL ERROR: {e}")
         
-        # For now, just simulate success to prevent any crashes
-        try:
-            for email in recipients:
-                recipients_storage.record_email_sent(email)
-        except:
-            pass
+        threading.Thread(target=_send_background, daemon=True).start()
         
-        print("📧 Email started in background - returning immediately")
-        
-        # Return immediately without waiting for email to complete
+        # Return immediately
         return {
             "success": True,
-            "message": f"Email alert is being sent to {len(recipients)} recipients in the background",
+            "message": (
+                f"Email alert for {item_name} is being sent to {len(recipients)} recipients in the background"
+                if item_name else f"General email alert is being sent to {len(recipients)} recipients in the background"
+            ),
             "recipients": recipients,
             "items_count": len(low_stock_items),
             "item_name": item_name,
-            "processing_status": "background",
-            "note": "Email is being processed in the background. Check the server logs for delivery status."
+            "processing_status": "background"
         }
             
     except Exception as e:
         print(f"❌ EMAIL REQUEST ERROR: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-# Individual item email alerts disabled per user request
-# @app.post("/email/send-item-alert/{item_name}")
-# async def send_item_specific_alert(
-#     item_name: str
-# ):
-#     """Send alert for a specific item to all active recipients - DISABLED"""
-#     raise HTTPException(status_code=404, detail="Individual item email alerts have been disabled")
 
 @app.get("/email/status")
 async def get_email_status():
