@@ -101,6 +101,44 @@ class ApiService {
     }
   }
 
+  // Auth
+  async login(username, password) {
+    const formData = new FormData();
+    formData.append('username', username);
+    formData.append('password', password);
+    const response = await fetch(`${this.baseUrl}/auth/login`, { method: 'POST', body: formData });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.detail || 'Login failed');
+    }
+    return response.json();
+  }
+
+  async requestPasswordReset(username) {
+    const formData = new FormData();
+    formData.append('username', username);
+    const response = await fetch(`${this.baseUrl}/auth/request-reset`, { method: 'POST', body: formData });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.detail || 'Reset request failed');
+    }
+    return response.json();
+  }
+
+  async confirmPasswordReset(username, code, newPassword, confirmPassword) {
+    const formData = new FormData();
+    formData.append('username', username);
+    formData.append('code', code);
+    formData.append('new_password', newPassword);
+    formData.append('confirm_password', confirmPassword);
+    const response = await fetch(`${this.baseUrl}/auth/confirm-reset`, { method: 'POST', body: formData });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.detail || 'Reset failed');
+    }
+    return response.json();
+  }
+
   // Key Items and Alerts
   async getAllKeyItemsWithAlerts() {
     return this.makeRequest('/key-items/batch-alerts');
@@ -398,6 +436,11 @@ export const clearCache = () => apiService.clearCache();
 export const getFilesListFast = () => apiService.getFilesListFast();
 export const getUploadHistoryFast = () => apiService.getUploadHistoryFast();
 export const getRecipientsFast = () => apiService.getRecipientsFast();
+
+// New auth helpers
+export const login = (username, password) => apiService.login(username, password);
+export const requestPasswordReset = (username) => apiService.requestPasswordReset(username);
+export const confirmPasswordReset = (username, code, newPassword, confirmPassword) => apiService.confirmPasswordReset(username, code, newPassword, confirmPassword);
 
 // Export the service instance for advanced usage
 export default apiService;

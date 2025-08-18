@@ -52,4 +52,17 @@ class ThresholdHistory(Base):
     changed_at = Column(DateTime, default=datetime.utcnow)
     note = Column(Text, nullable=True)
 
+# New: Single app user credential storage
+class UserCredential(Base):
+    __tablename__ = "user_credentials"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, nullable=False, index=True)
+    password_hash = Column(String, nullable=False)
+    password_salt = Column(String, nullable=False)
+    email = Column(String, nullable=True)
+    reset_code_hash = Column(String, nullable=True)
+    reset_code_expires_at = Column(DateTime, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
  

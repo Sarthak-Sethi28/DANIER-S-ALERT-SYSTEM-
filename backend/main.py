@@ -7,9 +7,11 @@ import os
 import gc
 import asyncio
 import psutil
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 import threading
+import secrets
+import hashlib
 
 from database import get_db, engine, init_db
 from models import Base, Recipient, UploadedFile, ThresholdOverride, ThresholdHistory
@@ -41,40 +43,140 @@ file_storage_service = FileStorageService()
 comparison_service = ComparisonService(key_items_service)
 threshold_analysis_service = ThresholdAnalysisService()
 
-# In-memory guard to prevent duplicate warming jobs
-STATS_WARM_IN_PROGRESS = set()
+# --- Simple credential utilities ---
+from models import UserCredential  # type: ignore
 
-def warm_file_stats(file_path: str, filename: str):
+def _hash_password(password: str, salt: str) -> str:
+    return hashlib.sha256((salt + password).encode('utf-8')).hexdigest()
+
+def _create_or_get_default_user(db: Session):
     try:
-        mtime = os.path.getmtime(file_path)
-        cache_key = f"file_stats_{filename}"
-        cache_sig_key = f"file_stats_sig_{filename}"
-        if not hasattr(key_items_service, '_cache'):
-            key_items_service._cache = {}
-        # If already up-to-date, skip
-        if cache_key in key_items_service._cache and cache_sig_key in key_items_service._cache:
-            if key_items_service._cache[cache_sig_key] == mtime:
-                return
-        # Compute fresh stats (heavy) in background thread
-        file_key_items = key_items_service.get_file_key_items(file_path) or []
-        low_stock_items, success, _ = key_items_service.process_key_items_inventory(file_path)
-        low_stock_count = len(low_stock_items) if success and low_stock_items else 0
-        result = {
-            "filename": filename,
-            "key_items_count": len(file_key_items),
-            "low_stock_count": low_stock_count,
-            "processed_successfully": bool(success)
-        }
-        key_items_service._cache[cache_key] = result
-        key_items_service._cache[cache_sig_key] = mtime
+        user = db.query(UserCredential).first()
+        if user:
+            return user
+        # Seed default user matching current demo creds
+        username = os.getenv('APP_USERNAME', 'danier_admin')
+        raw_password = os.getenv('APP_PASSWORD', 'danier2024')
+        email = os.getenv('APP_USER_EMAIL', 'danieralertsystem@gmail.com')
+        salt = secrets.token_hex(16)
+        pwd_hash = _hash_password(raw_password, salt)
+        user = UserCredential(username=username, password_hash=pwd_hash, password_salt=salt, email=email)
+        db.add(user)
+        db.commit()
+        return user
     except Exception:
-        # Swallow errors in background
-        pass
-    finally:
+        db.rollback()
+        return None
+
+# --- Auth endpoints ---
+@app.post("/auth/login")
+async def auth_login(username: str = Form(...), password: str = Form(...)):
+    try:
+        db = next(get_db())
         try:
-            STATS_WARM_IN_PROGRESS.discard(filename)
-        except Exception:
-            pass
+            _create_or_get_default_user(db)
+            user = db.query(UserCredential).filter(UserCredential.username == username).first()
+            if not user:
+                raise HTTPException(status_code=401, detail="Invalid credentials")
+            if user.password_hash != _hash_password(password, user.password_salt):
+                raise HTTPException(status_code=401, detail="Invalid credentials")
+            # Lightweight session response (frontend still stores locally)
+            return {
+                "success": True,
+                "username": user.username,
+                "loginTime": datetime.utcnow().isoformat(),
+                "sessionId": f"session_{int(datetime.utcnow().timestamp())}_{secrets.token_hex(4)}"
+            }
+        finally:
+            db.close()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/auth/request-reset")
+async def request_password_reset(username: str = Form(...)):
+    try:
+        db = next(get_db())
+        try:
+            user = db.query(UserCredential).filter(UserCredential.username == username).first()
+            if not user:
+                # For privacy, do not reveal user existence
+                return {"success": True, "message": "If the user exists, a reset code has been sent."}
+            # Generate 6-digit code
+            code = f"{secrets.randbelow(1000000):06d}"
+            salt = secrets.token_hex(8)
+            code_hash = _hash_password(code, salt)
+            user.reset_code_hash = f"{salt}:{code_hash}"
+            user.reset_code_expires_at = datetime.utcnow() + timedelta(minutes=15)
+            db.add(user)
+            db.commit()
+            # Send email with code (best-effort)
+            try:
+                recipient = user.email or os.getenv('RESET_FALLBACK_EMAIL', 'danieralertsystem@gmail.com')
+                subject = "Danier Dashboard Password Reset Code"
+                html = f"""
+                <html><body>
+                <p>Your password reset code is:</p>
+                <h2 style='letter-spacing:3px'>{code}</h2>
+                <p>This code expires in 15 minutes.</p>
+                <p>Username: <b>{user.username}</b></p>
+                </body></html>
+                """
+                email_service._send_real_gmail_email(recipient, subject, html, recipient)
+            except Exception:
+                pass
+            return {"success": True, "message": "If the user exists, a reset code has been sent."}
+        finally:
+            db.close()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/auth/confirm-reset")
+async def confirm_password_reset(
+    username: str = Form(...),
+    code: str = Form(...),
+    new_password: str = Form(...),
+    confirm_password: str = Form(...),
+):
+    try:
+        if len(new_password) < 8:
+            raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+        if new_password != confirm_password:
+            raise HTTPException(status_code=400, detail="Passwords do not match")
+        db = next(get_db())
+        try:
+            user = db.query(UserCredential).filter(UserCredential.username == username).first()
+            if not user or not user.reset_code_hash or not user.reset_code_expires_at:
+                raise HTTPException(status_code=400, detail="Invalid or expired code")
+            if datetime.utcnow() > user.reset_code_expires_at:
+                # expire
+                user.reset_code_hash = None
+                user.reset_code_expires_at = None
+                db.commit()
+                raise HTTPException(status_code=400, detail="Reset code expired")
+            # Verify code
+            try:
+                salt, stored_hash = (user.reset_code_hash or '').split(':', 1)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid code state")
+            if _hash_password(code, salt) != stored_hash:
+                raise HTTPException(status_code=400, detail="Invalid code")
+            # Set new password
+            new_salt = secrets.token_hex(16)
+            user.password_salt = new_salt
+            user.password_hash = _hash_password(new_password, new_salt)
+            user.reset_code_hash = None
+            user.reset_code_expires_at = None
+            db.add(user)
+            db.commit()
+            return {"success": True, "message": "Password updated successfully"}
+        finally:
+            db.close()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Default recipient email (can be configured via environment variable)
 RECIPIENT_EMAIL = os.getenv("DEFAULT_RECIPIENT_EMAIL", "alerts@danier.ca")
@@ -1687,6 +1789,14 @@ async def warm_caches_on_startup():
         except Exception as e:
             print(f"⚠️ Cache clear warning: {e}")
         
+        # Ensure default user exists on startup
+        db = next(get_db())
+        try:
+            _create_or_get_default_user(db)
+            print("✅ Default user checked/created")
+        finally:
+            db.close()
+
         print("✅ MINIMAL STARTUP COMPLETE - Server ready, no heavy processing")
         
     except Exception as e:
