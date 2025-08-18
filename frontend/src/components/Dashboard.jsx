@@ -607,9 +607,11 @@ const Dashboard = () => {
                               <tr>
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-danier-dark dark:text-white">Color</th>
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-danier-dark dark:text-white">Size</th>
+                                <th className="px-6 py-4 text-left text-sm font-semibold text-danier-dark dark:text-white">Item Number</th>
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-danier-dark dark:text-white">Current Stock</th>
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-danier-dark dark:text-white">Required</th>
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-danier-dark dark:text-white">Shortage</th>
+                                <th className="px-6 py-4 text-left text-sm font-semibold text-danier-dark dark:text-white">New Order</th>
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-danier-dark dark:text-white">Priority</th>
                               </tr>
                             </thead>
@@ -620,9 +622,11 @@ const Dashboard = () => {
                                   <tr key={alertIndex} className="hover:bg-white/60 dark:hover:bg-slate-800/60 transition-colors duration-200">
                                     <td className="px-6 py-4 text-sm font-semibold text-danier-dark dark:text-white">{alert.color}</td>
                                     <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{alert.size}</td>
+                                    <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{alert.item_number || '-'}</td>
                                     <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 font-medium">{alert.current_stock}</td>
                                     <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 font-medium">{alert.required_threshold}</td>
                                     <td className="px-6 py-4 text-sm font-bold text-red-600 dark:text-red-400">-{alert.shortage}</td>
+                                    <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{(alert.new_order ?? '') === '' ? '-' : alert.new_order}</td>
                                     <td className="px-6 py-4">
                                       <div className={`inline-flex items-center space-x-2 px-3 py-2 text-xs font-semibold rounded-xl border ${urgency.bg} ${urgency.color}`}>
                                         {urgency.icon}

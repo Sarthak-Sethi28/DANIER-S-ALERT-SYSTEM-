@@ -303,6 +303,16 @@ class KeyItemsService:
                         variant_code = row['Variant Code']
                         current_stock = row['Grand Total']
                         season_code = row['Season Code']
+                        # Optional columns
+                        item_number_col = self._detect_item_number_column(df.columns)
+                        reorder_col = self._detect_reorder_column(df.columns)
+                        item_number_val = str(row[item_number_col]) if item_number_col and item_number_col in row.index and pd.notna(row[item_number_col]) else None
+                        new_order_val = None
+                        if reorder_col and reorder_col in row.index:
+                            try:
+                                new_order_val = int(pd.to_numeric(row[reorder_col], errors='coerce'))
+                            except Exception:
+                                new_order_val = None
                         
                         # Extract size from variant code
                         size = self.extract_size_from_variant(variant_code)
@@ -323,7 +333,9 @@ class KeyItemsService:
                                 'variant_code': variant_code,
                                 'current_stock': int(current_stock),
                                 'required_threshold': threshold,
-                                'shortage': int(shortage)
+                                'shortage': int(shortage),
+                                'item_number': item_number_val,
+                                'new_order': new_order_val,
                             })
                     
                     except Exception as e:
@@ -531,6 +543,52 @@ class KeyItemsService:
                 return col
         return None 
 
+    def _detect_item_number_column(self, columns: List[str]) -> str | None:
+        """Detect the column that represents the item number (e.g., 'Item No_', 'Item Number')"""
+        # Exact preferred names first
+        preferred = ['Item No_', 'Item Number', 'Item No']
+        for col in preferred:
+            if col in columns:
+                return col
+        # Fallback: fuzzy match
+        for col in columns:
+            col_lower = str(col).lower()
+            if (
+                'item no' in col_lower
+                or 'item number' in col_lower
+                or 'item #' in col_lower
+                or col_lower.replace('_', ' ').strip() in ['item no', 'item no.']
+            ):
+                return col
+        return None
+
+    def _detect_reorder_column(self, columns: List[str]) -> str | None:
+        """Detect a column that likely represents newly ordered/reordered units.
+        We accept flexible naming like 'New Order', 'Reorder Qty', 'Ordered Qty', etc.
+        """
+        # Strong candidates in order of preference
+        strong_candidates = [
+            'New Order', 'New Orders', 'Reorder Qty', 'Reorder Quantity', 'Reordered Units',
+            'Ordered Qty', 'Ordered Quantity', 'Units Reordered', 'Re-ordered Qty', 'Re-ordered'
+        ]
+        for col in strong_candidates:
+            if col in columns:
+                return col
+        # Fallback fuzzy detection
+        for col in columns:
+            name = str(col)
+            lower = name.lower()
+            if 'order' in lower:
+                # Skip non-quantity identifiers
+                if any(skip in lower for skip in ['order number', 'order no', 'order #', 'order id']):
+                    continue
+                # Must imply quantity/units or explicitly be new/reorder
+                implies_qty = any(k in lower for k in ['qty', 'quantity', 'units', 'unit'])
+                implies_new_or_re = any(k in lower for k in ['new', 'reorder', 're-ordered', 'reordered', 'ordered'])
+                if implies_qty or implies_new_or_re:
+                    return col
+        return None
+
     def get_all_key_items_with_alerts(self, file_path: str) -> Tuple[List[Dict], bool, str]:
         """Get all key items with their alerts in a single ultra-fast batch operation"""
         try:
@@ -570,6 +628,8 @@ class KeyItemsService:
             # Detect columns once
             item_column = self._detect_item_column(df.columns)
             stock_column = self._detect_stock_column(df.columns)
+            item_number_column = self._detect_item_number_column(df.columns)
+            reorder_column = self._detect_reorder_column(df.columns)
             
             if not item_column or not stock_column:
                 return [], False, "Required columns not found"
@@ -579,6 +639,10 @@ class KeyItemsService:
             
             # Convert stock to numeric once
             ki00_data[stock_column] = pd.to_numeric(ki00_data[stock_column], errors='coerce').fillna(0)
+            
+            # If reorder column exists, ensure numeric
+            if reorder_column and reorder_column in ki00_data.columns:
+                ki00_data[reorder_column] = pd.to_numeric(ki00_data[reorder_column], errors='coerce').fillna(0).astype(int)
             
             # Get unique items
             unique_items = ki00_data['item_base'].unique()
@@ -623,6 +687,23 @@ class KeyItemsService:
                     # Get custom threshold for this item, size, and color
                     threshold = self.get_custom_threshold(item_name, size, color)
                     
+                    # Additional optional fields
+                    item_number_value = None
+                    if item_number_column and item_number_column in row.index:
+                        try:
+                            item_number_value = str(row[item_number_column]) if pd.notna(row[item_number_column]) else None
+                        except Exception:
+                            item_number_value = None
+                    new_order_value = None
+                    if reorder_column and reorder_column in row.index:
+                        try:
+                            new_order_value = int(row[reorder_column])
+                        except Exception:
+                            try:
+                                new_order_value = int(pd.to_numeric(row[reorder_column], errors='coerce'))
+                            except Exception:
+                                new_order_value = None
+                    
                     # Check if stock is below threshold
                     if stock_level < threshold:
                         alerts.append({
@@ -632,7 +713,9 @@ class KeyItemsService:
                             "stock_level": stock_level,
                             "required_threshold": threshold,
                             "shortage": threshold - stock_level,
-                            "status": "LOW STOCK"
+                            "status": "LOW STOCK",
+                            "item_number": item_number_value,
+                            "new_order": new_order_value,
                         })
                 
                 all_alerts.append({
