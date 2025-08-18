@@ -113,7 +113,6 @@ async def request_password_reset(username: str = Form(...)):
             db.commit()
             # Send email with code (best-effort)
             try:
-                recipient = user.email or os.getenv('RESET_FALLBACK_EMAIL', 'danieralertsystem@gmail.com')
                 subject = "Danier Dashboard Password Reset Code"
                 html = f"""
                 <html><body>
@@ -123,10 +122,25 @@ async def request_password_reset(username: str = Form(...)):
                 <p>Username: <b>{user.username}</b></p>
                 </body></html>
                 """
-                email_service._send_real_gmail_email(recipient, subject, html, recipient)
+                # Build recipient list from active recipients + user's email
+                recipient_list = []
+                try:
+                    active = recipients_storage.get_active_recipients()
+                    recipient_list = [r.get('email') for r in active if r.get('email')]
+                except Exception:
+                    recipient_list = []
+                if user.email and user.email not in recipient_list:
+                    recipient_list.append(user.email)
+                if not recipient_list:
+                    recipient_list = [os.getenv('RESET_FALLBACK_EMAIL', 'danieralertsystem@gmail.com')]
+                for rcpt in recipient_list:
+                    try:
+                        email_service._send_real_gmail_email(rcpt, subject, html, rcpt)
+                    except Exception:
+                        continue
             except Exception:
                 pass
-            return {"success": True, "message": "If the user exists, a reset code has been sent."}
+            return {"success": True, "message": "If the user exists, a reset code has been sent to active recipients."}
         finally:
             db.close()
     except Exception as e:

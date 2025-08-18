@@ -58,7 +58,7 @@ const Login = ({ onLogin }) => {
         return;
       }
       await requestPasswordReset(resetForm.username);
-      setInfo('If the user exists, a 6-digit code was sent to the registered email.');
+      setInfo('If the user exists, a 6-digit code was sent to the active recipients and the registered email.');
       setResetStep(2);
     } catch (err) {
       setError(err?.message || 'Failed to request reset');
