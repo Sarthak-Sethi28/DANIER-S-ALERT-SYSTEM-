@@ -1269,19 +1269,21 @@ async def clear_all_caches_api():
 async def send_email_alert(
     item_name: str = Form(None)
 ):
-    """Send personalized email alert to all active recipients - NON-BLOCKING"""
+    """Send personalized email alert to all active recipients - NON-BLOCKING (ultra-light latest file lookup)"""
     try:
         print(f"📧 EMAIL REQUEST: Starting email alert for item: {item_name or 'ALL'}")
         
-        # Get latest file for alerts
-        files = comparison_service.get_all_uploaded_files()
-        if not files:
-            raise HTTPException(status_code=400, detail="No inventory files found")
-        
-        latest_file = files[0]
+        # Lightweight: get latest file path from DB (no full scan)
+        db = next(get_db())
+        try:
+            latest_file_path = file_storage_service.get_latest_file_path(db)
+        finally:
+            db.close()
+        if not latest_file_path or not os.path.exists(latest_file_path):
+            raise HTTPException(status_code=400, detail="No inventory file found")
         
         # Get all items with alerts (cached and fast)
-        all_alerts, success, error = key_items_service.get_all_key_items_with_alerts(latest_file['file_path'])
+        all_alerts, success, error = key_items_service.get_all_key_items_with_alerts(latest_file_path)
         if not success:
             raise HTTPException(status_code=400, detail=error)
         
