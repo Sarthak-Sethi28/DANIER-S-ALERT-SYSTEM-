@@ -306,7 +306,7 @@ class KeyItemsService:
                         # Optional columns
                         item_number_col = self._detect_item_number_column(df.columns)
                         reorder_col = self._detect_reorder_column(df.columns)
-                        item_number_val = str(row[item_number_col]) if item_number_col and item_number_col in row.index and pd.notna(row[item_number_col]) else None
+                        item_number_val = self._normalize_item_number(row[item_number_col]) if item_number_col and item_number_col in row.index else None
                         new_order_val = None
                         if reorder_col and reorder_col in row.index:
                             try:
@@ -589,6 +589,60 @@ class KeyItemsService:
                     return col
         return None
 
+    def _normalize_item_number(self, value) -> str | None:
+        """Normalize item number to remove decimal tails like '.0' and return as string.
+        Keeps non-numeric strings unchanged.
+        """
+        try:
+            import math
+            import numpy as np  # type: ignore
+        except Exception:
+            math = None  # not used directly, safety
+            np = None
+        # Handle None/NaN
+        if value is None:
+            return None
+        try:
+            import pandas as pd  # local import to use pd.isna safely
+            if pd.isna(value):
+                return None
+        except Exception:
+            pass
+        # Numeric int
+        try:
+            if isinstance(value, int):
+                return str(value)
+        except Exception:
+            pass
+        # Numeric float
+        try:
+            if isinstance(value, float):
+                # If it is an integer-like float, cast to int string
+                if value == int(value):
+                    return str(int(value))
+                return str(value)
+        except Exception:
+            pass
+        s = str(value).strip()
+        if not s:
+            return None
+        # Remove trailing .0 or .00 etc. if purely numeric
+        import re
+        m = re.match(r"^(\d+)\.0+$", s)
+        if m:
+            return m.group(1)
+        # If string is all digits already, return as-is
+        if s.isdigit():
+            return s
+        # Try numeric cast safely
+        try:
+            f = float(s)
+            if f == int(f):
+                return str(int(f))
+        except Exception:
+            pass
+        return s
+
     def get_all_key_items_with_alerts(self, file_path: str) -> Tuple[List[Dict], bool, str]:
         """Get all key items with their alerts in a single ultra-fast batch operation"""
         try:
@@ -691,7 +745,7 @@ class KeyItemsService:
                     item_number_value = None
                     if item_number_column and item_number_column in row.index:
                         try:
-                            item_number_value = str(row[item_number_column]) if pd.notna(row[item_number_column]) else None
+                            item_number_value = self._normalize_item_number(row[item_number_column])
                         except Exception:
                             item_number_value = None
                     new_order_value = None
