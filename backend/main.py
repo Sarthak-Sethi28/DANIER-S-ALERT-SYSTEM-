@@ -232,8 +232,8 @@ async def get_recipients():
             print("⚡ Using cached recipients data")
             return cached_data
         
-        # Get fresh data
-        recipients = recipients_storage.get_all_recipients()
+        # Get fresh data (ACTIVE ONLY)
+        recipients = recipients_storage.get_active_recipients()
         stats = recipients_storage.get_stats()
         
         result = {
@@ -269,12 +269,24 @@ async def add_recipient(
 ):
     """Add a new email recipient"""
     result = recipients_storage.add_recipient(email, name, department)
+    # Invalidate recipients cache
+    try:
+        if hasattr(key_items_service, '_cache'):
+            key_items_service._cache.pop('recipients_cache', None)
+    except Exception:
+        pass
     return result
 
 @app.delete("/recipients/{email}")
 async def delete_recipient(email: str):
     """Delete a recipient email"""
     result = recipients_storage.delete_recipient(email)
+    # Invalidate recipients cache
+    try:
+        if hasattr(key_items_service, '_cache'):
+            key_items_service._cache.pop('recipients_cache', None)
+    except Exception:
+        pass
     return result
 
 @app.put("/recipients/{email}")
@@ -285,6 +297,12 @@ async def update_recipient(
 ):
     """Update recipient information"""
     result = recipients_storage.update_recipient(email, name, department)
+    # Invalidate recipients cache
+    try:
+        if hasattr(key_items_service, '_cache'):
+            key_items_service._cache.pop('recipients_cache', None)
+    except Exception:
+        pass
     return result
 
 @app.post("/upload-report")
