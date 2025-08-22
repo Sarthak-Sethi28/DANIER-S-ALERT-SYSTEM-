@@ -1591,7 +1591,7 @@ async def download_all_alerts():
         ws.title = "Low Stock Alerts"
         
         # Headers
-        headers = ["Item Name", "Item Number", "Color", "Size", "Current Stock", "Required Threshold", "Shortage", "New Order", "Priority"]
+        headers = ["Item Name", "Item Number", "Color", "Size", "Current Stock", "Required Threshold", "Shortage", "New Order", "Order Date", "Priority"]
         for col, header in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=header)
             cell.font = Font(bold=True)
@@ -1618,14 +1618,17 @@ async def download_all_alerts():
                 # New Order may be None if column not present; write empty string in that case
                 new_order_value = alert.get("new_order", None)
                 ws.cell(row=row, column=8, value=new_order_value if new_order_value is not None else "")
-                ws.cell(row=row, column=9, value=priority)
+                # Order Date may be None if column not present; write empty string in that case
+                order_date_value = alert.get("order_date", None)
+                ws.cell(row=row, column=9, value=order_date_value if order_date_value is not None else "")
+                ws.cell(row=row, column=10, value=priority)
                 
                 # Color coding for priority
                 if priority == "CRITICAL":
-                    for col in range(1, 10):
+                    for col in range(1, 11):
                         ws.cell(row=row, column=col).fill = PatternFill(start_color="FFE5E5", end_color="FFE5E5", fill_type="solid")
                 elif priority == "HIGH":
-                    for col in range(1, 10):
+                    for col in range(1, 11):
                         ws.cell(row=row, column=col).fill = PatternFill(start_color="FFF0E5", end_color="FFF0E5", fill_type="solid")
                 
                 row += 1
