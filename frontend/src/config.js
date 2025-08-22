@@ -1,1 +1,1 @@
-export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://danier-stock-alert-backend.onrender.com'; 
+export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://danier-s-alert-system.onrender.com'; 
