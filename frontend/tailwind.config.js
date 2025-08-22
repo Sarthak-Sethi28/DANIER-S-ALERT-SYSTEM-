@@ -8,20 +8,28 @@ module.exports = {
     extend: {
       colors: {
         brand: {
-          deep: '#003135',
-          sea: '#024950',
-          rust: '#964734',
-          accent: '#0FA4AF',
-          mist: '#AFDDE5',
+          // Primary palette from user's image (monochromatic blues)
+          primary: '#478AB8', // deep blue
+          secondary: '#6CA2C6', // light blue
+          // alias to preserve existing bg-brand-accent usages
+          accent: '#478AB8',
+          // Keep neutrals mapped for dark mode usage
+          surface: '#FFFFFF',
+          surfaceDark: '#0B1220',
+        },
+        // keep custom token used across components
+        danier: {
+          dark: '#111827', // near-black for readable headings on white base
         },
       },
       backgroundImage: {
-        'gradient-brand': 'linear-gradient(135deg, #AFDDE5 0%, #0FA4AF 60%, #024950 100%)',
-        'gradient-brand-dark': 'linear-gradient(135deg, #003135 0%, #024950 100%)',
+        // Replace gold gradients with refined blue gradients
+        'gradient-brand': 'linear-gradient(135deg, #FFFFFF 0%, #6CA2C6 40%, #478AB8 100%)',
+        'gradient-brand-dark': 'linear-gradient(135deg, #0B1220 0%, #1E2A3A 50%, #2F4A68 100%)',
       },
       boxShadow: {
         elegant: '0 4px 20px rgba(0,0,0,0.08)',
-        luxury: '0 8px 30px rgba(15,164,175,0.15)',
+        luxury: '0 8px 30px rgba(71,138,184,0.18)',
         sophisticated: '0 2px 15px rgba(0,0,0,0.06)',
         refined: '0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)',
       },

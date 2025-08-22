@@ -19,16 +19,16 @@ body {
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #FAFAFA;
+  background: #FFFFFF; /* White base for luxury look */
   min-height: 100vh;
   font-weight: 400;
   line-height: 1.6;
-  color: #374151;
+  color: #1F2937;
 }
 
 code {
   font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-  background: rgba(212, 175, 55, 0.1);
+  background: rgba(71, 138, 184, 0.12); /* soft blue tint */
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
   font-size: 0.875em;
@@ -41,45 +41,45 @@ code {
 }
 
 ::-webkit-scrollbar-track {
-  background: #F5F5F5;
+  background: #EEF2F7;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #D4AF37, #E8C547);
+  background: linear-gradient(135deg, #6CA2C6, #478AB8);
   border-radius: 4px;
   transition: background 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #B8941F, #D4AF37);
+  background: linear-gradient(135deg, #5D98BF, #3F7EA7);
 }
 
 ::-webkit-scrollbar-corner {
-  background: #F5F5F5;
+  background: #EEF2F7;
 }
 
 /* Firefox Scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #D4AF37 #F5F5F5;
+  scrollbar-color: #478AB8 #EEF2F7;
 }
 
 /* Elegant Focus Styles */
 *:focus {
-  outline: 2px solid rgba(212, 175, 55, 0.5);
+  outline: 2px solid rgba(71, 138, 184, 0.55);
   outline-offset: 2px;
 }
 
 /* Selection Styles */
 ::selection {
-  background: rgba(212, 175, 55, 0.2);
-  color: #2C2C2C;
+  background: rgba(108, 162, 198, 0.35);
+  color: #0B1220;
 }
 
 ::-moz-selection {
-  background: rgba(212, 175, 55, 0.2);
-  color: #2C2C2C;
+  background: rgba(108, 162, 198, 0.35);
+  color: #0B1220;
 }
 
 /* Sophisticated Button Styles */
@@ -155,9 +155,9 @@ code {
   }
 }
 
-/* Text Gradients */
+/* Text Gradients - Blue luxury */
 .text-gradient-elegant {
-  background: linear-gradient(135deg, #D4AF37, #E8C547);
+  background: linear-gradient(135deg, #6CA2C6, #478AB8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

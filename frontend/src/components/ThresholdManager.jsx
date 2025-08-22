@@ -17,6 +17,7 @@ const ThresholdManager = () => {
 
   // History
   const [history, setHistory] = useState([]);
+  const optionsCacheRef = React.useRef({});
 
   const loadAll = async () => {
     setLoading(true);
@@ -62,6 +63,9 @@ const ThresholdManager = () => {
 
   const fetchOptions = async (name) => {
     try {
+      // Instant: return cached if available
+      const cached = optionsCacheRef.current[name];
+      if (cached) { setOptions(cached); return; }
       const res = await fetch(`${API_BASE_URL}/key-items/options/${encodeURIComponent(name)}`);
       const data = await res.json();
       setOptions({
@@ -70,17 +74,23 @@ const ThresholdManager = () => {
         color_to_sizes: data.color_to_sizes || {},
         size_to_colors: data.size_to_colors || {}
       });
+      optionsCacheRef.current[name] = {
+        colors: data.colors || [],
+        sizes: data.sizes || [],
+        color_to_sizes: data.color_to_sizes || {},
+        size_to_colors: data.size_to_colors || {}
+      };
     } catch (e) {
       setOptions({ colors: [], sizes: [], color_to_sizes: {}, size_to_colors: {} });
     }
   };
 
-  // Auto-load size/color options as user types a valid item name (debounced)
+  // Auto-load size/color options immediately as user types a valid item name
   useEffect(() => {
     const name = itemName.trim();
     if (!name) { setOptions({ colors: [], sizes: [], color_to_sizes: {}, size_to_colors: {} }); return; }
-    const t = setTimeout(() => { fetchOptions(name); loadHistory(name); }, 300);
-    return () => clearTimeout(t);
+    fetchOptions(name);
+    loadHistory(name);
   }, [itemName]);
 
   const saveThreshold = async (itemName, size, color, threshold) => {

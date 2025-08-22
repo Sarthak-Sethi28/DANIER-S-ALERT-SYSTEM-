@@ -46,6 +46,7 @@ const Dashboard = () => {
   const itemRefs = useRef({});
   const [error, setError] = useState(null);
   const [emailStatusByItem, setEmailStatusByItem] = useState({});
+  const [allAlertsByItem, setAllAlertsByItem] = useState({});
 
   const scrollToItem = (name) => {
     const el = itemRefs.current[name];
@@ -101,6 +102,12 @@ const Dashboard = () => {
         variants_count: (k.alerts || []).length,
         low_stock_count: k.alert_count,
       }));
+      // Cache all alerts per item so stats stay stable regardless of UI expansion
+      const alertsMap = {};
+      (batch.key_items || []).forEach(k => {
+        alertsMap[k.name] = (k.alerts || []).map(a => ({ ...a, current_stock: a.stock_level }));
+      });
+      setAllAlertsByItem(alertsMap);
 
       if (arr && arr.length > 0) {
         const sorted = [...arr].sort((a,b)=> (a.name||'').localeCompare(b.name||''));
@@ -317,9 +324,14 @@ const Dashboard = () => {
   const getStatsCards = () => {
     const totalItems = keyItems.length;
     const totalAlerts = getTotalAlerts();
-    const criticalAlerts = keyItems.reduce((sum, item) => {
-      const itemAlerts = alerts[item.name] || [];
-      return sum + itemAlerts.filter(alert => alert.shortage >= 10).length;
+    // Compute from full batch, not lazily loaded UI alerts, to keep stable
+    const criticalAlerts = Object.values(allAlertsByItem).reduce((sum, list) => {
+      const num = (list || []).filter(alert => (alert.priority === 'ORDER_PLACED') ? false : (alert.shortage >= 10)).length;
+      return sum + num;
+    }, 0);
+    const orderPlaced = Object.values(allAlertsByItem).reduce((sum, list) => {
+      const num = (list || []).filter(alert => (alert.new_order ?? 0) > 0).length;
+      return sum + num;
     }, 0);
     const healthyItems = totalItems - keyItems.filter(item => item.low_stock_count > 0).length;
 
@@ -347,6 +359,14 @@ const Dashboard = () => {
         color: 'bg-gradient-to-br from-orange-500 to-orange-600',
         textColor: 'text-orange-600',
         bgColor: 'bg-orange-50 dark:bg-orange-900/20'
+      },
+      {
+        title: 'Order Placed',
+        value: orderPlaced,
+        icon: <TrendingUp className="w-6 h-6" />,
+        color: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
+        textColor: 'text-emerald-600',
+        bgColor: 'bg-emerald-50 dark:bg-emerald-900/20'
       },
       {
         title: 'Healthy Stock',
@@ -646,12 +666,14 @@ const Dashboard = () => {
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-danier-dark dark:text-white">Required</th>
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-danier-dark dark:text-white">Shortage</th>
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-danier-dark dark:text-white">New Order</th>
+                                <th className="px-6 py-4 text-left text-sm font-semibold text-danier-dark dark:text-white">Order Date</th>
                                 <th className="px-6 py-4 text-left text-sm font-semibold text-danier-dark dark:text-white">Priority</th>
                               </tr>
                             </thead>
                             <tbody className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm divide-y divide-white/50 dark:divide-slate-700/50">
                               {alerts[item.name].map((alert, alertIndex) => {
                                 const urgency = getUrgencyLevel(alert.shortage);
+                                const isOrderPlaced = ((alert.new_order ?? 0) > 0) || alert.priority === 'ORDER_PLACED';
                                 return (
                                   <tr key={alertIndex} className="hover:bg-white/60 dark:hover:bg-slate-800/60 transition-colors duration-200">
                                     <td className="px-6 py-4 text-sm font-semibold text-danier-dark dark:text-white">{alert.color}</td>
@@ -661,11 +683,19 @@ const Dashboard = () => {
                                     <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 font-medium">{alert.required_threshold}</td>
                                     <td className="px-6 py-4 text-sm font-bold text-red-600 dark:text-red-400">-{alert.shortage}</td>
                                     <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{(alert.new_order ?? '') === '' ? '-' : alert.new_order}</td>
+                                    <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">{alert.order_date || '-'}</td>
                                     <td className="px-6 py-4">
-                                      <div className={`inline-flex items-center space-x-2 px-3 py-2 text-xs font-semibold rounded-xl border ${urgency.bg} ${urgency.color}`}>
-                                        {urgency.icon}
-                                        <span>{urgency.label}</span>
-                                      </div>
+                                      {isOrderPlaced ? (
+                                        <div className={`inline-flex items-center space-x-2 px-3 py-2 text-xs font-semibold rounded-xl border bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300`}>
+                                          <TrendingUp className="w-3 h-3" />
+                                          <span>ORDER PLACED</span>
+                                        </div>
+                                      ) : (
+                                        <div className={`inline-flex items-center space-x-2 px-3 py-2 text-xs font-semibold rounded-xl border ${urgency.bg} ${urgency.color}`}>
+                                          {urgency.icon}
+                                          <span>{urgency.label}</span>
+                                        </div>
+                                      )}
                                     </td>
                                   </tr>
                                 );

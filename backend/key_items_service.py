@@ -306,6 +306,7 @@ class KeyItemsService:
                         # Optional columns
                         item_number_col = self._detect_item_number_column(df.columns)
                         reorder_col = self._detect_reorder_column(df.columns)
+                        reorder_date_col = self._detect_reorder_date_column(df.columns)
                         item_number_val = self._normalize_item_number(row[item_number_col]) if item_number_col and item_number_col in row.index else None
                         new_order_val = None
                         if reorder_col and reorder_col in row.index:
@@ -313,6 +314,14 @@ class KeyItemsService:
                                 new_order_val = int(pd.to_numeric(row[reorder_col], errors='coerce'))
                             except Exception:
                                 new_order_val = None
+                        order_date_val = None
+                        if reorder_date_col and reorder_date_col in row.index:
+                            try:
+                                dt = pd.to_datetime(row[reorder_date_col], errors='coerce')
+                                if pd.notna(dt):
+                                    order_date_val = dt.strftime('%Y-%m-%d')
+                            except Exception:
+                                order_date_val = None
                         
                         # Extract size from variant code
                         size = self.extract_size_from_variant(variant_code)
@@ -336,6 +345,8 @@ class KeyItemsService:
                                 'shortage': int(shortage),
                                 'item_number': item_number_val,
                                 'new_order': new_order_val,
+                                'order_date': order_date_val,
+                                'priority': 'ORDER_PLACED' if (isinstance(new_order_val, int) and new_order_val > 0) else 'LOW_STOCK'
                             })
                     
                     except Exception as e:
@@ -589,6 +600,22 @@ class KeyItemsService:
                     return col
         return None
 
+    def _detect_reorder_date_column(self, columns: List[str]) -> str | None:
+        """Detect a column that represents the date an order/reorder was placed.
+        Accept flexible names such as 'Order Date', 'Reorder Date', 'Date Ordered', etc.
+        """
+        strong_candidates = [
+            'Order Date', 'Reorder Date', 'Date Ordered', 'New Order Date', 'PO Date', 'Purchase Order Date'
+        ]
+        for col in strong_candidates:
+            if col in columns:
+                return col
+        for col in columns:
+            lower = str(col).lower()
+            if ('date' in lower) and ('order' in lower or 'reorder' in lower or 'po' in lower):
+                return col
+        return None
+
     def _normalize_item_number(self, value) -> str | None:
         """Normalize item number to remove decimal tails like '.0' and return as string.
         Keeps non-numeric strings unchanged.
@@ -684,6 +711,7 @@ class KeyItemsService:
             stock_column = self._detect_stock_column(df.columns)
             item_number_column = self._detect_item_number_column(df.columns)
             reorder_column = self._detect_reorder_column(df.columns)
+            reorder_date_column = self._detect_reorder_date_column(df.columns)
             
             if not item_column or not stock_column:
                 return [], False, "Required columns not found"
@@ -757,6 +785,14 @@ class KeyItemsService:
                                 new_order_value = int(pd.to_numeric(row[reorder_column], errors='coerce'))
                             except Exception:
                                 new_order_value = None
+                    order_date_value = None
+                    if reorder_date_column and reorder_date_column in row.index:
+                        try:
+                            dt = pd.to_datetime(row[reorder_date_column], errors='coerce')
+                            if pd.notna(dt):
+                                order_date_value = dt.strftime('%Y-%m-%d')
+                        except Exception:
+                            order_date_value = None
                     
                     # Check if stock is below threshold
                     if stock_level < threshold:
@@ -770,6 +806,8 @@ class KeyItemsService:
                             "status": "LOW STOCK",
                             "item_number": item_number_value,
                             "new_order": new_order_value,
+                            "order_date": order_date_value,
+                            "priority": "ORDER_PLACED" if (isinstance(new_order_value, int) and new_order_value > 0) else "LOW_STOCK",
                         })
                 
                 all_alerts.append({
