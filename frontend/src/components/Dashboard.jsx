@@ -53,6 +53,29 @@ const Dashboard = () => {
   const [orderPlacedItems, setOrderPlacedItems] = useState([]);
   const [healthyStockItems, setHealthyStockItems] = useState([]);
 
+  // Derive modal item lists from current alerts and keyItems without mutating during render
+  useEffect(() => {
+    try {
+      const itemsWithOrders = new Set();
+      Object.entries(allAlertsByItem).forEach(([itemName, alerts]) => {
+        const hasOrder = (alerts || []).some(alert => (alert.new_order ?? 0) > 0);
+        if (hasOrder) itemsWithOrders.add(itemName);
+      });
+      const orderPlacedItemsList = Array.from(itemsWithOrders).map(itemName => ({
+        name: itemName,
+        alerts: (allAlertsByItem[itemName] || []).filter(alert => (alert.new_order ?? 0) > 0)
+      }));
+      setOrderPlacedItems(orderPlacedItemsList);
+
+      const healthyStockItemsList = (keyItems || [])
+        .filter(item => (item.low_stock_count || 0) === 0)
+        .map(item => ({ name: item.name, total_stock: item.total_stock }));
+      setHealthyStockItems(healthyStockItemsList);
+    } catch (_) {
+      // no-op safeguard
+    }
+  }, [allAlertsByItem, keyItems]);
+
   const scrollToItem = (name) => {
     const el = itemRefs.current[name];
     if (el && typeof el.scrollIntoView === 'function') {
@@ -347,21 +370,7 @@ const Dashboard = () => {
     });
     const orderPlaced = itemsWithOrders.size;
     
-    // Store order placed items for modal
-    const orderPlacedItemsList = Array.from(itemsWithOrders).map(itemName => ({
-      name: itemName,
-      alerts: (allAlertsByItem[itemName] || []).filter(alert => (alert.new_order ?? 0) > 0)
-    }));
-    setOrderPlacedItems(orderPlacedItemsList);
-    
     const healthyItems = totalItems - keyItems.filter(item => item.low_stock_count > 0).length;
-    
-    // Store healthy stock items for modal
-    const healthyStockItemsList = keyItems.filter(item => item.low_stock_count === 0).map(item => ({
-      name: item.name,
-      total_stock: item.total_stock
-    }));
-    setHealthyStockItems(healthyStockItemsList);
 
     return [
       {
