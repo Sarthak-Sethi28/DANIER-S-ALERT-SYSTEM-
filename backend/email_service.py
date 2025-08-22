@@ -132,6 +132,34 @@ class EmailService:
                     padding: 15px;
                     margin: 20px 0;
                 }}
+                .order-placed {{
+                    color: #27ae60;
+                    font-weight: bold;
+                    background-color: #d5f4e6;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                }}
+                .critical {{
+                    color: #e74c3c;
+                    font-weight: bold;
+                    background-color: #fadbd8;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                }}
+                .high {{
+                    color: #f39c12;
+                    font-weight: bold;
+                    background-color: #fdeaa7;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                }}
+                .medium {{
+                    color: #f39c12;
+                    font-weight: bold;
+                    background-color: #fef9e7;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                }}
             </style>
         </head>
         <body>
@@ -162,6 +190,9 @@ class EmailService:
                                 <th>Available</th>
                                 <th>Required</th>
                                 <th>Shortage</th>
+                                <th>New Order</th>
+                                <th>Order Date</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -178,11 +209,29 @@ class EmailService:
                 available = item.get('stock_level', 0)
                 required = item.get('required_threshold', 10)
                 shortage = item.get('shortage', max(0, required - available))
+                new_order = item.get('new_order', None)
+                order_date = item.get('order_date', None)
             else:
                 # Data from process_key_items_inventory
                 available = item.get('current_stock', 0)
                 required = item.get('required_threshold', 10)
                 shortage = item.get('shortage', max(0, required - available))
+                new_order = item.get('new_order', None)
+                order_date = item.get('order_date', None)
+            
+            # Determine status based on new order and shortage
+            if new_order is not None and new_order > 0:
+                status = "ORDER PLACED"
+                status_class = "order-placed"
+            elif shortage >= 10:
+                status = "CRITICAL"
+                status_class = "critical"
+            elif shortage >= 5:
+                status = "HIGH"
+                status_class = "high"
+            else:
+                status = "MEDIUM"
+                status_class = "medium"
             
             html_content += f"""
                             <tr>
@@ -191,6 +240,9 @@ class EmailService:
                                 <td class="low-stock">{available}</td>
                                 <td>{required}</td>
                                 <td class="low-stock">{shortage}</td>
+                                <td>{new_order if new_order is not None else '-'}</td>
+                                <td>{order_date if order_date is not None else '-'}</td>
+                                <td class="{status_class}">{status}</td>
                             </tr>
             """
         

@@ -1606,7 +1606,13 @@ async def download_all_alerts():
             
             for alert in alerts:
                 shortage = alert.get("shortage", 0)
-                priority = "CRITICAL" if shortage >= 10 else "HIGH" if shortage >= 5 else "MEDIUM"
+                new_order_value = alert.get("new_order", None)
+                
+                # Check if order is placed first, then determine priority based on shortage
+                if new_order_value is not None and new_order_value > 0:
+                    priority = "ORDER PLACED"
+                else:
+                    priority = "CRITICAL" if shortage >= 10 else "HIGH" if shortage >= 5 else "MEDIUM"
                 
                 ws.cell(row=row, column=1, value=item_name)
                 ws.cell(row=row, column=2, value=alert.get("item_number", ""))
