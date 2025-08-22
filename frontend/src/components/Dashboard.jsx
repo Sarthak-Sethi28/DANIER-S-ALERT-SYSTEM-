@@ -16,7 +16,8 @@ import {
   Zap,
   Crown,
   Sparkles,
-  BarChart3
+  BarChart3,
+  X
 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 
@@ -47,6 +48,10 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [emailStatusByItem, setEmailStatusByItem] = useState({});
   const [allAlertsByItem, setAllAlertsByItem] = useState({});
+  const [showOrderPlacedModal, setShowOrderPlacedModal] = useState(false);
+  const [showHealthyStockModal, setShowHealthyStockModal] = useState(false);
+  const [orderPlacedItems, setOrderPlacedItems] = useState([]);
+  const [healthyStockItems, setHealthyStockItems] = useState([]);
 
   const scrollToItem = (name) => {
     const el = itemRefs.current[name];
@@ -329,11 +334,32 @@ const Dashboard = () => {
       const num = (list || []).filter(alert => (alert.priority === 'ORDER_PLACED') ? false : (alert.shortage >= 10)).length;
       return sum + num;
     }, 0);
-    const orderPlaced = Object.values(allAlertsByItem).reduce((sum, list) => {
-      const num = (list || []).filter(alert => (alert.new_order ?? 0) > 0).length;
-      return sum + num;
-    }, 0);
+    
+    // Fix: Count unique items with orders placed, not individual alerts
+    const itemsWithOrders = new Set();
+    Object.entries(allAlertsByItem).forEach(([itemName, alerts]) => {
+      const hasOrder = (alerts || []).some(alert => (alert.new_order ?? 0) > 0);
+      if (hasOrder) {
+        itemsWithOrders.add(itemName);
+      }
+    });
+    const orderPlaced = itemsWithOrders.size;
+    
+    // Store order placed items for modal
+    const orderPlacedItemsList = Array.from(itemsWithOrders).map(itemName => ({
+      name: itemName,
+      alerts: (allAlertsByItem[itemName] || []).filter(alert => (alert.new_order ?? 0) > 0)
+    }));
+    setOrderPlacedItems(orderPlacedItemsList);
+    
     const healthyItems = totalItems - keyItems.filter(item => item.low_stock_count > 0).length;
+    
+    // Store healthy stock items for modal
+    const healthyStockItemsList = keyItems.filter(item => item.low_stock_count === 0).map(item => ({
+      name: item.name,
+      total_stock: item.total_stock
+    }));
+    setHealthyStockItems(healthyStockItemsList);
 
     return [
       {
@@ -342,7 +368,8 @@ const Dashboard = () => {
         icon: <Package className="w-6 h-6" />,
         color: 'bg-gradient-to-br from-blue-500 to-blue-600',
         textColor: 'text-blue-600',
-        bgColor: 'bg-blue-50 dark:bg-blue-900/20'
+        bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+        onClick: null
       },
       {
         title: 'Active Alerts',
@@ -350,7 +377,8 @@ const Dashboard = () => {
         icon: <AlertTriangle className="w-6 h-6" />,
         color: 'bg-gradient-to-br from-red-500 to-red-600',
         textColor: 'text-red-600',
-        bgColor: 'bg-red-50 dark:bg-red-900/20'
+        bgColor: 'bg-red-50 dark:bg-red-900/20',
+        onClick: null
       },
       {
         title: 'Critical Items',
@@ -358,7 +386,8 @@ const Dashboard = () => {
         icon: <TrendingDown className="w-6 h-6" />,
         color: 'bg-gradient-to-br from-orange-500 to-orange-600',
         textColor: 'text-orange-600',
-        bgColor: 'bg-orange-50 dark:bg-orange-900/20'
+        bgColor: 'bg-orange-50 dark:bg-orange-900/20',
+        onClick: null
       },
       {
         title: 'Order Placed',
@@ -366,7 +395,8 @@ const Dashboard = () => {
         icon: <TrendingUp className="w-6 h-6" />,
         color: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
         textColor: 'text-emerald-600',
-        bgColor: 'bg-emerald-50 dark:bg-emerald-900/20'
+        bgColor: 'bg-emerald-50 dark:bg-emerald-900/20',
+        onClick: () => setShowOrderPlacedModal(true)
       },
       {
         title: 'Healthy Stock',
@@ -374,7 +404,8 @@ const Dashboard = () => {
         icon: <TrendingUp className="w-6 h-6" />,
         color: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
         textColor: 'text-emerald-600',
-        bgColor: 'bg-emerald-50 dark:bg-emerald-900/20'
+        bgColor: 'bg-emerald-50 dark:bg-emerald-900/20',
+        onClick: () => setShowHealthyStockModal(true)
       }
     ];
   };
@@ -458,8 +489,9 @@ const Dashboard = () => {
           {getStatsCards().map((stat, index) => (
             <div 
               key={stat.title} 
-              className="relative overflow-hidden rounded-2xl bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/50 dark:border-slate-700/50 p-6 hover:scale-105 transition-all duration-300 animate-slide-up"
+              className={`relative overflow-hidden rounded-2xl bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-white/50 dark:border-slate-700/50 p-6 hover:scale-105 transition-all duration-300 animate-slide-up ${stat.onClick ? 'cursor-pointer' : ''}`}
               style={{ animationDelay: `${index * 0.1}s` }}
+              onClick={stat.onClick}
             >
               <div className="flex items-center justify-between mb-4">
                 <div className={`w-12 h-12 ${stat.color} rounded-xl shadow-luxury flex items-center justify-center text-white`}>
@@ -741,6 +773,110 @@ const Dashboard = () => {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Order Placed Modal */}
+      {showOrderPlacedModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-danier-dark dark:text-white flex items-center">
+                <TrendingUp className="w-6 h-6 mr-2 text-emerald-600" />
+                Items with Orders Placed
+              </h2>
+              <button 
+                onClick={() => setShowOrderPlacedModal(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              {orderPlacedItems.length === 0 ? (
+                <div className="text-center py-8">
+                  <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 dark:text-gray-400">No items with orders placed</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {orderPlacedItems.map((item, index) => (
+                    <div key={index} className="bg-gray-50 dark:bg-slate-700 rounded-xl p-4">
+                      <h3 className="text-lg font-semibold text-danier-dark dark:text-white mb-3">
+                        {item.name}
+                      </h3>
+                      <div className="space-y-2">
+                        {item.alerts.map((alert, alertIndex) => (
+                          <div key={alertIndex} className="bg-white dark:bg-slate-600 rounded-lg p-3 flex items-center justify-between">
+                            <div className="flex items-center space-x-4">
+                              <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {alert.color} - {alert.size}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm text-gray-600 dark:text-gray-400">
+                                Order: {alert.new_order} units
+                              </div>
+                              {alert.order_date && (
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  {alert.order_date}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Healthy Stock Modal */}
+      {showHealthyStockModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-danier-dark dark:text-white flex items-center">
+                <TrendingUp className="w-6 h-6 mr-2 text-emerald-600" />
+                Items with Healthy Stock Levels
+              </h2>
+              <button 
+                onClick={() => setShowHealthyStockModal(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              {healthyStockItems.length === 0 ? (
+                <div className="text-center py-8">
+                  <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 dark:text-gray-400">No items with healthy stock levels</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {healthyStockItems.map((item, index) => (
+                    <div key={index} className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-semibold text-emerald-800 dark:text-emerald-200">
+                          {item.name}
+                        </h3>
+                        <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                      </div>
+                      <div className="text-sm text-emerald-700 dark:text-emerald-300">
+                        Total Stock: {item.total_stock} units
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
