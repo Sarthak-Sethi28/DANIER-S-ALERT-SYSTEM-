@@ -101,6 +101,8 @@ const Dashboard = () => {
 
       // Use single ultra-fast batch call
       const batch = await getAllKeyItemsWithAlerts();
+      console.log('📊 Batch response:', batch);
+      
       const arr = (batch.key_items || []).map(k => ({
         name: k.name,
         total_stock: k.total_stock,
@@ -507,6 +509,16 @@ const Dashboard = () => {
           ))}
         </div>
       </div>
+
+      {/* Debug Info */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-yellow-800 dark:text-yellow-200 mb-2">Debug Info:</h3>
+          <p className="text-xs text-yellow-700 dark:text-yellow-300">Loading: {loading.toString()}</p>
+          <p className="text-xs text-yellow-700 dark:text-yellow-300">Error: {error ? error.type : 'none'}</p>
+          <p className="text-xs text-yellow-700 dark:text-yellow-300">Key Items: {keyItems.length}</p>
+        </div>
+      )}
 
       {/* Content Area */}
       {loading ? (
