@@ -84,12 +84,12 @@ const Dashboard = () => {
         name: itemName,
         alerts: (allAlertsByItem[itemName] || []).filter(alert => (alert.new_order ?? 0) > 0)
       }));
-      setOrderPlacedItems(orderPlacedItemsList);
+      // setOrderPlacedItems(orderPlacedItemsList); // This line was removed
 
       const healthyStockItemsList = (keyItems || [])
         .filter(item => (item.low_stock_count || 0) === 0)
         .map(item => ({ name: item.name, total_stock: item.total_stock }));
-      setHealthyStockItems(healthyStockItemsList);
+      // setHealthyStockItems(healthyStockItemsList); // This line was removed
     } catch (_) {
       // no-op safeguard
     }
