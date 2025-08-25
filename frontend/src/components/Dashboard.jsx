@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { getSpecificKeyItemAlerts, getAllKeyItemsWithAlerts, sendEmailAlert } from '../services/api';
 import { 
   ChevronDown, 
@@ -50,8 +50,27 @@ const Dashboard = () => {
   const [allAlertsByItem, setAllAlertsByItem] = useState({});
   const [showOrderPlacedModal, setShowOrderPlacedModal] = useState(false);
   const [showHealthyStockModal, setShowHealthyStockModal] = useState(false);
-  const [orderPlacedItems, setOrderPlacedItems] = useState([]);
-  const [healthyStockItems, setHealthyStockItems] = useState([]);
+  // Added: track expanded rows inside Order Placed modal per item name and alert index
+  const [expandedOrderItems, setExpandedOrderItems] = useState({});
+  // Derived data for modals (computed, not stored as state)
+  const orderPlacedItems = useMemo(() => {
+    const itemsWithOrders = new Set();
+    Object.entries(allAlertsByItem).forEach(([itemName, alerts]) => {
+      if ((alerts || []).some(alert => (alert.new_order ?? 0) > 0)) {
+        itemsWithOrders.add(itemName);
+      }
+    });
+    return Array.from(itemsWithOrders).map(itemName => ({
+      name: itemName,
+      alerts: (allAlertsByItem[itemName] || []).filter(alert => (alert.new_order ?? 0) > 0)
+    }));
+  }, [allAlertsByItem]);
+
+  const healthyStockItems = useMemo(() => {
+    return keyItems
+      .filter(item => (item.low_stock_count || 0) === 0)
+      .map(item => ({ name: item.name, total_stock: item.total_stock }));
+  }, [keyItems]);
 
   // Derive modal item lists from current alerts and keyItems without mutating during render
   useEffect(() => {
@@ -359,18 +378,9 @@ const Dashboard = () => {
       const num = (list || []).filter(alert => (alert.priority === 'ORDER_PLACED') ? false : (alert.shortage >= 10)).length;
       return sum + num;
     }, 0);
-    
-    // Fix: Count unique items with orders placed, not individual alerts
-    const itemsWithOrders = new Set();
-    Object.entries(allAlertsByItem).forEach(([itemName, alerts]) => {
-      const hasOrder = (alerts || []).some(alert => (alert.new_order ?? 0) > 0);
-      if (hasOrder) {
-        itemsWithOrders.add(itemName);
-      }
-    });
-    const orderPlaced = itemsWithOrders.size;
-    
-    const healthyItems = totalItems - keyItems.filter(item => item.low_stock_count > 0).length;
+    // Count unique items with orders placed
+    const orderPlaced = orderPlacedItems.length;
+    const healthyItems = totalItems - keyItems.filter(item => (item.low_stock_count || 0) > 0).length;
 
     return [
       {
@@ -419,6 +429,15 @@ const Dashboard = () => {
         onClick: () => setShowHealthyStockModal(true)
       }
     ];
+  };
+
+  // Added: toggle for Order Placed modal rows
+  const toggleOrderItem = (itemName, alertIndex) => {
+    const key = `${itemName}__${alertIndex}`;
+    setExpandedOrderItems(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
   };
 
   return (
@@ -827,26 +846,62 @@ const Dashboard = () => {
                         {item.name}
                       </h3>
                       <div className="space-y-2">
-                        {item.alerts.map((alert, alertIndex) => (
-                          <div key={alertIndex} className="bg-white dark:bg-slate-600 rounded-lg p-3 flex items-center justify-between">
-                            <div className="flex items-center space-x-4">
-                              <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                {alert.color} - {alert.size}
-                              </span>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-sm text-gray-600 dark:text-gray-400">
-                                Order: {alert.new_order} units
-                              </div>
-                              {alert.order_date && (
-                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  {alert.order_date}
+                        {item.alerts.map((alert, alertIndex) => {
+                          const rowKey = `${item.name}__${alertIndex}`;
+                          const isOpen = !!expandedOrderItems[rowKey];
+                          return (
+                            <div key={alertIndex} className="bg-white dark:bg-slate-600 rounded-lg">
+                              <button
+                                type="button"
+                                onClick={() => toggleOrderItem(item.name, alertIndex)}
+                                className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-500 rounded-lg"
+                              >
+                                <div className="flex items-center space-x-4">
+                                  <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    {alert.color} - {alert.size}
+                                  </span>
+                                </div>
+                                <div className="flex items-center space-x-6">
+                                  <div className="text-right">
+                                    <div className="text-sm text-gray-600 dark:text-gray-300">
+                                      Order: {alert.new_order} units
+                                    </div>
+                                    {alert.order_date && (
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        {alert.order_date}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className={`p-2 rounded-xl ${isOpen ? 'bg-danier-gold text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300'}`}>
+                                    {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                                  </div>
+                                </div>
+                              </button>
+
+                              {isOpen && (
+                                <div className="border-t border-gray-200 dark:border-slate-700 p-4 text-sm grid grid-cols-2 md:grid-cols-4 gap-3">
+                                  <div>
+                                    <div className="text-gray-500 dark:text-gray-400">Item Number</div>
+                                    <div className="text-gray-800 dark:text-gray-200 font-medium">{alert.item_number || '-'}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-gray-500 dark:text-gray-400">Current Stock</div>
+                                    <div className="text-gray-800 dark:text-gray-200 font-medium">{alert.current_stock}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-gray-500 dark:text-gray-400">Required</div>
+                                    <div className="text-gray-800 dark:text-gray-200 font-medium">{alert.required_threshold}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-gray-500 dark:text-gray-400">Shortage</div>
+                                    <div className="text-red-600 dark:text-red-400 font-bold">-{alert.shortage}</div>
+                                  </div>
                                 </div>
                               )}
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
