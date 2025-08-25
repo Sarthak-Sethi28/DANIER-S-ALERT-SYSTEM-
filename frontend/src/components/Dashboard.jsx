@@ -52,6 +52,8 @@ const Dashboard = () => {
   const [showHealthyStockModal, setShowHealthyStockModal] = useState(false);
   // Added: track expanded rows inside Order Placed modal per item name and alert index
   const [expandedOrderItems, setExpandedOrderItems] = useState({});
+  // Added: track group expansion (per item name) for Order Placed modal
+  const [expandedOrderGroups, setExpandedOrderGroups] = useState({});
   // Derived data for modals (computed, not stored as state)
   const orderPlacedItems = useMemo(() => {
     const itemsWithOrders = new Set();
@@ -840,71 +842,88 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {orderPlacedItems.map((item, index) => (
-                    <div key={index} className="bg-gray-50 dark:bg-slate-700 rounded-xl p-4">
-                      <h3 className="text-lg font-semibold text-danier-dark dark:text-white mb-3">
-                        {item.name}
-                      </h3>
-                      <div className="space-y-2">
-                        {item.alerts.map((alert, alertIndex) => {
-                          const rowKey = `${item.name}__${alertIndex}`;
-                          const isOpen = !!expandedOrderItems[rowKey];
-                          return (
-                            <div key={alertIndex} className="bg-white dark:bg-slate-600 rounded-lg">
-                              <button
-                                type="button"
-                                onClick={() => toggleOrderItem(item.name, alertIndex)}
-                                className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-500 rounded-lg"
-                              >
-                                <div className="flex items-center space-x-4">
-                                  <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    {alert.color} - {alert.size}
-                                  </span>
-                                </div>
-                                <div className="flex items-center space-x-6">
-                                  <div className="text-right">
-                                    <div className="text-sm text-gray-600 dark:text-gray-300">
-                                      Order: {alert.new_order} units
-                                    </div>
-                                    {alert.order_date && (
-                                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                                        {alert.order_date}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className={`p-2 rounded-xl ${isOpen ? 'bg-danier-gold text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300'}`}>
-                                    {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                                  </div>
-                                </div>
-                              </button>
+                  {orderPlacedItems.map((item, index) => {
+                    const isGroupOpen = !!expandedOrderGroups[item.name];
+                    return (
+                      <div key={index} className="bg-gray-50 dark:bg-slate-700 rounded-xl">
+                        {/* Group Header */}
+                        <button
+                          type="button"
+                          onClick={() => setExpandedOrderGroups(prev => ({ ...prev, [item.name]: !prev[item.name] }))}
+                          className="w-full p-4 flex items-center justify-between"
+                        >
+                          <h3 className="text-lg font-semibold text-danier-dark dark:text-white">
+                            {item.name}
+                          </h3>
+                          <div className={`p-2 rounded-xl ${isGroupOpen ? 'bg-danier-gold text-white' : 'bg-gray-100 dark:bg-slate-600 text-gray-600 dark:text-gray-300'}`}>
+                            {isGroupOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                          </div>
+                        </button>
 
-                              {isOpen && (
-                                <div className="border-t border-gray-200 dark:border-slate-700 p-4 text-sm grid grid-cols-2 md:grid-cols-4 gap-3">
-                                  <div>
-                                    <div className="text-gray-500 dark:text-gray-400">Item Number</div>
-                                    <div className="text-gray-800 dark:text-gray-200 font-medium">{alert.item_number || '-'}</div>
-                                  </div>
-                                  <div>
-                                    <div className="text-gray-500 dark:text-gray-400">Current Stock</div>
-                                    <div className="text-gray-800 dark:text-gray-200 font-medium">{alert.current_stock}</div>
-                                  </div>
-                                  <div>
-                                    <div className="text-gray-500 dark:text-gray-400">Required</div>
-                                    <div className="text-gray-800 dark:text-gray-200 font-medium">{alert.required_threshold}</div>
-                                  </div>
-                                  <div>
-                                    <div className="text-gray-500 dark:text-gray-400">Shortage</div>
-                                    <div className="text-red-600 dark:text-red-400 font-bold">-{alert.shortage}</div>
-                                  </div>
+                        {/* Group Content */}
+                        {isGroupOpen && (
+                          <div className="p-4 pt-0 space-y-2">
+                            {item.alerts.map((alert, alertIndex) => {
+                              const rowKey = `${item.name}__${alertIndex}`;
+                              const isOpen = !!expandedOrderItems[rowKey];
+                              return (
+                                <div key={alertIndex} className="bg-white dark:bg-slate-600 rounded-lg">
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedOrderItems(prev => ({ ...prev, [rowKey]: !prev[rowKey] }))}
+                                    className="w-full p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-500 rounded-lg"
+                                  >
+                                    <div className="flex items-center space-x-4">
+                                      <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        {alert.color} - {alert.size}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center space-x-6">
+                                      <div className="text-right">
+                                        <div className="text-sm text-gray-600 dark:text-gray-300">
+                                          Order: {alert.new_order} units
+                                        </div>
+                                        {alert.order_date && (
+                                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                                            {alert.order_date}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className={`p-2 rounded-xl ${isOpen ? 'bg-danier-gold text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300'}`}>
+                                        {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                                      </div>
+                                    </div>
+                                  </button>
+
+                                  {isOpen && (
+                                    <div className="border-t border-gray-200 dark:border-slate-700 p-4 text-sm grid grid-cols-2 md:grid-cols-4 gap-3">
+                                      <div>
+                                        <div className="text-gray-500 dark:text-gray-400">Item Number</div>
+                                        <div className="text-gray-800 dark:text-gray-200 font-medium">{alert.item_number || '-'}</div>
+                                      </div>
+                                      <div>
+                                        <div className="text-gray-500 dark:text-gray-400">Current Stock</div>
+                                        <div className="text-gray-800 dark:text-gray-200 font-medium">{alert.current_stock}</div>
+                                      </div>
+                                      <div>
+                                        <div className="text-gray-500 dark:text-gray-400">Required</div>
+                                        <div className="text-gray-800 dark:text-gray-200 font-medium">{alert.required_threshold}</div>
+                                      </div>
+                                      <div>
+                                        <div className="text-gray-500 dark:text-gray-400">Shortage</div>
+                                        <div className="text-red-600 dark:text-red-400 font-bold">-{alert.shortage}</div>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                          );
-                        })}
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
