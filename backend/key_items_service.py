@@ -327,7 +327,14 @@ class KeyItemsService:
                         size = self.extract_size_from_variant(variant_code)
                         
                         # Get custom threshold for this item, size, and color, or use default
-                        threshold = self.get_custom_threshold(item_name, size, color)
+                        threshold_from_custom = self.get_custom_threshold(item_name, size, color)
+                        # Try deriving by product group (women/men) if no explicit custom override exists
+                        try:
+                            product_group_code = row['Item Product Group Code'] if 'Item Product Group Code' in row.index else None
+                        except Exception:
+                            product_group_code = None
+                        derived_threshold = None if self._has_custom_threshold(item_name, size, color) else self._threshold_by_product_group_and_size(product_group_code, size)
+                        threshold = derived_threshold if derived_threshold is not None else threshold_from_custom
                         
                         # Check if stock is below threshold
                         if pd.notna(current_stock) and current_stock < threshold:
@@ -767,7 +774,14 @@ class KeyItemsService:
                     size = self.extract_size_from_variant(variant_code)
                     
                     # Get custom threshold for this item, size, and color
-                    threshold = self.get_custom_threshold(item_name, size, color)
+                    threshold_from_custom = self.get_custom_threshold(item_name, size, color)
+                    # Try deriving by product group (women/men) if no explicit custom override exists
+                    try:
+                        product_group_code = row['Item Product Group Code'] if 'Item Product Group Code' in row.index else None
+                    except Exception:
+                        product_group_code = None
+                    derived_threshold = None if self._has_custom_threshold(item_name, size, color) else self._threshold_by_product_group_and_size(product_group_code, size)
+                    threshold = derived_threshold if derived_threshold is not None else threshold_from_custom
                     
                     # Additional optional fields
                     item_number_value = None
@@ -900,7 +914,14 @@ class KeyItemsService:
                         size = self.extract_size_from_variant(variant_code)
                         
                         # Get custom threshold for this item, size, and color, or use default
-                        threshold = self.get_custom_threshold(item_name, size, color)
+                        threshold_from_custom = self.get_custom_threshold(item_name, size, color)
+                        # Try deriving by product group (women/men) if no explicit custom override exists
+                        try:
+                            product_group_code = row['Item Product Group Code'] if 'Item Product Group Code' in row.index else None
+                        except Exception:
+                            product_group_code = None
+                        derived_threshold = None if self._has_custom_threshold(item_name, size, color) else self._threshold_by_product_group_and_size(product_group_code, size)
+                        threshold = derived_threshold if derived_threshold is not None else threshold_from_custom
                         
                         # Check if stock is below threshold
                         if pd.notna(current_stock) and current_stock < threshold:
@@ -1082,6 +1103,68 @@ class KeyItemsService:
         else:
             # Backward compatibility - return default if no size/color specified
             return self.default_size_threshold
+
+    # NEW: helper to check if a custom threshold exists for item+size+color (case-insensitive)
+    def _has_custom_threshold(self, item_name: str, size: str, color: str) -> bool:
+        try:
+            exact_key = f"{item_name}|{size}|{color}"
+            if exact_key in self.custom_thresholds:
+                return True
+            for stored_key in self.custom_thresholds.keys():
+                parts = stored_key.split('|')
+                if (len(parts) == 3 and 
+                    parts[0].upper() == (item_name or "").upper() and 
+                    parts[1].upper() == (size or "").upper() and 
+                    parts[2].upper() == (color or "").upper()):
+                    return True
+            return False
+        except Exception:
+            return False
+
+    # NEW: helper to derive threshold from Item Product Group Code and size
+    def _threshold_by_product_group_and_size(self, product_group_code: str, size: str):
+        if product_group_code is None:
+            return None
+        try:
+            code = str(product_group_code).strip()
+        except Exception:
+            return None
+        if not code:
+            return None
+        size_norm_raw = (size or "").upper()
+        # Normalize common synonyms
+        size_aliases = {
+            'XXXS': '3XS',
+            'XXS': '2XS',
+            'XXL': '2XL',
+            'XXXL': '3XL',
+        }
+        size_norm = size_aliases.get(size_norm_raw, size_norm_raw)
+        # Women's: product group starts with '10'
+        if code.startswith('10'):
+            womens_map = {
+                '3XS': 5,
+                '2XS': 15,
+                'XS': 30,
+                'S': 40,
+                'M': 40,
+                'L': 30,
+                'XL': 15,
+            }
+            return womens_map.get(size_norm)
+        # Men's: product group starts with '20'
+        if code.startswith('20'):
+            mens_map = {
+                'XS': 5,
+                'S': 20,
+                'M': 50,
+                'L': 50,
+                'XL': 50,
+                '2XL': 20,
+                '3XL': 10,
+            }
+            return mens_map.get(size_norm)
+        return None
     
     def search_article_alerts(self, search_term: str, file_path: str = None) -> list:
         """
