@@ -59,14 +59,25 @@ const Recipients = () => {
     e.preventDefault();
     
     try {
+      let result;
       if (editingEmail) {
         // Update existing recipient
-        await updateRecipient(editingEmail, formData.name, formData.department);
-        showMessage('Recipient updated successfully');
+        result = await updateRecipient(editingEmail, formData.name, formData.department);
+        if (result && result.success) {
+          showMessage(result.message || 'Recipient updated successfully');
+        } else {
+          showMessage(result?.message || 'Failed to update recipient', 'error');
+          return;
+        }
       } else {
         // Add new recipient
-        await addRecipient(formData.email, formData.name, formData.department);
-        showMessage('Recipient added successfully');
+        result = await addRecipient(formData.email, formData.name, formData.department);
+        if (result && result.success) {
+          showMessage(result.message || 'Recipient added successfully');
+        } else {
+          showMessage(result?.message || 'Failed to add recipient', 'error');
+          return;
+        }
       }
       
       // Reset form
@@ -75,11 +86,11 @@ const Recipients = () => {
       setEditingEmail(null);
       
       // Refresh list
-      fetchRecipients();
+      await fetchRecipients();
       
     } catch (error) {
       console.error('Error saving recipient:', error);
-      showMessage(error.response?.data?.detail || 'Error saving recipient', 'error');
+      showMessage(error.message || error.response?.data?.detail || 'Error saving recipient', 'error');
     }
   };
 
