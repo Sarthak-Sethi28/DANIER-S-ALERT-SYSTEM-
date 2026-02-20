@@ -101,12 +101,16 @@ class ApiService {
     }
   }
 
-  // Auth
+  // Auth - use application/x-www-form-urlencoded (more reliable than FormData for login)
   async login(username, password) {
-    const formData = new FormData();
-    formData.append('username', username);
-    formData.append('password', password);
-    const response = await fetch(`${this.baseUrl}/auth/login`, { method: 'POST', body: formData });
+    const params = new URLSearchParams();
+    params.append('username', username);
+    params.append('password', password);
+    const response = await fetch(`${this.baseUrl}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    });
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
       throw new Error(data.detail || 'Login failed');
