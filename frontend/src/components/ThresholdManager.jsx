@@ -187,8 +187,8 @@ const ThresholdManager = () => {
               {availableItemNames.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>
-          {/* Row 2: Size, Color, Threshold, Save */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {/* Row 2: Size, Color, Threshold */}
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                 Size {sizesForColor.length > 0 && <span className="text-blue-500">({sizesForColor.length})</span>}
@@ -228,18 +228,17 @@ const ThresholdManager = () => {
                 className="w-full border dark:border-neutral-600 rounded-md px-3 py-2.5 bg-white dark:bg-neutral-700 text-sm"
               />
             </div>
-            <div className="flex items-end">
-              <button
-                className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium disabled:opacity-50 transition-colors"
-                disabled={!itemName || !size || !color || !threshold || saving}
-                onClick={async () => {
-                  const t = parseInt(threshold, 10);
-                  if (Number.isNaN(t) || t < 0) return;
-                  try { await saveThreshold(itemName.trim(), size, color, t); } catch {}
-                }}
-              >{saving ? 'Saving...' : 'Save Threshold'}</button>
-            </div>
           </div>
+          {/* Row 3: Save Button */}
+          <button
+            className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium disabled:opacity-50 transition-colors"
+            disabled={!itemName || !size || !color || !threshold || saving}
+            onClick={async () => {
+              const t = parseInt(threshold, 10);
+              if (Number.isNaN(t) || t < 0) return;
+              try { await saveThreshold(itemName.trim(), size, color, t); } catch {}
+            }}
+          >{saving ? 'Saving...' : 'Save Threshold'}</button>
         </div>
       </div>
 
