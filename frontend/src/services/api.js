@@ -10,39 +10,32 @@ class ApiService {
 
   async makeRequest(endpoint, options = {}) {
     const url = `${this.baseUrl}${endpoint}`;
-    
-    // Add timeout to all requests
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-    
-    const requestOptions = {
-      ...options,
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    };
 
     for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
       try {
-        const response = await fetch(url, requestOptions);
+        const headers = { ...options.headers };
+        if (options.body && !(options.body instanceof FormData)) {
+          headers['Content-Type'] = 'application/json';
+        }
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal,
+          headers,
+          mode: 'cors',
+          cache: 'no-store',
+        });
         clearTimeout(timeoutId);
-        
+
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         return await response.json();
       } catch (error) {
-        console.log(`API attempt ${attempt}/${this.maxRetries} failed:`, error.message);
-        
-        if (attempt === this.maxRetries) {
-          clearTimeout(timeoutId);
-          throw error;
-        }
-        
-        // Wait before retrying (exponential backoff)
+        clearTimeout(timeoutId);
+        if (attempt === this.maxRetries) throw error;
         await new Promise(resolve => setTimeout(resolve, this.retryDelay * attempt));
       }
     }
@@ -449,56 +442,31 @@ export const confirmPasswordReset = (username, code, newPassword, confirmPasswor
 // Export the service instance for advanced usage
 export default apiService;
 
-// Heartbeat: keep backend warm and detect drops
+// Heartbeat: keep backend warm and detect drops (silent - no console spam)
 let __heartbeatTimer = null;
-export function startHeartbeat(intervalMs = 30000) {  // Increased to every 30 seconds
+export function startHeartbeat(intervalMs = 30000) {
   try {
     if (__heartbeatTimer) clearInterval(__heartbeatTimer);
-    
+
     const safePing = async () => {
       try {
-        // Ultra-lightweight ping with shorter timeout
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);  // Reduced to 2s
-        
-        const res = await fetch(`${API_BASE_URL}/health`, { 
-          method: 'GET', 
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        await fetch(`${API_BASE_URL}/health`, {
+          method: 'GET',
           signal: controller.signal,
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          }
+          mode: 'cors',
+          cache: 'no-store',
         });
-        
         clearTimeout(timeoutId);
-        
-        if (res.ok) {
-          // Success - server is alive
-          console.log('💓 Heartbeat: Server alive');
-        } else {
-          console.warn('⚠️ Heartbeat: Server responded but not OK');
-        }
-      } catch (error) {
-        console.warn('❤️‍🩹 Heartbeat: Connection issue (will retry)');
-      }
+      } catch (_) { /* silent retry */ }
     };
-    
-    // Immediate ping then regular interval
+
     safePing();
     __heartbeatTimer = setInterval(safePing, Math.max(10000, intervalMs));
-    
-    console.log(`💓 Heartbeat started: pinging every ${intervalMs/1000}s`);
-    
-  } catch (error) {
-    console.error('💔 Heartbeat setup failed:', error);
-  }
-  
-  // Return stop function
+  } catch (_) {}
+
   return () => {
-    if (__heartbeatTimer) {
-      clearInterval(__heartbeatTimer);
-      __heartbeatTimer = null;
-      console.log('💓 Heartbeat stopped');
-    }
+    if (__heartbeatTimer) { clearInterval(__heartbeatTimer); __heartbeatTimer = null; }
   };
 } 

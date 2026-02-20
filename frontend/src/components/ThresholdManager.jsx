@@ -26,7 +26,7 @@ const ThresholdManager = () => {
 
   const preloadAllOptions = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/key-items/all-options`);
+      const res = await fetch(`${API_BASE_URL}/key-items/all-options`, { mode: 'cors', cache: 'no-store' });
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
       allOptionsRef.current = data.items || {};
@@ -35,7 +35,7 @@ const ThresholdManager = () => {
       setOptionsReady(true);
     } catch {
       try {
-        const res = await fetch(`${API_BASE_URL}/key-items/summary`);
+        const res = await fetch(`${API_BASE_URL}/key-items/summary`, { mode: 'cors', cache: 'no-store' });
         const data = await res.json();
         const names = (data.key_items || []).map(k => k.name).filter(Boolean).sort();
         setAvailableItemNames(names);
@@ -47,7 +47,7 @@ const ThresholdManager = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch(`${API_BASE_URL}/thresholds/all`);
+      const response = await fetch(`${API_BASE_URL}/thresholds/all`, { mode: 'cors', cache: 'no-store' });
       const data = await response.json();
       let list = [];
       if (Array.isArray(data.custom_thresholds)) {
@@ -60,7 +60,7 @@ const ThresholdManager = () => {
       }
       setItems(list);
       try {
-        const o = await fetch(`${API_BASE_URL}/thresholds/overrides`);
+        const o = await fetch(`${API_BASE_URL}/thresholds/overrides`, { mode: 'cors', cache: 'no-store' });
         if (o.ok) {
           const oj = await o.json();
           setOverrides(oj.overrides || []);
@@ -92,7 +92,7 @@ const ThresholdManager = () => {
       // Fallback: fetch from server if not preloaded
       (async () => {
         try {
-          const res = await fetch(`${API_BASE_URL}/key-items/options/${encodeURIComponent(name)}`);
+          const res = await fetch(`${API_BASE_URL}/key-items/options/${encodeURIComponent(name)}`, { mode: 'cors', cache: 'no-store' });
           const data = await res.json();
           const opts = {
             colors: data.colors || [], sizes: data.sizes || [],
@@ -118,7 +118,7 @@ const ThresholdManager = () => {
       form.append('size', size);
       form.append('color', color);
       form.append('threshold', String(threshold));
-      const response = await fetch(`${API_BASE_URL}/thresholds/set`, { method: 'POST', body: form });
+      const response = await fetch(`${API_BASE_URL}/thresholds/set`, { method: 'POST', body: form, mode: 'cors', cache: 'no-store' });
       if (!response.ok) throw new Error('Failed to save');
       const result = await response.json();
       if (result.recalculated_alerts) {
@@ -138,7 +138,7 @@ const ThresholdManager = () => {
 
   const resetThreshold = async (itemName, size, color) => {
     const response = await fetch(`${API_BASE_URL}/thresholds/reset/${encodeURIComponent(itemName)}/${encodeURIComponent(size)}/${encodeURIComponent(color)}`, {
-      method: 'DELETE'
+      method: 'DELETE', mode: 'cors', cache: 'no-store',
     });
     if (!response.ok) throw new Error('Failed to reset');
     window.dispatchEvent(new CustomEvent('thresholdsUpdated'));
@@ -148,7 +148,7 @@ const ThresholdManager = () => {
 
   const loadHistory = async (name) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/thresholds/history?item_name=${encodeURIComponent(name)}&limit=50`);
+      const res = await fetch(`${API_BASE_URL}/thresholds/history?item_name=${encodeURIComponent(name)}&limit=50`, { mode: 'cors', cache: 'no-store' });
       if (!res.ok) { setHistory([]); return; }
       const data = await res.json();
       setHistory(data.history || []);
@@ -172,64 +172,72 @@ const ThresholdManager = () => {
       {error && <div className="text-red-600 text-sm">{error}</div>}
 
       {/* Create / Update Form */}
-      <div className="bg-white dark:bg-neutral-800 rounded border dark:border-neutral-700 p-4 mb-6">
-        <h3 className="font-semibold mb-3">Create or Update Threshold</h3>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-2 items-end">
-          {/* Product name - select for instant pick */}
-          <div className="col-span-2">
-            <label className="block text-xs text-gray-500 mb-1">Product Name</label>
+      <div className="bg-white dark:bg-neutral-800 rounded-lg border dark:border-neutral-700 p-5 mb-6 shadow-sm relative z-10">
+        <h3 className="font-semibold mb-4">Create or Update Threshold</h3>
+        <div className="space-y-3">
+          {/* Row 1: Product Name */}
+          <div>
+            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Product Name</label>
             <select
               value={itemName}
               onChange={(e) => { setItemName(e.target.value); setSize(''); setColor(''); }}
-              className="w-full border dark:border-neutral-600 rounded px-3 py-2 bg-white dark:bg-neutral-700"
+              className="w-full border dark:border-neutral-600 rounded-md px-3 py-2.5 bg-white dark:bg-neutral-700 text-sm"
             >
               <option value="">Select product...</option>
               {availableItemNames.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Size ({sizesForColor.length})</label>
-            <select
-              value={size}
-              onChange={(e) => setSize(e.target.value)}
-              className="w-full border dark:border-neutral-600 rounded px-2 py-2 bg-white dark:bg-neutral-700"
-              disabled={!itemName}
-            >
-              <option value="">Size</option>
-              {sizesForColor.map((s) => (<option key={s} value={s}>{s}</option>))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Color ({colorsForSize.length})</label>
-            <select
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              className="w-full border dark:border-neutral-600 rounded px-2 py-2 bg-white dark:bg-neutral-700"
-              disabled={!itemName}
-            >
-              <option value="">Color</option>
-              {colorsForSize.map((c) => (<option key={c} value={c}>{c}</option>))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Threshold</label>
-            <div className="flex gap-1">
+          {/* Row 2: Size, Color, Threshold, Save */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                Size {sizesForColor.length > 0 && <span className="text-blue-500">({sizesForColor.length})</span>}
+              </label>
+              <select
+                value={size}
+                onChange={(e) => setSize(e.target.value)}
+                className="w-full border dark:border-neutral-600 rounded-md px-3 py-2.5 bg-white dark:bg-neutral-700 text-sm"
+                disabled={!itemName}
+              >
+                <option value="">Select size</option>
+                {sizesForColor.map((s) => (<option key={s} value={s}>{s}</option>))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                Color {colorsForSize.length > 0 && <span className="text-blue-500">({colorsForSize.length})</span>}
+              </label>
+              <select
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                className="w-full border dark:border-neutral-600 rounded-md px-3 py-2.5 bg-white dark:bg-neutral-700 text-sm"
+                disabled={!itemName}
+              >
+                <option value="">Select color</option>
+                {colorsForSize.map((c) => (<option key={c} value={c}>{c}</option>))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Threshold</label>
               <input
                 type="number"
                 value={threshold}
                 onChange={(e) => setThreshold(e.target.value)}
                 placeholder="e.g. 5"
-                className="flex-1 border dark:border-neutral-600 rounded px-2 py-2 bg-white dark:bg-neutral-700"
+                min="0"
+                className="w-full border dark:border-neutral-600 rounded-md px-3 py-2.5 bg-white dark:bg-neutral-700 text-sm"
               />
+            </div>
+            <div className="flex items-end">
               <button
-                className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+                className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium disabled:opacity-50 transition-colors"
                 disabled={!itemName || !size || !color || !threshold || saving}
                 onClick={async () => {
                   const t = parseInt(threshold, 10);
                   if (Number.isNaN(t) || t < 0) return;
                   try { await saveThreshold(itemName.trim(), size, color, t); } catch {}
                 }}
-              >{saving ? '...' : 'Save'}</button>
+              >{saving ? 'Saving...' : 'Save Threshold'}</button>
             </div>
           </div>
         </div>
