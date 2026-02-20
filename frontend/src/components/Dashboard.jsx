@@ -3,7 +3,7 @@ import { sendEmailAlert } from '../services/api';
 import {
   ChevronDown, ChevronUp, AlertTriangle, Package, Mail, RefreshCw,
   Search as SearchIcon, Download, TrendingUp, Sparkles, BarChart3,
-  X, CheckCircle, Filter, ChevronsUpDown, Clock, ShieldAlert, ShieldCheck
+  X, CheckCircle, Filter, ChevronsUpDown, Clock, ShieldAlert, ShieldCheck, Zap
 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 import { useData } from '../DataContext';
