@@ -398,6 +398,7 @@ async def upload_report(file: UploadFile = File(...)):
         print("🧹 Clearing caches for new file...")
         key_items_service.clear_all_caches()
         comparison_service.clear_all_caches()
+        _all_options_cache["data"] = None
         # Explicitly invalidate history and file list caches as well
         if not hasattr(key_items_service, '_cache'):
             key_items_service._cache = {}
@@ -1171,25 +1172,57 @@ async def set_custom_threshold(
     color: str = Form(...),
     threshold: int = Form(...)
 ):
-    """Set custom threshold for a specific key item, size, and color combination"""
+    """Set custom threshold and recalculate alerts from the Excel sheet"""
     try:
         if threshold < 0:
             raise HTTPException(status_code=400, detail="Threshold must be positive")
-        
+
         success = key_items_service.set_custom_threshold(item_name, size, color, threshold)
-        
-        # Clear cache to reflect changes immediately
+
         key_items_service.clear_all_caches()
-        
+        _all_options_cache["data"] = None
+
+        # Recalculate: check Excel for new/resolved shortages with the updated threshold
+        new_alerts = []
+        try:
+            db = next(get_db())
+            try:
+                fp = file_storage_service.get_latest_file_path(db)
+            finally:
+                db.close()
+            if fp:
+                df = key_items_service._load_inventory_file(fp)
+                if df is not None and 'Season Code' in df.columns:
+                    ki = df[df['Season Code'] == 'KI00'].copy()
+                    item_col = key_items_service._detect_item_column(df.columns)
+                    stock_col = key_items_service._detect_stock_column(df.columns)
+                    if item_col and stock_col:
+                        ki['item_base'] = ki[item_col].str.split(' - ').str[0].str.strip()
+                        sub = ki[ki['item_base'] == item_name]
+                        for _, row in sub.iterrows():
+                            s = key_items_service.extract_size_from_variant(str(row.get('Variant Code', '')))
+                            c = str(row.get('Variant Color', ''))
+                            qty = int(row.get(stock_col, 0)) if pd.notna(row.get(stock_col)) else 0
+                            t = key_items_service.get_custom_threshold(item_name, s, c)
+                            new_alerts.append({
+                                "size": s, "color": c, "stock": qty,
+                                "threshold": t, "is_low": qty <= t
+                            })
+        except Exception as recalc_err:
+            print(f"⚠️ Threshold recalc warning: {recalc_err}")
+
+        low_count = sum(1 for a in new_alerts if a["is_low"])
         return {
             "success": success,
-            "item_name": item_name,
-            "size": size,
-            "color": color,
+            "item_name": item_name, "size": size, "color": color,
             "threshold": threshold,
-            "message": f"Threshold set to {threshold} for {item_name} ({size}, {color})"
+            "message": f"Threshold set to {threshold} for {item_name} ({size}, {color})",
+            "recalculated_alerts": new_alerts,
+            "new_low_stock_count": low_count,
         }
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"❌ Set threshold error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to set threshold: {str(e)}")
@@ -1575,46 +1608,66 @@ async def get_key_items_summary():
 async def get_item_options(item_name: str):
     """Return available colours and sizes for a given key item from latest inventory file"""
     try:
-        db = next(get_db())
-        try:
-            latest_file_path = file_storage_service.get_latest_file_path(db)
-        finally:
-            db.close()
-        if not latest_file_path:
-            return {"colors": [], "sizes": [], "color_to_sizes": {}, "size_to_colors": {}}
-        # Ensure we have a populated dataframe
-        df = key_items_service._load_inventory_file(latest_file_path)
-        if df is None or 'Season Code' not in df.columns:
-            return {"colors": [], "sizes": [], "color_to_sizes": {}, "size_to_colors": {}}
-        ki = df[df['Season Code'] == 'KI00'].copy()
-        item_col = key_items_service._detect_item_column(df.columns)
-        if not item_col or 'Variant Color' not in df.columns or 'Variant Code' not in df.columns:
-            return {"colors": [], "sizes": [], "color_to_sizes": {}, "size_to_colors": {}}
-        ki['item_base'] = ki[item_col].str.split(' - ').str[0].str.strip()
-        item_df = ki[ki['item_base'] == item_name]
-        if item_df.empty:
-            return {"colors": [], "sizes": [], "color_to_sizes": {}, "size_to_colors": {}}
-        # Build sets
-        colors = sorted(item_df['Variant Color'].dropna().astype(str).unique().tolist())
-        # Map color -> sizes
-        color_to_sizes = {}
-        size_to_colors = {}
-        for _, row in item_df.iterrows():
-            color = str(row['Variant Color'])
-            size = key_items_service.extract_size_from_variant(str(row['Variant Code']))
-            if color not in color_to_sizes:
-                color_to_sizes[color] = set()
-            color_to_sizes[color].add(size)
-            if size not in size_to_colors:
-                size_to_colors[size] = set()
-            size_to_colors[size].add(color)
-        # Unique lists
-        color_to_sizes = {c: sorted(list(s)) for c, s in color_to_sizes.items()}
-        size_to_colors = {s: sorted(list(cset)) for s, cset in size_to_colors.items()}
-        sizes = sorted(list(size_to_colors.keys()))
-        return {"colors": colors, "sizes": sizes, "color_to_sizes": color_to_sizes, "size_to_colors": size_to_colors}
+        all_opts = _build_all_item_options()
+        return all_opts.get(item_name, {"colors": [], "sizes": [], "color_to_sizes": {}, "size_to_colors": {}})
     except Exception as e:
         return {"colors": [], "sizes": [], "color_to_sizes": {}, "size_to_colors": {}, "error": str(e)}
+
+
+# In-memory cache for all-options (invalidated on upload / cache clear)
+_all_options_cache = {"data": None, "file": None}
+
+def _build_all_item_options():
+    """Build options for ALL key items in one pass. Result is cached."""
+    db = next(get_db())
+    try:
+        latest_file_path = file_storage_service.get_latest_file_path(db)
+    finally:
+        db.close()
+    if not latest_file_path:
+        return {}
+    if _all_options_cache["data"] and _all_options_cache["file"] == latest_file_path:
+        return _all_options_cache["data"]
+    df = key_items_service._load_inventory_file(latest_file_path)
+    if df is None or 'Season Code' not in df.columns:
+        return {}
+    ki = df[df['Season Code'] == 'KI00'].copy()
+    item_col = key_items_service._detect_item_column(df.columns)
+    if not item_col or 'Variant Color' not in df.columns or 'Variant Code' not in df.columns:
+        return {}
+    ki['item_base'] = ki[item_col].str.split(' - ').str[0].str.strip()
+    result = {}
+    for name, group in ki.groupby('item_base'):
+        colors_set = sorted(group['Variant Color'].dropna().astype(str).unique().tolist())
+        c2s = {}
+        s2c = {}
+        for _, row in group.iterrows():
+            c = str(row['Variant Color'])
+            s = key_items_service.extract_size_from_variant(str(row['Variant Code']))
+            c2s.setdefault(c, set()).add(s)
+            s2c.setdefault(s, set()).add(c)
+        c2s = {c: sorted(list(v)) for c, v in c2s.items()}
+        s2c = {s: sorted(list(v)) for s, v in s2c.items()}
+        result[name] = {
+            "colors": colors_set,
+            "sizes": sorted(list(s2c.keys())),
+            "color_to_sizes": c2s,
+            "size_to_colors": s2c,
+        }
+    _all_options_cache["data"] = result
+    _all_options_cache["file"] = latest_file_path
+    print(f"⚡ Built all-options cache: {len(result)} items")
+    return result
+
+
+@app.get("/key-items/all-options")
+async def get_all_item_options():
+    """Return sizes/colors for ALL key items in one call (for instant frontend dropdowns)"""
+    try:
+        all_opts = _build_all_item_options()
+        return {"items": all_opts, "count": len(all_opts)}
+    except Exception as e:
+        return {"items": {}, "count": 0, "error": str(e)}
 
 @app.post("/alerts/download-all")
 async def download_all_alerts():
