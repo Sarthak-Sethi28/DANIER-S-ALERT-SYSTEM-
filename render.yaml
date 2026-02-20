@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: danier-stock-alert-backend
+    env: python
+    plan: starter
+    autoDeploy: true
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1 --timeout-keep-alive 600
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: PYTHONDONTWRITEBYTECODE
+        value: "1"
+      - key: DEFAULT_RECIPIENT_EMAIL
+        value: alerts@danier.ca
+      - key: DATABASE_URL
+        value: sqlite:////var/data/danier_stock_alert.db
+      - key: UPLOAD_DIR
+        value: /var/data/uploads
+      - key: APP_USERNAME
+        value: danier_admin
+      - key: APP_PASSWORD
+        value: Danier2024!
+      - key: APP_USER_EMAIL
+        value: sarthak.sethi@volarisgroup.com
+      # Optional: comma-separated list to add more CORS origins (e.g. new Vercel preview URLs)
+      # - key: CORS_ORIGINS
+      #   value: "https://inventoryreport.ca,https://your-preview.vercel.app"
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 1

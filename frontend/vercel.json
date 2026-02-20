@@ -1,0 +1,12 @@
+{
+  "framework": "create-react-app",
+  "buildCommand": "npm run build",
+  "installCommand": "npm ci",
+  "outputDirectory": "build",
+  "env": {
+    "REACT_APP_API_BASE_URL": "https://danier-s-alert-system.onrender.com"
+  },
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/" }
+  ]
+} 

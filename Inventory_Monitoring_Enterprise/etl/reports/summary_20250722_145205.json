@@ -1,0 +1,26 @@
+{
+  "total_items": 4087,
+  "total_quantity": 52318.0,
+  "total_value": 8942175.930000002,
+  "average_price": 247.06055786640565,
+  "tier_distribution": {
+    "okay": 1636,
+    "making_progress": 1226,
+    "doing_good": 817,
+    "best_sellers": 408
+  },
+  "top_styles": {
+    "CORBAN": 240576.0,
+    "JULIETTE": 173886.0,
+    "MAGALIE": 157990.0,
+    "HAYDEN": 132921.0,
+    "CAMDEN 2": 131280.0,
+    "BOSTON REVERSIBLE HOODIE": 127276.0,
+    "JAXON": 125263.0,
+    "SEAN": 119400.0,
+    "AMORA": 115417.0,
+    "MANDY": 113776.0
+  },
+  "low_stock_items": 3856,
+  "critical_stock_items": 2718
+}

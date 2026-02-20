@@ -1,0 +1,66 @@
+{
+  "email_recipients": {
+    "critical_stock": [
+      "inventory-manager@danier.com",
+      "operations-director@danier.com",
+      "warehouse-supervisor@danier.com"
+    ],
+    "low_stock": [
+      "inventory-team@danier.com",
+      "purchasing@danier.com",
+      "store-managers@danier.com"
+    ],
+    "reorder": [
+      "purchasing@danier.com",
+      "inventory-team@danier.com",
+      "supply-chain@danier.com"
+    ],
+    "daily_digest": [
+      "management@danier.com",
+      "inventory-manager@danier.com",
+      "operations@danier.com"
+    ],
+    "system_alerts": [
+      "it-support@danier.com",
+      "system-admin@danier.com"
+    ],
+    "all_alerts": [
+      "admin@danier.com",
+      "inventory-director@danier.com"
+    ]
+  },
+  "email_groups": {
+    "management": [
+      "ceo@danier.com",
+      "operations-director@danier.com",
+      "inventory-director@danier.com"
+    ],
+    "inventory_team": [
+      "inventory-manager@danier.com",
+      "inventory-specialist@danier.com",
+      "warehouse-supervisor@danier.com"
+    ],
+    "purchasing_team": [
+      "purchasing-manager@danier.com",
+      "purchasing-specialist@danier.com",
+      "supply-chain@danier.com"
+    ],
+    "store_managers": [
+      "store-manager-1@danier.com",
+      "store-manager-2@danier.com",
+      "store-manager-3@danier.com"
+    ]
+  },
+  "email_settings": {
+    "default_recipients": [
+      "admin@danier.com",
+      "inventory-manager@danier.com"
+    ],
+    "cc_recipients": [
+      "operations@danier.com"
+    ],
+    "bcc_recipients": [
+      "audit@danier.com"
+    ]
+  }
+} 
