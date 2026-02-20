@@ -27,25 +27,16 @@ init_db()
 
 app = FastAPI(title="Danier Stock Alert System")
 
-# Add CORS middleware - explicit origins required when allow_credentials=True
-# Wildcard "*" with credentials causes login to fail in browsers
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "").strip().split(",") if os.getenv("CORS_ORIGINS") else [
-    "https://inventoryreport.ca",
-    "https://www.inventoryreport.ca",
-    "https://danier-s-alert-system-re1i0tkhw-sarthak-sethi28s-projects.vercel.app",
-    "https://danier-s-alert-system.vercel.app",
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3000",
-]
-# Filter empty strings and ensure we have at least localhost for dev
-CORS_ORIGINS = [o.strip() for o in CORS_ORIGINS if o.strip()] or ["http://localhost:3000"]
+# Add CORS middleware
+# Use allow_credentials=False so we can use allow_origins=["*"] - login uses FormData/localStorage, not cookies
+# This fixes "No 'Access-Control-Allow-Origin' header" errors from inventoryreport.ca and Vercel
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Initialize services
