@@ -114,7 +114,8 @@ async def auth_login(username: str = Form(...), password: str = Form(...)):
     try:
         db = next(get_db())
         try:
-            _create_or_get_default_user(db)
+            # Always sync admin from env vars first - fixes 401 when DB has stale credentials
+            _sync_admin_user_on_startup(db)
             user = db.query(UserCredential).filter(UserCredential.username == username).first()
             if not user:
                 raise HTTPException(status_code=401, detail="Invalid credentials")
