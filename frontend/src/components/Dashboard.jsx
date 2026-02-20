@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { getSpecificKeyItemAlerts, getAllKeyItemsWithAlerts, sendEmailAlert } from '../services/api';
+import { sendEmailAlert } from '../services/api';
 import { 
   ChevronDown, 
   ChevronUp, 
@@ -20,6 +20,7 @@ import {
   X
 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
+import { useData } from '../DataContext';
 
 // Add new API call for key items alerts
 const getKeyItemsSummary = async () => {
@@ -37,11 +38,12 @@ const getKeyItemsSummary = async () => {
 };
 
 const Dashboard = () => {
+  const { batchAlerts, batchLoading, fetchBatch } = useData();
   const [keyItems, setKeyItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedItems, setExpandedItems] = useState({});
   const [alerts, setAlerts] = useState({});
-  const [loadingAlerts, setLoadingAlerts] = useState({});
+  const [loadingAlerts] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [searching, setSearching] = useState(false);
   const itemRefs = useRef({});
@@ -50,9 +52,7 @@ const Dashboard = () => {
   const [allAlertsByItem, setAllAlertsByItem] = useState({});
   const [showOrderPlacedModal, setShowOrderPlacedModal] = useState(false);
   const [showHealthyStockModal, setShowHealthyStockModal] = useState(false);
-  // Added: track expanded rows inside Order Placed modal per item name and alert index
   const [expandedOrderItems, setExpandedOrderItems] = useState({});
-  // Added: track group expansion (per item name) for Order Placed modal
   const [expandedOrderGroups, setExpandedOrderGroups] = useState({});
   // Derived data for modals (computed, not stored as state)
   const orderPlacedItems = useMemo(() => {
@@ -104,95 +104,42 @@ const Dashboard = () => {
     }
   };
 
-  // Load key items on component mount
+  const hydrateBatch = (batch) => {
+    if (!batch) return;
+    const arr = (batch.key_items || []).map(k => ({
+      name: k.name,
+      total_stock: k.total_stock,
+      variants_count: (k.alerts || []).length,
+      low_stock_count: k.alert_count,
+    }));
+    const alertsMap = {};
+    (batch.key_items || []).forEach(k => {
+      alertsMap[k.name] = (k.alerts || []).map(a => ({ ...a, current_stock: a.stock_level }));
+    });
+    setAllAlertsByItem(alertsMap);
+    if (arr.length > 0) {
+      setKeyItems([...arr].sort((a, b) => (a.name || '').localeCompare(b.name || '')));
+      setError(null);
+    } else {
+      setKeyItems([]);
+      if (batch.message?.includes('No inventory files found')) {
+        setError({ type: 'no-files', message: batch.message, help: batch.help });
+      }
+    }
+  };
+
   useEffect(() => {
-    loadKeyItems();
-  }, []);
-
-  // Auto-refresh when component becomes visible (e.g., returning from upload)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      // REMOVED: No auto-refresh on visibility change to prevent disruptions
-      console.log('🔄 Dashboard visible - staying on current data to prevent disruptions');
-    };
-
-    const handleFocus = () => {
-      // REMOVED: No auto-refresh on focus to prevent disruptions  
-      console.log('🔄 Dashboard focused - staying on current data to prevent disruptions');
-    };
-
-    const handleThresholdsUpdated = () => {
-      // Only refresh if user explicitly requests it
-      console.log('🔄 Thresholds updated - manual refresh required');
-    };
-
-    // Keep listeners but don't auto-refresh
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('thresholdsUpdated', handleThresholdsUpdated);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('thresholdsUpdated', handleThresholdsUpdated);
-    };
-  }, []);
+    if (batchAlerts) {
+      hydrateBatch(batchAlerts);
+      setLoading(false);
+    } else {
+      setLoading(batchLoading);
+    }
+  }, [batchAlerts, batchLoading]);
 
   const loadKeyItems = async () => {
-    try {
-      setLoading(true);
-      console.log('🚀 Loading key items with ultra-fast batch processing...');
-
-      // Use single ultra-fast batch call
-      const batch = await getAllKeyItemsWithAlerts();
-      console.log('📊 Batch response:', batch);
-      
-      const arr = (batch.key_items || []).map(k => ({
-        name: k.name,
-        total_stock: k.total_stock,
-        variants_count: (k.alerts || []).length,
-        low_stock_count: k.alert_count,
-      }));
-      // Cache all alerts per item so stats stay stable regardless of UI expansion
-      const alertsMap = {};
-      (batch.key_items || []).forEach(k => {
-        alertsMap[k.name] = (k.alerts || []).map(a => ({ ...a, current_stock: a.stock_level }));
-      });
-      setAllAlertsByItem(alertsMap);
-
-      if (arr && arr.length > 0) {
-        const sorted = [...arr].sort((a,b)=> (a.name||'').localeCompare(b.name||''));
-        setKeyItems(sorted);
-        console.log(`✅ Loaded ${sorted.length} items with ${sorted.reduce((sum, item) => sum + (item.low_stock_count || 0), 0)} total alerts`);
-      } else {
-        console.log('⚠️ No items loaded');
-        setKeyItems([]);
-        
-        // Check if this is a "no files" situation and show helpful message
-        if (batch.message && batch.message.includes('No inventory files found')) {
-          setError({
-            type: 'no-files',
-            message: batch.message,
-            help: batch.help
-          });
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error loading key items:', error);
-      setKeyItems([]);
-      setError({
-        type: 'error',
-        message: 'Failed to load inventory data. Please try refreshing the page.'
-      });
-    } finally {
-      setLoading(false);
-      // Clear any error after 5 seconds to prevent permanent UI issues
-      setTimeout(() => {
-        if (error && error.type === 'error') {
-          setError(null);
-        }
-      }, 5000);
-    }
+    setLoading(true);
+    await fetchBatch(false);
   };
 
   const handleQuickSearch = async () => {
@@ -201,9 +148,7 @@ const Dashboard = () => {
     const term = raw.toUpperCase();
     try {
       setSearching(true);
-      // Prefer cached batch
-      const batch = await getAllKeyItemsWithAlerts();
-      const list = batch.key_items || [];
+      const list = batchAlerts?.key_items || [];
       let item = list.find(x => (x.name || '').toUpperCase() === term);
       if (!item) item = list.find(x => (x.name || '').toUpperCase().includes(term));
 
@@ -251,37 +196,25 @@ const Dashboard = () => {
     }
   };
 
-  const loadAlertsForItem = async (itemName) => {
-    if (alerts[itemName]) return; // Already loaded
-    
-    try {
-      setLoadingAlerts(prev => ({ ...prev, [itemName]: true }));
-      // Use cached batch alerts so we get required_threshold and shortage
-      const batch = await getAllKeyItemsWithAlerts();
-      const item = (batch.key_items || []).find(x => x.name === itemName);
-      const list = item ? (item.alerts || []).map(a => ({
-        ...a,
-        current_stock: a.stock_level,
-      })) : [];
+  const loadAlertsForItem = (itemName) => {
+    if (alerts[itemName]) return;
+    if (allAlertsByItem[itemName]) {
+      setAlerts(prev => ({ ...prev, [itemName]: allAlertsByItem[itemName] }));
+      return;
+    }
+    const items = batchAlerts?.key_items || [];
+    const item = items.find(x => x.name === itemName);
+    if (item) {
+      const list = (item.alerts || []).map(a => ({ ...a, current_stock: a.stock_level }));
       setAlerts(prev => ({ ...prev, [itemName]: list }));
-    } catch (error) {
-      console.error(`Error loading alerts for ${itemName}:`, error);
-    } finally {
-      setLoadingAlerts(prev => ({ ...prev, [itemName]: false }));
     }
   };
 
-  const toggleExpanded = async (itemName) => {
+  const toggleExpanded = (itemName) => {
     const isExpanding = !expandedItems[itemName];
-    
-    setExpandedItems(prev => ({
-      ...prev,
-      [itemName]: isExpanding
-    }));
-
-    // Load alerts when expanding for the first time
+    setExpandedItems(prev => ({ ...prev, [itemName]: isExpanding }));
     if (isExpanding && !alerts[itemName]) {
-      await loadAlertsForItem(itemName);
+      loadAlertsForItem(itemName);
     }
     if (isExpanding) scrollToItem(itemName);
   };

@@ -10,6 +10,7 @@ import SearchBar from './components/SearchBar';
 import ThresholdManager from './components/ThresholdManager';
 import Login from './components/Login';
 import { startHeartbeat } from './services/api';
+import { DataProvider } from './DataContext';
 
 function App() {
   const [dark, setDark] = React.useState(() => {
@@ -64,6 +65,7 @@ function App() {
 
   return (
     <Router>
+      <DataProvider>
       <div className="min-h-screen bg-gradient-brand dark:bg-gradient-brand-dark">
         {/* Elegant Header */}
         <header className="bg-white/95 dark:bg-neutral-900/95 backdrop-blur-sm border-b border-neutral-200 dark:border-neutral-700 shadow-sophisticated">
@@ -139,6 +141,7 @@ function App() {
           </div>
         </main>
       </div>
+      </DataProvider>
     </Router>
   );
 }

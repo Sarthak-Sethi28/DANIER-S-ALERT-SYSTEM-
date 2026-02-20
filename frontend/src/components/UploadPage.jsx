@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { uploadReport, checkHealth } from '../services/api';
-import { API_BASE_URL } from '../config';
+import { useData } from '../DataContext';
 import { 
   Upload, 
   AlertCircle, 
@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 
 const UploadPage = () => {
+  const { refreshAll } = useData();
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -116,13 +117,12 @@ const UploadPage = () => {
       
       console.log('Upload result:', result);
       
-      // Ensure we mark connected after a successful backend action
       setConnectionStatus('connected');
-      
-      // Show brief success message
       setSuccess(true);
-      
-      // Auto-redirect to Dashboard after 1.5 seconds
+
+      // Prefetch all data for every tab while showing success message
+      refreshAll(false);
+
       setTimeout(() => {
         navigate('/dashboard');
       }, 1500);

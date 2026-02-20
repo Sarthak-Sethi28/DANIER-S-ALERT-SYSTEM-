@@ -1,11 +1,14 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { API_BASE_URL } from '../config';
+import { useData } from '../DataContext';
 
 const ThresholdManager = () => {
+  const { thresholds: ctxThresh, threshLoading, allOptions: ctxOpts, fetchThresholds } = useData();
+
   const [items, setItems] = useState([]);
-  const [overrides, setOverrides] = useState([]);
+  const [, setOverrides] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error] = useState('');
 
   const [itemName, setItemName] = useState('');
   const [availableItemNames, setAvailableItemNames] = useState([]);
@@ -17,66 +20,41 @@ const ThresholdManager = () => {
   const [recalcAlerts, setRecalcAlerts] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  // Preloaded options: { ITEM_NAME: { colors, sizes, color_to_sizes, size_to_colors } }
   const allOptionsRef = useRef({});
   const [optionsReady, setOptionsReady] = useState(false);
-
-  // Current item's options (derived from preloaded data)
   const [options, setOptions] = useState({ colors: [], sizes: [], color_to_sizes: {}, size_to_colors: {} });
 
-  const preloadAllOptions = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/key-items/all-options`, { mode: 'cors', cache: 'no-store' });
-      if (!res.ok) throw new Error('Failed');
-      const data = await res.json();
-      allOptionsRef.current = data.items || {};
-      const names = Object.keys(data.items || {}).sort();
-      setAvailableItemNames(names);
-      setOptionsReady(true);
-    } catch {
-      try {
-        const res = await fetch(`${API_BASE_URL}/key-items/summary`, { mode: 'cors', cache: 'no-store' });
-        const data = await res.json();
-        const names = (data.key_items || []).map(k => k.name).filter(Boolean).sort();
-        setAvailableItemNames(names);
-      } catch {}
+  // Hydrate thresholds from context
+  useEffect(() => {
+    if (!ctxThresh) { setLoading(threshLoading); return; }
+    const data = ctxThresh.allThresholds;
+    let list = [];
+    if (Array.isArray(data?.custom_thresholds)) {
+      list = data.custom_thresholds;
+    } else if (data?.raw_thresholds && typeof data.raw_thresholds === 'object') {
+      list = Object.entries(data.raw_thresholds).map(([key, threshold]) => {
+        const [item_name, size, color] = key.split('|');
+        return { key, item_name, size, color, threshold };
+      });
     }
-  }, []);
+    setItems(list);
+    setOverrides(ctxThresh.overrides || []);
+    setLoading(false);
+  }, [ctxThresh, threshLoading]);
+
+  // Hydrate options from context
+  useEffect(() => {
+    if (!ctxOpts) return;
+    allOptionsRef.current = ctxOpts.items || {};
+    const names = Object.keys(ctxOpts.items || {}).sort();
+    setAvailableItemNames(names);
+    setOptionsReady(true);
+  }, [ctxOpts]);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
-    setError('');
-    try {
-      const response = await fetch(`${API_BASE_URL}/thresholds/all`, { mode: 'cors', cache: 'no-store' });
-      const data = await response.json();
-      let list = [];
-      if (Array.isArray(data.custom_thresholds)) {
-        list = data.custom_thresholds;
-      } else if (data.raw_thresholds && typeof data.raw_thresholds === 'object') {
-        list = Object.entries(data.raw_thresholds).map(([key, threshold]) => {
-          const [item_name, size, color] = key.split('|');
-          return { key, item_name, size, color, threshold };
-        });
-      }
-      setItems(list);
-      try {
-        const o = await fetch(`${API_BASE_URL}/thresholds/overrides`, { mode: 'cors', cache: 'no-store' });
-        if (o.ok) {
-          const oj = await o.json();
-          setOverrides(oj.overrides || []);
-        }
-      } catch {}
-    } catch {
-      setError('Failed to load thresholds');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadAll();
-    preloadAllOptions();
-  }, [loadAll, preloadAllOptions]);
+    await fetchThresholds(false);
+  }, [fetchThresholds]);
 
   // Instant: set options from preloaded data when item name changes
   useEffect(() => {
@@ -89,7 +67,6 @@ const ThresholdManager = () => {
     if (cached) {
       setOptions(cached);
     } else {
-      // Fallback: fetch from server if not preloaded
       (async () => {
         try {
           const res = await fetch(`${API_BASE_URL}/key-items/options/${encodeURIComponent(name)}`, { mode: 'cors', cache: 'no-store' });

@@ -1,25 +1,6 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, AlertTriangle, Package, RefreshCw } from 'lucide-react';
-import { getAllKeyItemsWithAlerts } from '../services/api';
-
-const CACHE_KEY = 'danier_key_items_cache';
-const CACHE_TS_KEY = 'danier_key_items_ts';
-const CACHE_MAX_AGE_MS = 30 * 60 * 1000; // 30 min
-
-function readCache() {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    const ts = Number(localStorage.getItem(CACHE_TS_KEY) || 0);
-    if (raw && Date.now() - ts < CACHE_MAX_AGE_MS) return JSON.parse(raw);
-  } catch {}
-  return null;
-}
-function writeCache(items) {
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(items));
-    localStorage.setItem(CACHE_TS_KEY, String(Date.now()));
-  } catch {}
-}
+import { useData } from '../DataContext';
 
 const SkeletonRow = () => (
   <div className="border border-gray-200 rounded-lg overflow-hidden animate-pulse">
@@ -35,69 +16,27 @@ const SkeletonRow = () => (
 );
 
 const KeyItemsDashboard = () => {
-  const [keyItems, setKeyItems] = useState(() => readCache() || []);
+  const { batchAlerts, batchLoading, fetchBatch } = useData();
   const [expandedItems, setExpandedItems] = useState({});
-  const [loading, setLoading] = useState(!readCache());
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(null);
-  const fetchRef = useRef(0);
 
-  const fetchData = useCallback(async (isBackground = false) => {
-    const id = ++fetchRef.current;
-    if (!isBackground) setLoading(true);
-    else setRefreshing(true);
+  const keyItems = batchAlerts?.key_items || [];
+  const loading = batchLoading && !keyItems.length;
+  const error = !batchLoading && !keyItems.length && batchAlerts?.message?.includes('No inventory files found')
+    ? { type: 'no-files', message: batchAlerts.message, help: batchAlerts.help }
+    : null;
 
-    try {
-      const response = await getAllKeyItemsWithAlerts();
-      if (id !== fetchRef.current) return;
-
-      const items = response.key_items || [];
-      if (items.length > 0) {
-        setKeyItems(items);
-        writeCache(items);
-        setError(null);
-      } else if (!isBackground) {
-        setKeyItems([]);
-        if (response.message?.includes('No inventory files found')) {
-          setError({ type: 'no-files', message: response.message, help: response.help });
-        } else {
-          setError('No key items found in the current inventory file.');
-        }
-      }
-    } catch (err) {
-      if (id !== fetchRef.current) return;
-      if (!isBackground) {
-        setError('Failed to load key items. Please try refreshing the page.');
-        if (!keyItems.length) setKeyItems([]);
-      }
-    } finally {
-      if (id === fetchRef.current) {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    const cached = readCache();
-    if (cached?.length) {
-      fetchData(true);
-    } else {
-      fetchData(false);
-    }
-  }, [fetchData]);
-
-  useEffect(() => {
-    const onVisible = () => { if (!document.hidden) fetchData(true); };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [fetchData]);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchBatch(true);
+    setRefreshing(false);
+  };
 
   const toggleItem = (itemName) => {
     setExpandedItems(prev => ({ ...prev, [itemName]: !prev[itemName] }));
   };
 
-  if (loading && !keyItems.length) {
+  if (loading) {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-md p-6">
@@ -119,8 +58,8 @@ const KeyItemsDashboard = () => {
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="text-center text-red-600">
             <AlertTriangle className="w-8 h-8 mx-auto mb-2" />
-            <p>{typeof error === 'string' ? error : error.message}</p>
-            {typeof error === 'object' && error.help && (
+            <p>{error.message}</p>
+            {error.help && (
               <div className="mt-4 text-sm text-gray-600">
                 <p className="font-semibold">{error.help.title}</p>
                 <ul className="mt-2 space-y-1">
@@ -131,7 +70,7 @@ const KeyItemsDashboard = () => {
               </div>
             )}
             <button
-              onClick={() => fetchData(false)}
+              onClick={() => fetchBatch(false)}
               className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition-colors"
             >
               Retry
@@ -149,11 +88,9 @@ const KeyItemsDashboard = () => {
           <h2 className="text-3xl font-bold text-gray-800 mb-2">Key Items Dashboard</h2>
           <p className="text-gray-600">Click on any key item to view detailed stock alerts</p>
           <div className="flex items-center justify-center mt-4 space-x-4">
-            <p className="text-sm text-green-600">
-              {keyItems.length} items loaded
-            </p>
+            <p className="text-sm text-green-600">{keyItems.length} items loaded</p>
             <button
-              onClick={() => fetchData(true)}
+              onClick={handleRefresh}
               disabled={refreshing}
               className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-sm hover:bg-blue-200 transition-colors disabled:opacity-50"
             >
