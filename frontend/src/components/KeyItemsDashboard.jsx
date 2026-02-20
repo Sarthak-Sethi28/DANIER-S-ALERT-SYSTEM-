@@ -1,101 +1,119 @@
-import React, { useEffect, useState } from 'react';
-import { ChevronDown, ChevronRight, AlertTriangle, Package } from 'lucide-react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { ChevronDown, ChevronRight, AlertTriangle, Package, RefreshCw } from 'lucide-react';
 import { getAllKeyItemsWithAlerts } from '../services/api';
-import { API_BASE_URL } from '../config';
+
+const CACHE_KEY = 'danier_key_items_cache';
+const CACHE_TS_KEY = 'danier_key_items_ts';
+const CACHE_MAX_AGE_MS = 30 * 60 * 1000; // 30 min
+
+function readCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    const ts = Number(localStorage.getItem(CACHE_TS_KEY) || 0);
+    if (raw && Date.now() - ts < CACHE_MAX_AGE_MS) return JSON.parse(raw);
+  } catch {}
+  return null;
+}
+function writeCache(items) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(items));
+    localStorage.setItem(CACHE_TS_KEY, String(Date.now()));
+  } catch {}
+}
+
+const SkeletonRow = () => (
+  <div className="border border-gray-200 rounded-lg overflow-hidden animate-pulse">
+    <div className="px-6 py-4 bg-gray-50 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="w-5 h-5 bg-gray-200 rounded" />
+        <div className="h-4 w-40 bg-gray-200 rounded" />
+        <div className="h-5 w-20 bg-gray-200 rounded-full" />
+      </div>
+      <div className="w-5 h-5 bg-gray-200 rounded" />
+    </div>
+  </div>
+);
 
 const KeyItemsDashboard = () => {
-  const [keyItems, setKeyItems] = useState([]);
+  const [keyItems, setKeyItems] = useState(() => readCache() || []);
   const [expandedItems, setExpandedItems] = useState({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!readCache());
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const fetchRef = useRef(0);
 
-  useEffect(() => {
-    loadAllKeyItemsWithAlerts();
-  }, []);
+  const fetchData = useCallback(async (isBackground = false) => {
+    const id = ++fetchRef.current;
+    if (!isBackground) setLoading(true);
+    else setRefreshing(true);
 
-  // Auto-refresh when component becomes visible (e.g., returning from upload)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && keyItems.length === 0) {
-        console.log('🔄 Component visible with no data - refreshing...');
-        loadAllKeyItemsWithAlerts();
-      }
-    };
-
-    const handleFocus = () => {
-      if (keyItems.length === 0) {
-        console.log('🔄 Window focused with no data - refreshing...');
-        loadAllKeyItemsWithAlerts();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [keyItems.length]);
-
-  const loadAllKeyItemsWithAlerts = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      console.log('🚀 Loading key items with ultra-fast batch processing...');
-      
-      // Use single ultra-fast batch call
       const response = await getAllKeyItemsWithAlerts();
+      if (id !== fetchRef.current) return;
+
       const items = response.key_items || [];
-      
       if (items.length > 0) {
         setKeyItems(items);
-        console.log(`✅ Loaded ${items.length} items with ${items.reduce((sum, item) => sum + (item.alert_count || 0), 0)} total alerts`);
-      } else {
-        console.log('⚠️ No items loaded');
+        writeCache(items);
+        setError(null);
+      } else if (!isBackground) {
         setKeyItems([]);
-        
-        // Check if this is a "no files" situation and show helpful message
-        if (response.message && response.message.includes('No inventory files found')) {
-          setError({
-            type: 'no-files',
-            message: response.message,
-            help: response.help
-          });
+        if (response.message?.includes('No inventory files found')) {
+          setError({ type: 'no-files', message: response.message, help: response.help });
         } else {
           setError('No key items found in the current inventory file.');
         }
       }
-
-      console.log('✅ Data loading complete');
     } catch (err) {
-      console.error('❌ Error loading key items:', err);
-      setError('Failed to load key items. Please try refreshing the page.');
-      setKeyItems([]);
+      if (id !== fetchRef.current) return;
+      if (!isBackground) {
+        setError('Failed to load key items. Please try refreshing the page.');
+        if (!keyItems.length) setKeyItems([]);
+      }
     } finally {
-      setLoading(false);
+      if (id === fetchRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const cached = readCache();
+    if (cached?.length) {
+      fetchData(true);
+    } else {
+      fetchData(false);
+    }
+  }, [fetchData]);
+
+  useEffect(() => {
+    const onVisible = () => { if (!document.hidden) fetchData(true); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [fetchData]);
 
   const toggleItem = (itemName) => {
     setExpandedItems(prev => ({ ...prev, [itemName]: !prev[itemName] }));
   };
 
-  if (loading) {
+  if (loading && !keyItems.length) {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Loading key items with alerts...</p>
-            <p className="text-sm text-gray-500">Ultra-fast batch processing</p>
+          <div className="text-center mb-6">
+            <h2 className="text-3xl font-bold text-gray-800 mb-1">Key Items Dashboard</h2>
+            <p className="text-gray-500 text-sm">Loading inventory data...</p>
+          </div>
+          <div className="space-y-3">
+            {Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)}
           </div>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (error && !keyItems.length) {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-md p-6">
@@ -112,6 +130,12 @@ const KeyItemsDashboard = () => {
                 </ul>
               </div>
             )}
+            <button
+              onClick={() => fetchData(false)}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition-colors"
+            >
+              Retry
+            </button>
           </div>
         </div>
       </div>
@@ -122,33 +146,30 @@ const KeyItemsDashboard = () => {
     <div className="max-w-4xl mx-auto">
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">
-            Key Items Dashboard
-          </h2>
-          <p className="text-gray-600">
-            Click on any key item to view detailed stock alerts
-          </p>
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">Key Items Dashboard</h2>
+          <p className="text-gray-600">Click on any key item to view detailed stock alerts</p>
           <div className="flex items-center justify-center mt-4 space-x-4">
             <p className="text-sm text-green-600">
-              ⚡ Ultra-fast batch processing • {keyItems.length} items loaded
+              {keyItems.length} items loaded
             </p>
             <button
-              onClick={loadAllKeyItemsWithAlerts}
-              className="px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-sm hover:bg-blue-200 transition-colors"
+              onClick={() => fetchData(true)}
+              disabled={refreshing}
+              className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-sm hover:bg-blue-200 transition-colors disabled:opacity-50"
             >
-              Refresh
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Refreshing...' : 'Refresh'}
             </button>
           </div>
         </div>
 
         <div className="space-y-4">
           {keyItems.map((item) => {
-            const itemName = item.name || item?.name;
-            const alertCount = item.alert_count || item?.alert_count || 0;
-            const alerts = item.alerts || [];
-            const totalStock = item.total_stock ?? item?.total_stock ?? 0;
+            const itemName = item.name;
+            const alertCount = item.alert_count || 0;
+            const totalStock = item.total_stock ?? 0;
             const colorTotals = item.color_totals || [];
-            
+
             return (
               <div key={itemName} className="border border-gray-200 rounded-lg overflow-hidden">
                 <button
@@ -175,7 +196,7 @@ const KeyItemsDashboard = () => {
                     )}
                   </div>
                 </button>
-                
+
                 {expandedItems[itemName] && (
                   <div className="px-6 py-4 bg-white border-t border-gray-200">
                     {colorTotals.length > 0 ? (
@@ -204,4 +225,4 @@ const KeyItemsDashboard = () => {
   );
 };
 
-export default KeyItemsDashboard; 
+export default KeyItemsDashboard;

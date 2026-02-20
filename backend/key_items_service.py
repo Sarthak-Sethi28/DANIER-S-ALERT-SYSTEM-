@@ -27,7 +27,7 @@ class KeyItemsService:
         
         # Performance cache
         self.cache = {}
-        self.cache_ttl = 300  # 5 minutes
+        self.cache_ttl = 1800  # 30 minutes — cache is invalidated on upload anyway
         self.cache_timestamps = {}
         
         # Size code mapping (based on Variant Code patterns)
@@ -133,68 +133,52 @@ class KeyItemsService:
         return sorted(list(self.global_key_items))
     
     def _load_inventory_file(self, file_path: str) -> pd.DataFrame:
-        """Load inventory file with flexible column detection"""
+        """Load inventory file with flexible column detection and aggressive caching"""
         try:
-            # Check cache first for performance
             if file_path in self.file_cache:
-                print(f"⚡ Using cached file data for: {file_path}")
                 return self.file_cache[file_path]
-            
-            # Get all sheet names first
-            excel_file = pd.ExcelFile(file_path)
+
+            t0 = time.time()
+            excel_file = pd.ExcelFile(file_path, engine='openpyxl')
             sheet_names = excel_file.sheet_names
-            
-            # Required columns (flexible matching)
+
             required_columns = ['Item Description', 'Variant Color', 'Variant Code', 'Grand Total', 'Season Code']
-            
-            # Strategy: Try each sheet by name, prioritizing common names
-            priority_sheets = []
-            if 'Sheet1' in sheet_names:
-                priority_sheets.append('Sheet1')
-            if 'Inventory' in sheet_names:
-                priority_sheets.append('Inventory')
-            if 'Data' in sheet_names:
-                priority_sheets.append('Data')
-            
-            # Add all other sheets
-            for sheet in sheet_names:
-                if sheet not in priority_sheets:
-                    priority_sheets.append(sheet)
-            
+
+            priority_sheets = [s for s in ('Sheet1', 'Inventory', 'Data') if s in sheet_names]
+            for s in sheet_names:
+                if s not in priority_sheets:
+                    priority_sheets.append(s)
+
             for sheet_name in priority_sheets:
-                try:
-                    # Try different header rows
-                    for header_row in [0, 1, 2]:
-                        try:
-                            df = pd.read_excel(file_path, sheet_name=sheet_name, header=header_row)
-                            
-                            # Check if we have the required columns
-                            if all(col in df.columns for col in required_columns):
-                                return df
-                            
-                            # Try flexible column matching
-                            column_mapping = {}
-                            for required_col in required_columns:
-                                for actual_col in df.columns:
-                                    if required_col.lower() in str(actual_col).lower():
-                                        column_mapping[required_col] = actual_col
-                                        break
-                            
-                            if len(column_mapping) == len(required_columns):
-                                # Rename columns to standard names
-                                df = df.rename(columns=column_mapping)
-                                # Cache the processed DataFrame for future use
-                                self.file_cache[file_path] = df
-                                return df
-                                
-                        except Exception:
-                            continue
-                            
-                except Exception:
-                    continue
-            
+                for header_row in (0, 1, 2):
+                    try:
+                        df = pd.read_excel(
+                            excel_file, sheet_name=sheet_name, header=header_row,
+                            dtype={'Season Code': str, 'Variant Code': str, 'Variant Color': str},
+                        )
+
+                        if all(col in df.columns for col in required_columns):
+                            self.file_cache[file_path] = df
+                            print(f"⚡ Loaded {len(df)} rows in {time.time()-t0:.2f}s (sheet={sheet_name}, hdr={header_row})")
+                            return df
+
+                        column_mapping = {}
+                        for req in required_columns:
+                            for actual in df.columns:
+                                if req.lower() in str(actual).lower():
+                                    column_mapping[req] = actual
+                                    break
+
+                        if len(column_mapping) == len(required_columns):
+                            df = df.rename(columns=column_mapping)
+                            self.file_cache[file_path] = df
+                            print(f"⚡ Loaded {len(df)} rows in {time.time()-t0:.2f}s (sheet={sheet_name}, hdr={header_row}, mapped)")
+                            return df
+                    except Exception:
+                        continue
+
             return None
-            
+
         except Exception as e:
             print(f"❌ Error loading file: {e}")
             return None

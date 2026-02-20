@@ -1,6 +1,7 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, Form, BackgroundTasks
 from fastapi.responses import FileResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from sqlalchemy.orm import Session
 import tempfile
 import os
@@ -26,6 +27,9 @@ from threshold_analysis_service import ThresholdAnalysisService
 init_db()
 
 app = FastAPI(title="Danier Stock Alert System")
+
+# GZip compress all responses > 500 bytes — huge speedup for large JSON payloads
+app.add_middleware(GZipMiddleware, minimum_size=500)
 
 # Add CORS middleware
 # Use allow_credentials=False so we can use allow_origins=["*"] - login uses FormData/localStorage, not cookies
@@ -1931,14 +1935,6 @@ async def warm_caches_on_startup():
             except Exception as e:
                 print(f"⚠️ Emails directory warning: {e}")
         
-        # Clear any stale cache on startup
-        try:
-            if hasattr(key_items_service, '_cache'):
-                key_items_service._cache.clear()
-            print("✅ Cleared stale caches")
-        except Exception as e:
-            print(f"⚠️ Cache clear warning: {e}")
-        
         # Sync admin user on startup - always ensures credentials match env vars
         db = next(get_db())
         try:
@@ -1947,7 +1943,27 @@ async def warm_caches_on_startup():
         finally:
             db.close()
 
-        print("✅ MINIMAL STARTUP COMPLETE - Server ready, no heavy processing")
+        # Warm key-items cache in background so first request is fast
+        import threading
+        def _warm_cache():
+            try:
+                db = next(get_db())
+                try:
+                    fp = file_storage_service.get_latest_file_path(db)
+                finally:
+                    db.close()
+                if fp and os.path.exists(fp):
+                    print(f"🔥 Warming cache for: {os.path.basename(fp)}")
+                    key_items_service.get_all_key_items_with_alerts(fp)
+                    _build_all_item_options()
+                    print("✅ Cache warmed — first request will be instant")
+                else:
+                    print("ℹ️ No inventory file to warm cache with")
+            except Exception as e:
+                print(f"⚠️ Cache warm warning: {e}")
+        threading.Thread(target=_warm_cache, daemon=True).start()
+
+        print("✅ STARTUP COMPLETE - Cache warming in background")
         
     except Exception as e:
         print(f"⚠️ Startup warning (non-critical): {e}")
