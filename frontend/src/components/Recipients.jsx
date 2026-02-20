@@ -24,6 +24,7 @@ const Recipients = () => {
   useEffect(() => {
     fetchRecipients();
     fetchEmailStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchRecipients = async () => {
