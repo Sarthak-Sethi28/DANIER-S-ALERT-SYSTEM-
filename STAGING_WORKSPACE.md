@@ -8,7 +8,7 @@ Shared workspace for the Danier Key Items Stock Alert System. Use this folder fo
 |-------------|-----|-------|
 | **Production Frontend** | https://inventoryreport.ca | Custom domain |
 | **Vercel Frontend** | https://danier-s-alert-system-re1i0tkhw-sarthak-sethi28s-projects.vercel.app | Vercel deployment |
-| **Backend API (Render)** | https://danier-s-alert-system.onrender.com | NestJS/Python API |
+| **Backend API (Render)** | https://danier-s-alert-system.onrender.com | danier-s-alert-system:10000 (Python/FastAPI) |
 
 ## 📂 Repository
 

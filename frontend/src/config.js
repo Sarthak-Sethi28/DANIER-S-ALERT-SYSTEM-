@@ -1,1 +1,2 @@
+// Backend: danier-s-alert-system (Render port 10000) -> https://danier-s-alert-system.onrender.com
 export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://danier-s-alert-system.onrender.com'; 
