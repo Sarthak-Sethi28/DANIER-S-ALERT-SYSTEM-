@@ -68,7 +68,7 @@ function App() {
     <Router>
       <DataProvider>
       <div className="min-h-screen bg-gradient-brand dark:bg-gradient-brand-dark">
-        <header style={{ background: 'rgba(7,7,14,0.92)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(201,168,76,0.12)' }}>
+        <header style={{ background: 'rgba(5,5,8,0.95)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(201,168,76,0.12)' }}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <Link to="/" className="flex items-center" style={{ textDecoration: 'none' }}>
@@ -155,7 +155,7 @@ function Navigation() {
   ];
 
   return (
-    <nav style={{ background: 'rgba(13,13,26,0.95)', borderBottom: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(12px)' }}>
+    <nav style={{ background: 'rgba(5,5,8,0.97)', borderBottom: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(12px)' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex space-x-1 overflow-x-auto scrollbar-hide py-2">
           {navItems.map((item) => {
