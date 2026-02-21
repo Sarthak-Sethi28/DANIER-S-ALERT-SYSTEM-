@@ -77,7 +77,7 @@ const HomePage = () => {
   return (
     <div className="hp-root">
       <style>{`
-        .hp-root{--gold:#c9a84c;--gold2:#e8c96a;--bg:#07070e;--surf:rgba(13,13,26,0.9);--stroke:rgba(255,255,255,0.06);--txt:#f0f0f8;--muted:rgba(200,200,220,0.6);--red:#ff4d4d;--green:#10b981;--blue:#3b82f6;font-family:'Inter',sans-serif;color:var(--txt);}
+        .hp-root{--gold:#c9a84c;--gold2:#e8c96a;--bg:#07070e;--surf:rgba(13,13,26,0.9);--stroke:rgba(255,255,255,0.06);--txt:#f0f0f8;--muted:rgba(200,200,220,0.85);--red:#ff4d4d;--green:#10b981;--blue:#3b82f6;font-family:'Inter',sans-serif;color:var(--txt);}
         .hp-section{min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px;position:relative;}
         .hp-reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease;}
         .hp-visible{opacity:1;transform:translateY(0);}

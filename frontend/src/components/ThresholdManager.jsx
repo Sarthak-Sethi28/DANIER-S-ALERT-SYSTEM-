@@ -167,7 +167,7 @@ const ThresholdManager = () => {
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gradient-gold leading-tight font-elegant">Threshold Manager</h1>
-              <p style={{ color: 'rgba(200,200,220,0.5)', fontSize: '0.85rem', marginTop: 2 }}>
+              <p style={{ color: 'rgba(200,200,220,0.75)', fontSize: '0.9rem', marginTop: 2 }}>
                 Configure stock alert thresholds for key items
               </p>
             </div>
@@ -193,7 +193,7 @@ const ThresholdManager = () => {
       {loading && (
         <div className="card-premium p-12 text-center">
           <div className="w-12 h-12 border-4 rounded-full animate-spin mx-auto mb-4" style={{ borderColor: 'rgba(201,168,76,0.2)', borderTopColor: '#c9a84c' }} />
-          <p style={{ color: 'rgba(200,200,220,0.6)' }}>Loading thresholds...</p>
+          <p style={{ color: 'rgba(200,200,220,0.85)' }}>Loading thresholds...</p>
         </div>
       )}
       {error && <div style={{ color: '#ff6b6b', fontSize: '0.875rem', padding: '12px', background: 'rgba(255,61,61,0.08)', borderRadius: '12px', border: '1px solid rgba(255,61,61,0.2)' }}>{error}</div>}
@@ -209,7 +209,7 @@ const ThresholdManager = () => {
 
         <div className="space-y-4">
           <div>
-            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'rgba(201,168,76,0.7)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Product Name</label>
+            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#c9a84c', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Product Name</label>
             <select
               value={itemName}
               onChange={(e) => { setItemName(e.target.value); setSize(''); setColor(''); }}
@@ -224,7 +224,7 @@ const ThresholdManager = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'rgba(201,168,76,0.7)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#c9a84c', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
                 Size {sizesForColor.length > 0 && <span style={{ color: '#3b82f6' }}>({sizesForColor.length})</span>}
               </label>
               <select
@@ -240,7 +240,7 @@ const ThresholdManager = () => {
               </select>
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'rgba(201,168,76,0.7)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#c9a84c', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
                 Color {colorsForSize.length > 0 && <span style={{ color: '#3b82f6' }}>({colorsForSize.length})</span>}
               </label>
               <select
@@ -256,7 +256,7 @@ const ThresholdManager = () => {
               </select>
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'rgba(201,168,76,0.7)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Threshold</label>
+              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: '#c9a84c', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Threshold</label>
               <input
                 type="number"
                 value={threshold}
@@ -270,9 +270,24 @@ const ThresholdManager = () => {
             </div>
           </div>
 
+          {/* Save Button - always visible */}
           <button
-            className="btn-premium w-full flex items-center justify-center gap-2"
-            style={{ padding: '14px', borderRadius: '14px', fontSize: '0.95rem', border: 'none', cursor: (!itemName || !size || !color || !threshold || saving) ? 'not-allowed' : 'pointer', opacity: (!itemName || !size || !color || !threshold || saving) ? 0.35 : 1 }}
+            className="w-full flex items-center justify-center gap-3"
+            style={{
+              padding: '16px',
+              borderRadius: '14px',
+              fontSize: '1.05rem',
+              fontWeight: 800,
+              border: 'none',
+              marginTop: 8,
+              cursor: (!itemName || !size || !color || !threshold || saving) ? 'not-allowed' : 'pointer',
+              opacity: (!itemName || !size || !color || !threshold || saving) ? 0.55 : 1,
+              background: 'linear-gradient(135deg, #c9a84c, #e8c96a)',
+              color: '#000',
+              boxShadow: '0 6px 24px rgba(201,168,76,0.4)',
+              transition: 'all 0.3s',
+              letterSpacing: '0.02em',
+            }}
             disabled={!itemName || !size || !color || !threshold || saving}
             onClick={async () => {
               const t = parseInt(threshold, 10);
@@ -281,7 +296,7 @@ const ThresholdManager = () => {
             }}
           >
             <Save className="w-5 h-5" />
-            {saving ? 'Saving...' : 'Save Threshold'}
+            {saving ? 'Saving...' : 'SAVE THRESHOLD'}
           </button>
         </div>
       </div>
@@ -293,7 +308,7 @@ const ThresholdManager = () => {
             <AlertTriangle className="w-5 h-5" style={{ color: '#f59e0b' }} />
             <h3 style={{ fontWeight: 700, color: '#f0f0f8' }}>
               Recalculated: {recalcAlerts.item}
-              <span style={{ marginLeft: 8, fontSize: '0.8rem', fontWeight: 400, color: 'rgba(200,200,220,0.5)' }}>
+              <span style={{ marginLeft: 8, fontSize: '0.85rem', fontWeight: 400, color: 'rgba(200,200,220,0.75)' }}>
                 ({recalcAlerts.low} low stock of {recalcAlerts.alerts.length} variants)
               </span>
             </h3>
@@ -337,14 +352,14 @@ const ThresholdManager = () => {
               <ChevronDown className="w-4 h-4" style={{ color: '#8b5cf6' }} />
             </div>
             <h3 className="text-lg font-bold" style={{ color: '#f0f0f8' }}>Existing Overrides</h3>
-            <span style={{ fontSize: '0.7rem', color: 'rgba(200,200,220,0.4)', background: 'rgba(255,255,255,0.04)', padding: '2px 8px', borderRadius: '999px' }}>{items.length}</span>
+            <span style={{ fontSize: '0.75rem', color: 'rgba(200,200,220,0.7)', background: 'rgba(255,255,255,0.06)', padding: '3px 10px', borderRadius: '999px', fontWeight: 600 }}>{items.length}</span>
           </div>
         </div>
 
         {items.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '2rem', color: 'rgba(200,200,220,0.4)' }}>
-            <Settings2 className="w-10 h-10 mx-auto mb-3" style={{ opacity: 0.3 }} />
-            <p style={{ fontSize: '0.9rem' }}>No custom thresholds set yet</p>
+          <div style={{ textAlign: 'center', padding: '2rem', color: 'rgba(200,200,220,0.65)' }}>
+            <Settings2 className="w-10 h-10 mx-auto mb-3" style={{ opacity: 0.5 }} />
+            <p style={{ fontSize: '0.95rem' }}>No custom thresholds set yet</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -365,8 +380,8 @@ const ThresholdManager = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
                     <div style={{ fontWeight: 700, color: '#f0f0f8', fontSize: '0.95rem', marginBottom: 2 }}>{it.item_name}</div>
-                    <div style={{ fontSize: '0.8rem', color: 'rgba(200,200,220,0.5)' }}>
-                      {it.size} &bull; {it.color} &bull; <span style={{ color: '#c9a84c', fontWeight: 600 }}>Threshold: {it.threshold}</span>
+                    <div style={{ fontSize: '0.85rem', color: 'rgba(200,200,220,0.75)' }}>
+                      {it.size} &bull; {it.color} &bull; <span style={{ color: '#e8c96a', fontWeight: 700 }}>Threshold: {it.threshold}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -409,12 +424,12 @@ const ThresholdManager = () => {
             <Clock className="w-4 h-4" style={{ color: '#10b981' }} />
           </div>
           <h3 className="text-lg font-bold" style={{ color: '#f0f0f8' }}>
-            Recent Changes {itemName ? <span style={{ fontWeight: 400, fontSize: '0.85rem', color: 'rgba(200,200,220,0.5)' }}> for {itemName}</span> : ''}
+            Recent Changes {itemName ? <span style={{ fontWeight: 400, fontSize: '0.9rem', color: 'rgba(200,200,220,0.75)' }}> for {itemName}</span> : ''}
           </h3>
         </div>
         {history.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '1.5rem', color: 'rgba(200,200,220,0.35)' }}>
-            <RotateCcw className="w-8 h-8 mx-auto mb-2" style={{ opacity: 0.3 }} />
+          <div style={{ textAlign: 'center', padding: '1.5rem', color: 'rgba(200,200,220,0.6)' }}>
+            <RotateCcw className="w-8 h-8 mx-auto mb-2" style={{ opacity: 0.5 }} />
             <p style={{ fontSize: '0.85rem' }}>No history yet</p>
           </div>
         ) : (
@@ -432,11 +447,11 @@ const ThresholdManager = () => {
                   gap: 2,
                 }}
               >
-                <div style={{ fontWeight: 600, color: '#d0d0e8', fontSize: '0.85rem' }}>
+                <div style={{ fontWeight: 700, color: '#f0f0f8', fontSize: '0.9rem' }}>
                   {h.item_name} &bull; {h.size} &bull; {h.color}
                 </div>
-                <div style={{ fontSize: '0.78rem', color: 'rgba(200,200,220,0.45)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ color: 'rgba(255,61,61,0.6)' }}>{h.old_threshold ?? 'default'}</span>
+                <div style={{ fontSize: '0.82rem', color: 'rgba(200,200,220,0.7)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ color: '#ff6b6b' }}>{h.old_threshold ?? 'default'}</span>
                   <span>&rarr;</span>
                   <span style={{ color: '#c9a84c', fontWeight: 600 }}>{h.new_threshold}</span>
                   <span style={{ marginLeft: 8 }}>{h.changed_at}</span>

@@ -244,7 +244,7 @@ const DashboardInner = () => {
       boxShadow: '0 4px 12px rgba(201,168,76,0.3)',
     } : {
       background: 'rgba(255,255,255,0.03)',
-      color: 'rgba(200,200,220,0.6)',
+      color: 'rgba(200,200,220,0.85)',
       borderColor: 'rgba(255,255,255,0.08)',
     }),
   });
@@ -268,8 +268,8 @@ const DashboardInner = () => {
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gradient-gold leading-tight font-elegant">Key Items Dashboard</h1>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                <Clock className="w-3.5 h-3.5" style={{ color: 'rgba(200,200,220,0.35)' }} />
-                <span style={{ fontSize: '0.75rem', color: 'rgba(200,200,220,0.35)' }}>
+                <Clock className="w-3.5 h-3.5" style={{ color: 'rgba(200,200,220,0.7)' }} />
+                <span style={{ fontSize: '0.75rem', color: 'rgba(200,200,220,0.7)' }}>
                   {lastSynced ? `Last synced ${lastSynced.toLocaleTimeString()}` : 'Loading...'}
                 </span>
               </div>
@@ -327,8 +327,8 @@ const DashboardInner = () => {
                 {s.icon}
               </div>
               <div className="text-gradient-gold" style={{ fontSize: '1.5rem', fontWeight: 800, fontFamily: "'Space Grotesk', sans-serif" }}>{s.value}</div>
-              <div style={{ fontSize: '0.65rem', fontWeight: 600, color: 'rgba(200,200,220,0.4)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{s.label}</div>
-              {s.onClick && <div style={{ position: 'absolute', bottom: 8, right: 10, fontSize: '0.6rem', color: 'rgba(200,200,220,0.25)' }}>click to view</div>}
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(200,200,220,0.85)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{s.label}</div>
+              {s.onClick && <div style={{ position: 'absolute', bottom: 8, right: 10, fontSize: '0.65rem', color: 'rgba(200,200,220,0.7)', fontWeight: 600 }}>click to view</div>}
             </div>
           ))}
         </div>
@@ -359,7 +359,7 @@ const DashboardInner = () => {
             </button>
             <button
               onClick={handleDownload}
-              style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'rgba(200,200,220,0.6)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
+              style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'rgba(200,200,220,0.85)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
             >
               Download
             </button>
@@ -371,7 +371,7 @@ const DashboardInner = () => {
       {!loading && !error && keyItems.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(13,13,26,0.9)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: '8px 14px', flex: '1 1 auto', maxWidth: 300 }}>
-            <SearchIcon className="w-4 h-4" style={{ color: 'rgba(200,200,220,0.35)', flexShrink: 0 }} />
+            <SearchIcon className="w-4 h-4" style={{ color: 'rgba(200,200,220,0.7)', flexShrink: 0 }} />
             <input
               type="text"
               value={searchTerm}
@@ -421,21 +421,21 @@ const DashboardInner = () => {
         <div className="card-premium" style={{ padding: '4rem', textAlign: 'center' }}>
           <div style={{ width: 48, height: 48, borderRadius: '50%', border: '4px solid rgba(201,168,76,0.2)', borderTopColor: '#c9a84c', margin: '0 auto 16px' }} className="animate-spin" />
           <div style={{ fontSize: '1.1rem', fontWeight: 600, color: '#f0f0f8' }}>Loading inventory alerts...</div>
-          <div style={{ fontSize: '0.85rem', color: 'rgba(200,200,220,0.4)', marginTop: 4 }}>Fetching latest data from warehouse</div>
+          <div style={{ fontSize: '0.85rem', color: 'rgba(200,200,220,0.75)', marginTop: 4 }}>Fetching latest data from warehouse</div>
         </div>
 
       ) : error?.type === 'no-files' ? (
         <div className="card-premium" style={{ padding: '3rem', textAlign: 'center' }}>
           <Package className="w-16 h-16 mx-auto mb-4" style={{ color: 'rgba(200,200,220,0.2)' }} />
           <h2 className="text-gradient-gold" style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: 8 }}>No Inventory Data</h2>
-          <p style={{ color: 'rgba(200,200,220,0.5)', marginBottom: 24 }}>{error.message}</p>
+          <p style={{ color: 'rgba(200,200,220,0.8)', marginBottom: 24 }}>{error.message}</p>
           {error.help && (
             <div style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)', borderRadius: 16, padding: 24, textAlign: 'left', maxWidth: 420, margin: '0 auto 20px' }}>
               <p style={{ fontWeight: 700, color: '#f59e0b', marginBottom: 12 }}>{error.help.title}</p>
               {error.help.steps.map((step, i) => (
                 <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
                   <span style={{ width: 22, height: 22, background: 'linear-gradient(135deg, #c9a84c, #e8c96a)', color: '#000', borderRadius: '50%', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, flexShrink: 0 }}>{i+1}</span>
-                  <span style={{ fontSize: '0.85rem', color: 'rgba(200,200,220,0.6)' }}>{step}</span>
+                  <span style={{ fontSize: '0.85rem', color: 'rgba(200,200,220,0.85)' }}>{step}</span>
                 </div>
               ))}
             </div>
@@ -446,7 +446,7 @@ const DashboardInner = () => {
         <div className="card-premium" style={{ padding: '3rem', textAlign: 'center' }}>
           <AlertTriangle className="w-16 h-16 mx-auto mb-4" style={{ color: '#ff6b6b', opacity: 0.6 }} />
           <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ff8080', marginBottom: 8 }}>Something went wrong</h2>
-          <p style={{ color: 'rgba(200,200,220,0.5)', marginBottom: 24 }}>{error.message}</p>
+          <p style={{ color: 'rgba(200,200,220,0.8)', marginBottom: 24 }}>{error.message}</p>
           <button onClick={() => { setError(null); fetchBatch(false); }} className="btn-premium" style={{ padding: '10px 24px', borderRadius: 12, border: 'none', cursor: 'pointer' }}>Try Again</button>
         </div>
 
@@ -454,7 +454,7 @@ const DashboardInner = () => {
         <div className="card-premium" style={{ padding: '3rem', textAlign: 'center' }}>
           <Sparkles className="w-12 h-12 mx-auto mb-3" style={{ color: 'rgba(200,200,220,0.2)' }} />
           <h3 className="text-gradient-gold" style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 6 }}>No items match this filter</h3>
-          <p style={{ color: 'rgba(200,200,220,0.4)', fontSize: '0.85rem', marginBottom: 16 }}>Try changing the filter or search above</p>
+          <p style={{ color: 'rgba(200,200,220,0.75)', fontSize: '0.85rem', marginBottom: 16 }}>Try changing the filter or search above</p>
           <button onClick={() => setFilter('all')} className="btn-premium" style={{ padding: '8px 20px', borderRadius: 10, border: 'none', fontSize: '0.85rem', cursor: 'pointer' }}>Show All</button>
         </div>
 
@@ -500,7 +500,7 @@ const DashboardInner = () => {
                     <div style={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, background: isCritical ? '#ff4d4d' : hasAlerts ? '#fb923c' : '#10b981' }} className={isCritical ? 'animate-pulse' : ''} />
                     <div style={{ minWidth: 0 }}>
                       <h3 style={{ fontWeight: 700, color: '#f0f0f8', fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</h3>
-                      <p style={{ fontSize: '0.75rem', color: 'rgba(200,200,220,0.4)', marginTop: 1 }}>
+                      <p style={{ fontSize: '0.75rem', color: 'rgba(200,200,220,0.75)', marginTop: 1 }}>
                         {hasAlerts
                           ? `${item.low_stock_count} variant${item.low_stock_count > 1 ? 's' : ''} below threshold`
                           : 'All variants adequate'
@@ -545,7 +545,7 @@ const DashboardInner = () => {
                     )}
 
                     <div style={{ padding: 6, borderRadius: 8, background: isExpanded ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.04)', transition: 'all 0.2s' }}>
-                      {isExpanded ? <ChevronUp className="w-4 h-4" style={{ color: '#c9a84c' }} /> : <ChevronDown className="w-4 h-4" style={{ color: 'rgba(200,200,220,0.4)' }} />}
+                      {isExpanded ? <ChevronUp className="w-4 h-4" style={{ color: '#c9a84c' }} /> : <ChevronDown className="w-4 h-4" style={{ color: 'rgba(200,200,220,0.75)' }} />}
                     </div>
                   </div>
                 </div>
@@ -586,13 +586,13 @@ const DashboardInner = () => {
                                     onMouseLeave={e => { e.currentTarget.style.background = isCritical && (alert.shortage || 0) >= 10 ? 'rgba(255,61,61,0.03)' : 'transparent'; }}
                                   >
                                     <td style={{ padding: '10px 14px', fontWeight: 600, color: '#d0d0e8', fontSize: '0.85rem' }}>{alert.color}</td>
-                                    <td style={{ padding: '10px 14px', color: 'rgba(200,200,220,0.6)', fontSize: '0.85rem' }}>{alert.size}</td>
-                                    <td style={{ padding: '10px 14px', color: 'rgba(200,200,220,0.45)', fontSize: '0.8rem' }}>{alert.item_number || '—'}</td>
+                                    <td style={{ padding: '10px 14px', color: 'rgba(200,200,220,0.85)', fontSize: '0.85rem' }}>{alert.size}</td>
+                                    <td style={{ padding: '10px 14px', color: 'rgba(200,200,220,0.75)', fontSize: '0.8rem' }}>{alert.item_number || '—'}</td>
                                     <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 500, color: '#d0d0e8', fontSize: '0.85rem' }}>{alert.current_stock}</td>
-                                    <td style={{ padding: '10px 14px', textAlign: 'right', color: 'rgba(200,200,220,0.5)', fontSize: '0.85rem' }}>{alert.required_threshold}</td>
+                                    <td style={{ padding: '10px 14px', textAlign: 'right', color: 'rgba(200,200,220,0.8)', fontSize: '0.85rem' }}>{alert.required_threshold}</td>
                                     <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: 700, color: '#ff4d4d', fontSize: '0.85rem' }}>-{alert.shortage}</td>
-                                    <td style={{ padding: '10px 14px', textAlign: 'right', color: 'rgba(200,200,220,0.5)', fontSize: '0.85rem' }}>{(alert.new_order ?? '') === '' ? '—' : alert.new_order}</td>
-                                    <td style={{ padding: '10px 14px', color: 'rgba(200,200,220,0.4)', fontSize: '0.78rem' }}>{alert.order_date || '—'}</td>
+                                    <td style={{ padding: '10px 14px', textAlign: 'right', color: 'rgba(200,200,220,0.8)', fontSize: '0.85rem' }}>{(alert.new_order ?? '') === '' ? '—' : alert.new_order}</td>
+                                    <td style={{ padding: '10px 14px', color: 'rgba(200,200,220,0.75)', fontSize: '0.78rem' }}>{alert.order_date || '—'}</td>
                                     <td style={{ padding: '10px 14px', textAlign: 'center' }}>
                                       {isOrderPlaced ? (
                                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#10b981', fontSize: '0.65rem', fontWeight: 700, borderRadius: 8 }}>
@@ -624,7 +624,7 @@ const DashboardInner = () => {
       {showOrderModal && (
         <DarkModal title="Items with Orders Placed" icon={<TrendingUp className="w-5 h-5" style={{ color: '#8b5cf6' }} />} onClose={() => setShowOrderModal(false)}>
           {orderPlacedItems.length === 0
-            ? <p style={{ textAlign: 'center', color: 'rgba(200,200,220,0.4)', padding: '2rem' }}>No items with orders placed yet.</p>
+            ? <p style={{ textAlign: 'center', color: 'rgba(200,200,220,0.75)', padding: '2rem' }}>No items with orders placed yet.</p>
             : orderPlacedItems.map((item, i) => (
               <div key={i} style={{ borderRadius: 14, border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden', marginBottom: 10, background: 'rgba(5,8,14,0.5)' }}>
                 <button
@@ -633,8 +633,8 @@ const DashboardInner = () => {
                   onMouseEnter={e => { e.currentTarget.style.background = 'rgba(201,168,76,0.03)'; }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'none'; }}
                 >
-                  <span>{item.name} <span style={{ fontSize: '0.8rem', fontWeight: 400, color: 'rgba(200,200,220,0.4)' }}>({item.alerts.length} variant{item.alerts.length > 1 ? 's' : ''})</span></span>
-                  {expandedOrderGroups[item.name] ? <ChevronUp className="w-4 h-4" style={{ color: 'rgba(200,200,220,0.4)' }} /> : <ChevronDown className="w-4 h-4" style={{ color: 'rgba(200,200,220,0.4)' }} />}
+                  <span>{item.name} <span style={{ fontSize: '0.8rem', fontWeight: 400, color: 'rgba(200,200,220,0.75)' }}>({item.alerts.length} variant{item.alerts.length > 1 ? 's' : ''})</span></span>
+                  {expandedOrderGroups[item.name] ? <ChevronUp className="w-4 h-4" style={{ color: 'rgba(200,200,220,0.75)' }} /> : <ChevronDown className="w-4 h-4" style={{ color: 'rgba(200,200,220,0.75)' }} />}
                 </button>
                 {expandedOrderGroups[item.name] && (
                   <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
@@ -650,7 +650,7 @@ const DashboardInner = () => {
                             <span style={{ color: '#10b981', fontWeight: 700 }}>{a.new_order} units ordered</span>
                           </button>
                           {expandedOrderItems[rk] && (
-                            <div style={{ padding: '8px 16px 12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: '0.78rem', color: 'rgba(200,200,220,0.5)', background: 'rgba(5,8,14,0.3)' }}>
+                            <div style={{ padding: '8px 16px 12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: '0.78rem', color: 'rgba(200,200,220,0.8)', background: 'rgba(5,8,14,0.3)' }}>
                               <div><span style={{ color: 'rgba(200,200,220,0.3)' }}>Item #</span><br/><strong style={{ color: '#d0d0e8' }}>{a.item_number || '—'}</strong></div>
                               <div><span style={{ color: 'rgba(200,200,220,0.3)' }}>Current Stock</span><br/><strong style={{ color: '#d0d0e8' }}>{a.current_stock}</strong></div>
                               <div><span style={{ color: 'rgba(200,200,220,0.3)' }}>Required</span><br/><strong style={{ color: '#d0d0e8' }}>{a.required_threshold}</strong></div>
@@ -673,7 +673,7 @@ const DashboardInner = () => {
       {showHealthyModal && (
         <DarkModal title="Healthy Stock Items" icon={<ShieldCheck className="w-5 h-5" style={{ color: '#10b981' }} />} onClose={() => setShowHealthyModal(false)}>
           {healthyStockItems.length === 0
-            ? <p style={{ textAlign: 'center', color: 'rgba(200,200,220,0.4)', padding: '2rem' }}>No items with healthy stock levels.</p>
+            ? <p style={{ textAlign: 'center', color: 'rgba(200,200,220,0.75)', padding: '2rem' }}>No items with healthy stock levels.</p>
             : <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {healthyStockItems.map((item, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: 12 }}>
@@ -699,7 +699,7 @@ const DarkModal = ({ title, icon, onClose, children }) => (
     <div style={{ background: 'rgba(13,13,26,0.98)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, maxWidth: 640, width: '100%', maxHeight: '85vh', overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,0.7)' }} onClick={e => e.stopPropagation()}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <h2 style={{ fontWeight: 700, color: '#f0f0f8', display: 'flex', alignItems: 'center', gap: 8, fontSize: '1rem' }}>{icon}{title}</h2>
-        <button onClick={onClose} style={{ padding: 8, borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer', color: 'rgba(200,200,220,0.5)', transition: 'all 0.2s' }}><X className="w-4 h-4" /></button>
+        <button onClick={onClose} style={{ padding: 8, borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer', color: 'rgba(200,200,220,0.8)', transition: 'all 0.2s' }}><X className="w-4 h-4" /></button>
       </div>
       <div style={{ padding: 20, overflowY: 'auto', maxHeight: '70vh' }}>{children}</div>
     </div>

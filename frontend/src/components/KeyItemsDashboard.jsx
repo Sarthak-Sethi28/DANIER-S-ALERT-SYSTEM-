@@ -56,7 +56,7 @@ const KeyItemsDashboard = () => {
         <div className="card-premium p-8">
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
             <h2 className="text-gradient-gold" style={{ fontSize: '1.75rem', fontWeight: 800, fontFamily: "'Space Grotesk', sans-serif", marginBottom: 4 }}>Key Items Dashboard</h2>
-            <p style={{ color: 'rgba(200,200,220,0.45)', fontSize: '0.85rem' }}>Loading inventory data...</p>
+            <p style={{ color: 'rgba(200,200,220,0.8)', fontSize: '0.85rem' }}>Loading inventory data...</p>
           </div>
           <div>{Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)}</div>
         </div>
@@ -70,7 +70,7 @@ const KeyItemsDashboard = () => {
         <div className="card-premium p-12" style={{ textAlign: 'center' }}>
           <AlertTriangle className="w-16 h-16 mx-auto mb-4" style={{ color: '#ff6b6b', opacity: 0.6 }} />
           <h2 className="text-gradient-gold" style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: 8 }}>No Inventory Data</h2>
-          <p style={{ color: 'rgba(200,200,220,0.5)', marginBottom: 16, fontSize: '0.9rem' }}>{error.message}</p>
+          <p style={{ color: 'rgba(200,200,220,0.8)', marginBottom: 16, fontSize: '0.9rem' }}>{error.message}</p>
           {error.help && (
             <div style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)', borderRadius: 16, padding: 24, textAlign: 'left', maxWidth: 420, margin: '0 auto 20px' }}>
               <p style={{ fontWeight: 700, color: '#f59e0b', marginBottom: 12 }}>{error.help.title}</p>
@@ -105,7 +105,7 @@ const KeyItemsDashboard = () => {
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gradient-gold leading-tight font-elegant">Key Items Dashboard</h1>
-              <p style={{ color: 'rgba(200,200,220,0.5)', fontSize: '0.85rem', marginTop: 2 }}>
+              <p style={{ color: 'rgba(200,200,220,0.8)', fontSize: '0.85rem', marginTop: 2 }}>
                 Click on any item to view detailed stock by colour
               </p>
             </div>
@@ -130,7 +130,7 @@ const KeyItemsDashboard = () => {
           ].map(s => (
             <div key={s.label} style={{ background: 'rgba(5,8,14,0.5)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '14px 16px', textAlign: 'center' }}>
               <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.5rem', fontWeight: 800, color: s.color }}>{s.value}</div>
-              <div style={{ fontSize: '0.65rem', color: 'rgba(200,200,220,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>{s.label}</div>
+              <div style={{ fontSize: '0.75rem', color: 'rgba(200,200,220,0.85)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -138,7 +138,7 @@ const KeyItemsDashboard = () => {
 
       {/* Search */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(13,13,26,0.9)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: '10px 16px' }}>
-        <Search className="w-4 h-4" style={{ color: 'rgba(200,200,220,0.35)', flexShrink: 0 }} />
+        <Search className="w-4 h-4" style={{ color: 'rgba(200,200,220,0.7)', flexShrink: 0 }} />
         <input
           type="text"
           value={searchTerm}
@@ -147,7 +147,7 @@ const KeyItemsDashboard = () => {
           style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#f0f0f8', fontSize: '0.9rem' }}
         />
         {searchTerm && (
-          <span style={{ fontSize: '0.75rem', color: 'rgba(200,200,220,0.4)' }}>{filteredItems.length} results</span>
+          <span style={{ fontSize: '0.75rem', color: 'rgba(200,200,220,0.75)' }}>{filteredItems.length} results</span>
         )}
       </div>
 
@@ -203,7 +203,7 @@ const KeyItemsDashboard = () => {
                   )}
                 </div>
                 <div style={{ padding: 6, borderRadius: 8, background: isExpanded ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.04)', transition: 'all 0.2s' }}>
-                  {isExpanded ? <ChevronDown className="w-4 h-4" style={{ color: '#c9a84c' }} /> : <ChevronRight className="w-4 h-4" style={{ color: 'rgba(200,200,220,0.4)' }} />}
+                  {isExpanded ? <ChevronDown className="w-4 h-4" style={{ color: '#c9a84c' }} /> : <ChevronRight className="w-4 h-4" style={{ color: 'rgba(200,200,220,0.75)' }} />}
                 </div>
               </button>
 
@@ -212,7 +212,7 @@ const KeyItemsDashboard = () => {
                   {colorTotals.length > 0 ? (
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                        <Layers className="w-4 h-4" style={{ color: 'rgba(200,200,220,0.4)' }} />
+                        <Layers className="w-4 h-4" style={{ color: 'rgba(200,200,220,0.75)' }} />
                         <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'rgba(200,200,220,0.6)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Stock by Colour</span>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -239,7 +239,7 @@ const KeyItemsDashboard = () => {
                       </div>
                     </div>
                   ) : (
-                    <div style={{ textAlign: 'center', padding: 16, color: 'rgba(200,200,220,0.35)', fontSize: '0.85rem' }}>
+                    <div style={{ textAlign: 'center', padding: 16, color: 'rgba(200,200,220,0.7)', fontSize: '0.85rem' }}>
                       No colour data available
                     </div>
                   )}
@@ -253,7 +253,7 @@ const KeyItemsDashboard = () => {
       {filteredItems.length === 0 && !loading && (
         <div className="card-premium" style={{ padding: '3rem', textAlign: 'center' }}>
           <Search className="w-12 h-12 mx-auto mb-3" style={{ color: 'rgba(200,200,220,0.2)' }} />
-          <p style={{ color: 'rgba(200,200,220,0.5)', fontSize: '0.9rem' }}>No items match "{searchTerm}"</p>
+          <p style={{ color: 'rgba(200,200,220,0.8)', fontSize: '0.9rem' }}>No items match "{searchTerm}"</p>
         </div>
       )}
     </div>
