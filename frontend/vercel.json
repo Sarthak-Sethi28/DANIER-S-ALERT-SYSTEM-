@@ -1,14 +1,12 @@
 {
   "framework": "create-react-app",
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build && cp build/index.html build/app.html && cp build/landing.html build/index.html",
   "installCommand": "npm ci",
   "outputDirectory": "build",
   "env": {
     "REACT_APP_API_BASE_URL": "https://danier-s-alert-system.onrender.com"
   },
   "rewrites": [
-    { "source": "/", "destination": "/landing.html" },
-    { "source": "/landing", "destination": "/landing.html" },
-    { "source": "/(upload|dashboard|thresholds|key-items|recipients|help|search)(.*)", "destination": "/index.html" }
+    { "source": "/(upload|dashboard|thresholds|key-items|recipients|help|search)(.*)", "destination": "/app.html" }
   ]
 } 
