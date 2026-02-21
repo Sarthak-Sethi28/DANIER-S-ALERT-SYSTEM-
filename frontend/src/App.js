@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Upload, BarChart3, Users, HelpCircle, Package, Search, AlertTriangle, LogOut, Moon, Sun, Crown } from 'lucide-react';
+import { Upload, BarChart3, Users, HelpCircle, Package, AlertTriangle, LogOut, Moon, Sun, Crown, Home } from 'lucide-react';
 import UploadPage from './components/UploadPage';
 import Dashboard from './components/Dashboard';
 import Recipients from './components/Recipients';
@@ -8,6 +8,7 @@ import HelpPage from './components/HelpPage';
 import KeyItemsDashboard from './components/KeyItemsDashboard';
 import SearchBar from './components/SearchBar';
 import ThresholdManager from './components/ThresholdManager';
+import HomePage from './components/HomePage';
 import Login from './components/Login';
 import { startHeartbeat } from './services/api';
 import { DataProvider } from './DataContext';
@@ -17,7 +18,7 @@ function App() {
     const saved = localStorage.getItem('theme');
     if (saved === 'dark') return true;
     if (saved === 'light') return false;
-    return false;
+    return true;
   });
 
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
@@ -67,51 +68,50 @@ function App() {
     <Router>
       <DataProvider>
       <div className="min-h-screen bg-gradient-brand dark:bg-gradient-brand-dark">
-        {/* Elegant Header */}
-        <header className="bg-white/95 dark:bg-neutral-900/95 backdrop-blur-sm border-b border-neutral-200 dark:border-neutral-700 shadow-sophisticated">
+        <header style={{ background: 'rgba(7,7,14,0.92)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(201,168,76,0.12)' }}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
-              {/* Brand Section */}
-              <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 bg-brand-accent/90 rounded-lg shadow-luxury flex items-center justify-center">
-                  <Crown className="w-6 h-6 text-white" />
+              <Link to="/" className="flex items-center space-x-4" style={{ textDecoration: 'none' }}>
+                <div className="w-10 h-10 rounded-lg shadow-gold flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #c9a84c, #e8c96a)' }}>
+                  <Crown className="w-6 h-6 text-black" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-danier-dark dark:text-white font-elegant tracking-tight">
+                  <h1 className="text-2xl font-bold font-elegant tracking-tight" style={{ background: 'linear-gradient(135deg, #c9a84c, #e8c96a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                     DANIER
                   </h1>
-                  <p className="text-xs text-neutral-600 dark:text-neutral-400 font-medium tracking-wide uppercase">
+                  <p className="text-xs font-medium tracking-widest uppercase" style={{ color: 'rgba(201,168,76,0.55)' }}>
                     Inventory Intelligence
                   </p>
                 </div>
-              </div>
+              </Link>
 
-              {/* User Controls */}
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
                 <div className="hidden md:flex flex-col items-end">
-                  <div className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  <div className="text-sm font-medium" style={{ color: '#e0e0f0' }}>
                     {user?.username}
                   </div>
-                  <div className="text-xs text-neutral-500 dark:text-neutral-500">
+                  <div className="text-xs" style={{ color: 'rgba(201,168,76,0.5)' }}>
                     Session: {user?.sessionId?.slice(-8)}
                   </div>
                 </div>
 
                 <button
                   onClick={() => setDark(v => !v)}
-                  className="p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors duration-200"
+                  className="p-2 rounded-lg transition-colors duration-200"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
                   title="Toggle theme"
                 >
                   {dark ? (
-                    <Sun className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+                    <Sun className="w-5 h-5" style={{ color: '#c9a84c' }} />
                   ) : (
-                    <Moon className="w-5 h-5 text-neutral-600" />
+                    <Moon className="w-5 h-5" style={{ color: '#c9a84c' }} />
                   )}
                 </button>
 
                 <button
                   onClick={handleLogout}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 transition-colors duration-200"
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105"
+                  style={{ background: 'rgba(255,61,61,0.1)', border: '1px solid rgba(255,61,61,0.2)', color: '#ff6b6b' }}
                   title="Sign out"
                 >
                   <LogOut className="w-4 h-4" />
@@ -122,14 +122,12 @@ function App() {
           </div>
         </header>
 
-        {/* Elegant Navigation */}
         <Navigation />
 
-        {/* Main Content */}
         <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
           <div className="animate-fade-in">
             <Routes>
-              <Route path="/" element={<UploadPage />} />
+              <Route path="/" element={<HomePage />} />
               <Route path="/upload" element={<UploadPage />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/search" element={<SearchBar />} />
@@ -146,68 +144,45 @@ function App() {
   );
 }
 
-// Elegant Navigation Component
 function Navigation() {
   const location = useLocation();
   
   const navItems = [
-    { 
-      to: "/upload", 
-      icon: <Upload className="w-5 h-5" />, 
-      label: "Upload", 
-      priority: true,
-    },
-    { 
-      to: "/dashboard", 
-      icon: <BarChart3 className="w-5 h-5" />, 
-      label: "Dashboard",
-    },
-    { 
-      to: "/thresholds", 
-      icon: <AlertTriangle className="w-5 h-5" />, 
-      label: "Thresholds",
-    },
-    { 
-      to: "/key-items", 
-      icon: <Package className="w-5 h-5" />, 
-      label: "Key Items",
-    },
-    { 
-      to: "/recipients", 
-      icon: <Users className="w-5 h-5" />, 
-      label: "Recipients",
-    },
-    { 
-      to: "/help", 
-      icon: <HelpCircle className="w-5 h-5" />, 
-      label: "Help",
-    }
+    { to: "/", icon: <Home className="w-5 h-5" />, label: "Home" },
+    { to: "/upload", icon: <Upload className="w-5 h-5" />, label: "Upload" },
+    { to: "/dashboard", icon: <BarChart3 className="w-5 h-5" />, label: "Dashboard" },
+    { to: "/thresholds", icon: <AlertTriangle className="w-5 h-5" />, label: "Thresholds" },
+    { to: "/key-items", icon: <Package className="w-5 h-5" />, label: "Key Items" },
+    { to: "/recipients", icon: <Users className="w-5 h-5" />, label: "Recipients" },
+    { to: "/help", icon: <HelpCircle className="w-5 h-5" />, label: "Help" },
   ];
 
   return (
-    <nav className="bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-700">
+    <nav style={{ background: 'rgba(13,13,26,0.95)', borderBottom: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(12px)' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex space-x-1 overflow-x-auto py-3">
+        <div className="flex space-x-1 overflow-x-auto scrollbar-hide py-2">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.to || (location.pathname === '/' && item.to === '/upload');
-            
+            const isActive = location.pathname === item.to;
+
             return (
               <Link
                 key={item.to}
                 to={item.to}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors duration-200 whitespace-nowrap ${
-                  isActive
-                    ? 'bg-brand-accent text-white shadow-luxury'
-                    : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                } ${item.priority ? 'ring-2 ring-brand-accent/30 ring-offset-1' : ''}`}
+                className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 whitespace-nowrap"
+                style={isActive ? {
+                  background: 'linear-gradient(135deg, #c9a84c, #e8c96a)',
+                  color: '#000',
+                  boxShadow: '0 4px 16px rgba(201,168,76,0.3)',
+                  fontWeight: '700',
+                } : {
+                  color: 'rgba(200,200,220,0.65)',
+                  background: 'transparent',
+                }}
+                onMouseEnter={e => { if (!isActive) { e.currentTarget.style.color = '#c9a84c'; e.currentTarget.style.background = 'rgba(201,168,76,0.08)'; }}}
+                onMouseLeave={e => { if (!isActive) { e.currentTarget.style.color = 'rgba(200,200,220,0.65)'; e.currentTarget.style.background = 'transparent'; }}}
               >
                 {item.icon}
                 <span className="text-sm">{item.label}</span>
-                {item.priority && (
-                  <span className="text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full font-bold">
-                    START
-                  </span>
-                )}
               </Link>
             );
           })}

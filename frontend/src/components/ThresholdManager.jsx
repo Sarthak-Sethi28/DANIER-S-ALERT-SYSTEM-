@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { AlertTriangle, Save, RotateCcw, Clock, ChevronDown, Pencil, Trash2, Sparkles, RefreshCw, Settings2 } from 'lucide-react';
 import { API_BASE_URL } from '../config';
 import { useData } from '../DataContext';
 
@@ -24,7 +25,6 @@ const ThresholdManager = () => {
   const [optionsReady, setOptionsReady] = useState(false);
   const [options, setOptions] = useState({ colors: [], sizes: [], color_to_sizes: {}, size_to_colors: {} });
 
-  // Hydrate thresholds from context
   useEffect(() => {
     if (!ctxThresh) { setLoading(threshLoading); return; }
     const data = ctxThresh.allThresholds;
@@ -42,7 +42,6 @@ const ThresholdManager = () => {
     setLoading(false);
   }, [ctxThresh, threshLoading]);
 
-  // Hydrate options from context
   useEffect(() => {
     if (!ctxOpts) return;
     allOptionsRef.current = ctxOpts.items || {};
@@ -56,7 +55,6 @@ const ThresholdManager = () => {
     await fetchThresholds(false);
   }, [fetchThresholds]);
 
-  // Instant: set options from preloaded data when item name changes
   useEffect(() => {
     const name = itemName.trim();
     if (!name) {
@@ -84,7 +82,7 @@ const ThresholdManager = () => {
     }
     loadHistory(name);
     setRecalcAlerts(null);
-  }, [itemName]);
+  }, [itemName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveThreshold = async (itemName, size, color, threshold) => {
     setSaving(true);
@@ -135,121 +133,193 @@ const ThresholdManager = () => {
   const sizesForColor = color && options.color_to_sizes[color] ? options.color_to_sizes[color] : options.sizes;
   const colorsForSize = size && options.size_to_colors[size] ? options.size_to_colors[size] : options.colors;
 
+  const selectStyle = {
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    color: '#f0f0f8',
+    borderRadius: '12px',
+    padding: '12px 14px',
+    fontSize: '0.875rem',
+    width: '100%',
+    outline: 'none',
+    transition: 'all 0.2s',
+    appearance: 'none',
+    WebkitAppearance: 'none',
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23c9a84c' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'right 12px center',
+    backgroundSize: '12px',
+  };
+
+  const inputStyle = {
+    ...selectStyle,
+    backgroundImage: 'none',
+  };
+
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold">Threshold Manager</h2>
-        {optionsReady && (
-          <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-            {availableItemNames.length} products loaded
-          </span>
-        )}
+    <div className="max-w-5xl mx-auto animate-fade-in space-y-6 pb-10">
+      {/* Header */}
+      <div className="card-premium p-6 sm:p-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-gold" style={{ background: 'linear-gradient(135deg, #c9a84c, #e8c96a)' }}>
+              <Settings2 className="w-6 h-6 text-black" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gradient-gold leading-tight font-elegant">Threshold Manager</h1>
+              <p style={{ color: 'rgba(200,200,220,0.5)', fontSize: '0.85rem', marginTop: 2 }}>
+                Configure stock alert thresholds for key items
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {optionsReady && (
+              <span style={{ fontSize: '0.75rem', color: '#10b981', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', padding: '4px 12px', borderRadius: '999px', fontWeight: 600 }}>
+                {availableItemNames.length} products loaded
+              </span>
+            )}
+            <button
+              onClick={loadAll}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+              style={{ background: 'linear-gradient(135deg, #c9a84c, #e8c96a)', color: '#000', boxShadow: '0 4px 16px rgba(201,168,76,0.3)' }}
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
+        </div>
       </div>
-      {loading && <div>Loading...</div>}
-      {error && <div className="text-red-600 text-sm">{error}</div>}
+
+      {loading && (
+        <div className="card-premium p-12 text-center">
+          <div className="w-12 h-12 border-4 rounded-full animate-spin mx-auto mb-4" style={{ borderColor: 'rgba(201,168,76,0.2)', borderTopColor: '#c9a84c' }} />
+          <p style={{ color: 'rgba(200,200,220,0.6)' }}>Loading thresholds...</p>
+        </div>
+      )}
+      {error && <div style={{ color: '#ff6b6b', fontSize: '0.875rem', padding: '12px', background: 'rgba(255,61,61,0.08)', borderRadius: '12px', border: '1px solid rgba(255,61,61,0.2)' }}>{error}</div>}
 
       {/* Create / Update Form */}
-      <div className="bg-white dark:bg-neutral-800 rounded-lg border dark:border-neutral-700 p-5 mb-6 shadow-sm relative z-10">
-        <h3 className="font-semibold mb-4">Create or Update Threshold</h3>
-        <div className="space-y-3">
-          {/* Row 1: Product Name */}
+      <div className="card-premium p-6 sm:p-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(201,168,76,0.12)', border: '1px solid rgba(201,168,76,0.2)' }}>
+            <Sparkles className="w-4 h-4" style={{ color: '#c9a84c' }} />
+          </div>
+          <h3 className="text-lg font-bold" style={{ color: '#f0f0f8' }}>Create or Update Threshold</h3>
+        </div>
+
+        <div className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Product Name</label>
+            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'rgba(201,168,76,0.7)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Product Name</label>
             <select
               value={itemName}
               onChange={(e) => { setItemName(e.target.value); setSize(''); setColor(''); }}
-              className="w-full border dark:border-neutral-600 rounded-md px-3 py-2.5 bg-white dark:bg-neutral-700 text-sm"
+              style={selectStyle}
+              onFocus={e => { e.target.style.borderColor = 'rgba(201,168,76,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(201,168,76,0.1)'; }}
+              onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.08)'; e.target.style.boxShadow = 'none'; }}
             >
-              <option value="">Select product...</option>
-              {availableItemNames.map(n => <option key={n} value={n}>{n}</option>)}
+              <option value="" style={{ background: '#0d0d1a', color: '#888' }}>Select product...</option>
+              {availableItemNames.map(n => <option key={n} value={n} style={{ background: '#0d0d1a', color: '#f0f0f8' }}>{n}</option>)}
             </select>
           </div>
-          {/* Row 2: Size, Color, Threshold */}
-          <div className="grid grid-cols-3 gap-3">
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                Size {sizesForColor.length > 0 && <span className="text-blue-500">({sizesForColor.length})</span>}
+              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'rgba(201,168,76,0.7)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+                Size {sizesForColor.length > 0 && <span style={{ color: '#3b82f6' }}>({sizesForColor.length})</span>}
               </label>
               <select
                 value={size}
                 onChange={(e) => setSize(e.target.value)}
-                className="w-full border dark:border-neutral-600 rounded-md px-3 py-2.5 bg-white dark:bg-neutral-700 text-sm"
+                style={{ ...selectStyle, opacity: !itemName ? 0.4 : 1 }}
                 disabled={!itemName}
+                onFocus={e => { e.target.style.borderColor = 'rgba(201,168,76,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(201,168,76,0.1)'; }}
+                onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.08)'; e.target.style.boxShadow = 'none'; }}
               >
-                <option value="">Select size</option>
-                {sizesForColor.map((s) => (<option key={s} value={s}>{s}</option>))}
+                <option value="" style={{ background: '#0d0d1a' }}>Select size</option>
+                {sizesForColor.map((s) => <option key={s} value={s} style={{ background: '#0d0d1a', color: '#f0f0f8' }}>{s}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                Color {colorsForSize.length > 0 && <span className="text-blue-500">({colorsForSize.length})</span>}
+              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'rgba(201,168,76,0.7)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+                Color {colorsForSize.length > 0 && <span style={{ color: '#3b82f6' }}>({colorsForSize.length})</span>}
               </label>
               <select
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
-                className="w-full border dark:border-neutral-600 rounded-md px-3 py-2.5 bg-white dark:bg-neutral-700 text-sm"
+                style={{ ...selectStyle, opacity: !itemName ? 0.4 : 1 }}
                 disabled={!itemName}
+                onFocus={e => { e.target.style.borderColor = 'rgba(201,168,76,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(201,168,76,0.1)'; }}
+                onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.08)'; e.target.style.boxShadow = 'none'; }}
               >
-                <option value="">Select color</option>
-                {colorsForSize.map((c) => (<option key={c} value={c}>{c}</option>))}
+                <option value="" style={{ background: '#0d0d1a' }}>Select color</option>
+                {colorsForSize.map((c) => <option key={c} value={c} style={{ background: '#0d0d1a', color: '#f0f0f8' }}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Threshold</label>
+              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 700, color: 'rgba(201,168,76,0.7)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Threshold</label>
               <input
                 type="number"
                 value={threshold}
                 onChange={(e) => setThreshold(e.target.value)}
-                placeholder="e.g. 5"
+                placeholder="e.g. 30"
                 min="0"
-                className="w-full border dark:border-neutral-600 rounded-md px-3 py-2.5 bg-white dark:bg-neutral-700 text-sm"
+                style={inputStyle}
+                onFocus={e => { e.target.style.borderColor = 'rgba(201,168,76,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(201,168,76,0.1)'; }}
+                onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.08)'; e.target.style.boxShadow = 'none'; }}
               />
             </div>
           </div>
-          {/* Row 3: Save Button */}
+
           <button
-            className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium disabled:opacity-50 transition-colors"
+            className="btn-premium w-full flex items-center justify-center gap-2"
+            style={{ padding: '14px', borderRadius: '14px', fontSize: '0.95rem', border: 'none', cursor: (!itemName || !size || !color || !threshold || saving) ? 'not-allowed' : 'pointer', opacity: (!itemName || !size || !color || !threshold || saving) ? 0.35 : 1 }}
             disabled={!itemName || !size || !color || !threshold || saving}
             onClick={async () => {
               const t = parseInt(threshold, 10);
               if (Number.isNaN(t) || t < 0) return;
-              try { await saveThreshold(itemName.trim(), size, color, t); } catch {}
+              try { await saveThreshold(itemName.trim(), size, color, t); } catch {} // eslint-disable-line no-empty
             }}
-          >{saving ? 'Saving...' : 'Save Threshold'}</button>
+          >
+            <Save className="w-5 h-5" />
+            {saving ? 'Saving...' : 'Save Threshold'}
+          </button>
         </div>
       </div>
 
-      {/* Recalculated Alerts after threshold change */}
+      {/* Recalculated Alerts */}
       {recalcAlerts && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded p-4 mb-6">
-          <h3 className="font-semibold text-yellow-800 dark:text-yellow-300 mb-2">
-            Recalculated Alerts for {recalcAlerts.item}
-            <span className="ml-2 text-sm font-normal">
-              ({recalcAlerts.low} low stock out of {recalcAlerts.alerts.length} variants)
-            </span>
-          </h3>
-          <div className="max-h-48 overflow-y-auto">
-            <table className="w-full text-sm">
+        <div className="card-premium p-6" style={{ borderColor: 'rgba(245,158,11,0.25)' }}>
+          <div className="flex items-center gap-3 mb-4">
+            <AlertTriangle className="w-5 h-5" style={{ color: '#f59e0b' }} />
+            <h3 style={{ fontWeight: 700, color: '#f0f0f8' }}>
+              Recalculated: {recalcAlerts.item}
+              <span style={{ marginLeft: 8, fontSize: '0.8rem', fontWeight: 400, color: 'rgba(200,200,220,0.5)' }}>
+                ({recalcAlerts.low} low stock of {recalcAlerts.alerts.length} variants)
+              </span>
+            </h3>
+          </div>
+          <div style={{ maxHeight: 240, overflowY: 'auto' }}>
+            <table className="table-luxury" style={{ width: '100%' }}>
               <thead>
-                <tr className="text-left border-b">
-                  <th className="py-1">Size</th>
-                  <th className="py-1">Color</th>
-                  <th className="py-1">Stock</th>
-                  <th className="py-1">Threshold</th>
-                  <th className="py-1">Status</th>
+                <tr>
+                  <th style={{ padding: '8px 12px', textAlign: 'left' }}>Size</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'left' }}>Color</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'right' }}>Stock</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'right' }}>Threshold</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'center' }}>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {recalcAlerts.alerts.map((a, i) => (
-                  <tr key={i} className={a.is_low ? 'bg-red-50 dark:bg-red-900/20' : ''}>
-                    <td className="py-1">{a.size}</td>
-                    <td className="py-1">{a.color}</td>
-                    <td className="py-1 font-mono">{a.stock}</td>
-                    <td className="py-1 font-mono">{a.threshold}</td>
-                    <td className="py-1">
+                  <tr key={i} style={{ background: a.is_low ? 'rgba(255,61,61,0.05)' : 'transparent' }}>
+                    <td style={{ padding: '8px 12px', color: '#d0d0e8', fontSize: '0.85rem' }}>{a.size}</td>
+                    <td style={{ padding: '8px 12px', color: '#d0d0e8', fontSize: '0.85rem' }}>{a.color}</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace', color: '#d0d0e8', fontSize: '0.85rem' }}>{a.stock}</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace', color: '#d0d0e8', fontSize: '0.85rem' }}>{a.threshold}</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                       {a.is_low
-                        ? <span className="text-red-600 font-semibold">LOW STOCK</span>
-                        : <span className="text-green-600">OK</span>}
+                        ? <span className="badge-critical">LOW STOCK</span>
+                        : <span className="badge-good">OK</span>}
                     </td>
                   </tr>
                 ))}
@@ -260,55 +330,120 @@ const ThresholdManager = () => {
       )}
 
       {/* Existing Overrides */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="font-semibold">Existing Overrides</h3>
-          <button onClick={loadAll} className="px-3 py-2 bg-blue-600 text-white rounded text-sm">Refresh</button>
+      <div className="card-premium p-6 sm:p-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.2)' }}>
+              <ChevronDown className="w-4 h-4" style={{ color: '#8b5cf6' }} />
+            </div>
+            <h3 className="text-lg font-bold" style={{ color: '#f0f0f8' }}>Existing Overrides</h3>
+            <span style={{ fontSize: '0.7rem', color: 'rgba(200,200,220,0.4)', background: 'rgba(255,255,255,0.04)', padding: '2px 8px', borderRadius: '999px' }}>{items.length}</span>
+          </div>
         </div>
+
         {items.length === 0 ? (
-          <div className="text-gray-600 text-sm">No custom thresholds set yet.</div>
+          <div style={{ textAlign: 'center', padding: '2rem', color: 'rgba(200,200,220,0.4)' }}>
+            <Settings2 className="w-10 h-10 mx-auto mb-3" style={{ opacity: 0.3 }} />
+            <p style={{ fontSize: '0.9rem' }}>No custom thresholds set yet</p>
+          </div>
         ) : (
-          <ul className="space-y-2">
+          <div className="space-y-3">
             {items.map((it, idx) => (
-              <li key={idx} className="border dark:border-neutral-700 rounded p-3 bg-white dark:bg-neutral-800">
-                <div className="font-semibold">{it.item_name}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">{it.size} &bull; {it.color}</div>
-                <div className="mt-2 flex items-center gap-2">
-                  <input
-                    type="number"
-                    defaultValue={it.threshold}
-                    min="0"
-                    className="w-24 border dark:border-neutral-600 rounded px-2 py-1 text-sm bg-white dark:bg-neutral-700"
-                    onBlur={async (e) => {
-                      const newVal = parseInt(e.target.value, 10);
-                      if (!Number.isNaN(newVal) && newVal >= 0 && newVal !== it.threshold) {
-                        try { await saveThreshold(it.item_name, it.size, it.color, newVal); } catch {}
-                      }
-                    }}
-                  />
-                  <button className="px-2 py-1 border rounded text-sm" onClick={() => { setItemName(it.item_name); setSize(it.size); setColor(it.color); }}>Edit</button>
-                  <button className="px-2 py-1 border rounded text-sm text-red-600" onClick={() => resetThreshold(it.item_name, it.size, it.color)}>Reset</button>
+              <div
+                key={idx}
+                style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: '14px',
+                  padding: '16px 20px',
+                  transition: 'all 0.2s',
+                }}
+                className="hover-lift"
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(201,168,76,0.2)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#f0f0f8', fontSize: '0.95rem', marginBottom: 2 }}>{it.item_name}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'rgba(200,200,220,0.5)' }}>
+                      {it.size} &bull; {it.color} &bull; <span style={{ color: '#c9a84c', fontWeight: 600 }}>Threshold: {it.threshold}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      defaultValue={it.threshold}
+                      min="0"
+                      style={{ ...inputStyle, width: '80px', padding: '8px 10px', fontSize: '0.8rem', textAlign: 'center' }}
+                      onBlur={async (e) => {
+                        const newVal = parseInt(e.target.value, 10);
+                        if (!Number.isNaN(newVal) && newVal >= 0 && newVal !== it.threshold) {
+                          try { await saveThreshold(it.item_name, it.size, it.color, newVal); } catch {} // eslint-disable-line no-empty
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={() => { setItemName(it.item_name); setSize(it.size); setColor(it.color); setThreshold(String(it.threshold)); }}
+                      style={{ padding: '8px 12px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '10px', color: '#3b82f6', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, transition: 'all 0.2s' }}
+                    >
+                      <Pencil className="w-3 h-3" /> Edit
+                    </button>
+                    <button
+                      onClick={() => resetThreshold(it.item_name, it.size, it.color)}
+                      style={{ padding: '8px 12px', background: 'rgba(255,61,61,0.08)', border: '1px solid rgba(255,61,61,0.2)', borderRadius: '10px', color: '#ff6b6b', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, transition: 'all 0.2s' }}
+                    >
+                      <Trash2 className="w-3 h-3" /> Reset
+                    </button>
+                  </div>
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
 
       {/* History */}
-      <div>
-        <h3 className="font-semibold mb-2">Recent Changes {itemName ? `(for ${itemName})` : ''}</h3>
+      <div className="card-premium p-6 sm:p-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.2)' }}>
+            <Clock className="w-4 h-4" style={{ color: '#10b981' }} />
+          </div>
+          <h3 className="text-lg font-bold" style={{ color: '#f0f0f8' }}>
+            Recent Changes {itemName ? <span style={{ fontWeight: 400, fontSize: '0.85rem', color: 'rgba(200,200,220,0.5)' }}> for {itemName}</span> : ''}
+          </h3>
+        </div>
         {history.length === 0 ? (
-          <div className="text-gray-600 text-sm">No history yet.</div>
+          <div style={{ textAlign: 'center', padding: '1.5rem', color: 'rgba(200,200,220,0.35)' }}>
+            <RotateCcw className="w-8 h-8 mx-auto mb-2" style={{ opacity: 0.3 }} />
+            <p style={{ fontSize: '0.85rem' }}>No history yet</p>
+          </div>
         ) : (
-          <ul className="space-y-1 text-sm">
+          <div className="space-y-2">
             {history.map((h, i) => (
-              <li key={i} className="border dark:border-neutral-700 rounded p-2">
-                <div className="font-medium">{h.item_name} &bull; {h.size} &bull; {h.color}</div>
-                <div className="text-gray-700 dark:text-gray-400">{h.old_threshold ?? 'default'} &rarr; {h.new_threshold} at {h.changed_at}</div>
-              </li>
+              <div
+                key={i}
+                style={{
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  borderRadius: '10px',
+                  padding: '12px 16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2,
+                }}
+              >
+                <div style={{ fontWeight: 600, color: '#d0d0e8', fontSize: '0.85rem' }}>
+                  {h.item_name} &bull; {h.size} &bull; {h.color}
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'rgba(200,200,220,0.45)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ color: 'rgba(255,61,61,0.6)' }}>{h.old_threshold ?? 'default'}</span>
+                  <span>&rarr;</span>
+                  <span style={{ color: '#c9a84c', fontWeight: 600 }}>{h.new_threshold}</span>
+                  <span style={{ marginLeft: 8 }}>{h.changed_at}</span>
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </div>
