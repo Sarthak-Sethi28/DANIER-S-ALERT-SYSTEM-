@@ -87,7 +87,7 @@ code {
 /* ── Button: Elegant (base shimmer effect) ── */
 .btn-elegant {
   @apply relative overflow-hidden transition-all duration-200 ease-out;
-  @apply shadow-elegant hover:shadow-luxury;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
   @apply transform hover:-translate-y-0.5;
 }
 
@@ -111,8 +111,11 @@ code {
   @apply relative overflow-hidden transition-all duration-300 ease-out;
   background: linear-gradient(135deg, #c9a84c 0%, #e8c96a 100%);
   @apply text-black font-bold;
-  @apply shadow-gold;
-  @apply transform hover:scale-105 hover:shadow-luxury;
+  box-shadow: 0 8px 24px rgba(201,168,76,0.28);
+  @apply transform hover:scale-105;
+}
+.btn-premium:hover {
+  box-shadow: 0 8px 30px rgba(201,168,76,0.18);
 }
 
 .btn-premium::before {
@@ -140,13 +143,14 @@ code {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  @apply rounded-xl shadow-sophisticated;
+  @apply rounded-xl;
+  box-shadow: 0 2px 15px rgba(0,0,0,0.5);
   @apply transition-all duration-200 ease-out;
 }
 
 .card-elegant:hover {
   border-color: rgba(201, 168, 76, 0.2);
-  @apply shadow-gold;
+  box-shadow: 0 8px 24px rgba(201,168,76,0.28);
 }
 
 /* Legacy: dark variant of card-elegant (now same as card-elegant) */
@@ -155,7 +159,8 @@ code {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.06);
-  @apply rounded-xl shadow-sophisticated;
+  @apply rounded-xl;
+  box-shadow: 0 2px 15px rgba(0,0,0,0.5);
   @apply transition-all duration-200 ease-out;
 }
 
