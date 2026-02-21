@@ -1,7 +1,7 @@
 {
   "framework": "create-react-app",
   "buildCommand": "npm run build && cp build/index.html build/app.html && cp build/landing.html build/index.html",
-  "installCommand": "npm ci",
+  "installCommand": "npm install",
   "outputDirectory": "build",
   "env": {
     "REACT_APP_API_BASE_URL": "https://danier-s-alert-system.onrender.com"
