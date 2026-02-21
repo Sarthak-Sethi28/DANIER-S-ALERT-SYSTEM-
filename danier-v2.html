@@ -1,0 +1,2285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DANIER — Inventory Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════════
+   ROOT VARIABLES
+═══════════════════════════════════════════════ */
+:root {
+  --bg:       #08080f;
+  --bg2:      #0d0d1a;
+  --bg3:      #131324;
+  --card:     rgba(18,18,32,0.85);
+  --card2:    rgba(25,25,46,0.9);
+  --glass:    rgba(255,255,255,0.04);
+  --border:   rgba(255,255,255,0.07);
+  --gold:     #c9a84c;
+  --gold2:    #e8c96a;
+  --gold-glow:rgba(201,168,76,0.14);
+  --crit:     #ff3d3d;
+  --crit-bg:  rgba(255,61,61,0.1);
+  --warn:     #f59e0b;
+  --warn-bg:  rgba(245,158,11,0.1);
+  --good:     #10b981;
+  --good-bg:  rgba(16,185,129,0.1);
+  --order:    #8b5cf6;
+  --order-bg: rgba(139,92,246,0.1);
+  --info:     #60a5fa;
+  --info-bg:  rgba(96,165,250,0.1);
+  --t1: #f0f0f8;
+  --t2: #9090b8;
+  --t3: #4a4a6a;
+  --r: 12px;
+  --rs: 8px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--t1);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 4px; }
+
+/* ═══════════════════════════════════════════════
+   THREE.JS CANVAS
+═══════════════════════════════════════════════ */
+#threeCanvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  transition: opacity 0.6s ease;
+}
+
+body:not(.page-upload) #threeCanvas { opacity: 0.18; }
+body.page-upload #threeCanvas { opacity: 1; }
+
+/* ═══════════════════════════════════════════════
+   NAVBAR
+═══════════════════════════════════════════════ */
+#navbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 200;
+  height: 58px;
+  background: rgba(8,8,15,0.88);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 0;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: 28px;
+  flex-shrink: 0;
+}
+
+.nav-logo-crown {
+  width: 28px; height: 28px;
+  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.nav-logo-text {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+}
+
+.nav-link {
+  padding: 6px 14px;
+  border-radius: var(--rs);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--t2);
+  cursor: pointer;
+  transition: all 0.18s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  white-space: nowrap;
+}
+
+.nav-link:hover { background: var(--glass); color: var(--t1); }
+.nav-link.active { background: var(--gold-glow); color: var(--gold); }
+
+.nav-badge {
+  background: var(--crit);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.nav-badge.purple { background: var(--order); }
+.nav-badge.green  { background: var(--good); }
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.nav-user {
+  font-size: 12.5px;
+  color: var(--t2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold-glow), var(--bg3));
+  border: 1px solid rgba(201,168,76,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.nav-icon-btn {
+  width: 32px; height: 32px;
+  border-radius: var(--rs);
+  background: var(--glass);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s;
+  color: var(--t2);
+}
+
+.nav-icon-btn:hover { background: var(--card2); color: var(--t1); }
+
+.nav-signout {
+  padding: 6px 14px;
+  border-radius: var(--rs);
+  background: var(--glass);
+  border: 1px solid var(--border);
+  color: var(--t2);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s;
+  font-family: 'Inter', sans-serif;
+}
+
+.nav-signout:hover { background: var(--crit-bg); color: var(--crit); border-color: rgba(255,61,61,0.2); }
+
+.session-id {
+  font-size: 10px;
+  color: var(--t3);
+  background: var(--bg3);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+/* ═══════════════════════════════════════════════
+   PAGES
+═══════════════════════════════════════════════ */
+.page {
+  position: relative;
+  z-index: 10;
+  min-height: 100vh;
+  padding-top: 58px;
+  display: none;
+}
+
+.page.active { display: block; }
+
+/* ═══════════════════════════════════════════════
+   UPLOAD / LANDING PAGE
+═══════════════════════════════════════════════ */
+#page-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 80px 24px 40px;
+}
+
+.upload-hero {
+  text-align: center;
+  margin-bottom: 40px;
+  animation: heroIn 1s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+@keyframes heroIn {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.upload-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--gold-glow);
+  border: 1px solid rgba(201,168,76,0.22);
+  border-radius: 20px;
+  padding: 5px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 22px;
+}
+
+.pulse {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--good);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pulse::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: var(--good);
+  opacity: 0;
+  animation: pulseAnim 2s ease infinite;
+}
+
+@keyframes pulseAnim {
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+.upload-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 54px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 14px;
+}
+
+.upload-title .gd {
+  background: linear-gradient(135deg, var(--gold), var(--gold2), #fff5d6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.upload-sub {
+  font-size: 15px;
+  color: var(--t2);
+  max-width: 520px;
+  margin: 0 auto 12px;
+  line-height: 1.7;
+}
+
+.server-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--good-bg);
+  border: 1px solid rgba(16,185,129,0.25);
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--good);
+  margin-top: 8px;
+}
+
+/* Upload Card */
+.upload-card-wrap {
+  width: 100%;
+  max-width: 820px;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+  animation: heroIn 1s 0.2s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+.upload-card {
+  background: var(--card);
+  backdrop-filter: blur(32px);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 32px;
+}
+
+.upload-dropzone {
+  border: 2px dashed rgba(201,168,76,0.25);
+  border-radius: 14px;
+  padding: 48px 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.upload-dropzone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, var(--gold-glow), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.upload-dropzone:hover { border-color: var(--gold); }
+.upload-dropzone:hover::before { opacity: 1; }
+.upload-dropzone.drag { border-color: var(--gold); background: var(--gold-glow); }
+
+.upload-cloud-icon {
+  width: 72px; height: 72px;
+  background: var(--gold-glow);
+  border: 1px solid rgba(201,168,76,0.22);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+}
+
+.upload-cloud-icon svg { width: 32px; height: 32px; color: var(--gold); }
+
+.upload-dz-title { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+.upload-dz-hint  { font-size: 13px; color: var(--t2); margin-bottom: 20px; }
+
+.upload-main-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  color: #08080f;
+  padding: 11px 28px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+  letter-spacing: 0.04em;
+}
+
+.upload-main-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(201,168,76,0.35); }
+
+.upload-fmt { font-size: 11px; color: var(--t3); margin-top: 14px; }
+
+/* Upload progress */
+.up-progress { display: none; margin-top: 20px; }
+.up-prog-bar { height: 3px; background: var(--bg3); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+.up-prog-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold2)); width: 0; transition: width 0.3s; }
+.up-prog-lbl { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--t2); }
+
+/* Format card */
+.fmt-card {
+  background: var(--card);
+  backdrop-filter: blur(32px);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 24px;
+}
+
+.fmt-card-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--t3);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.fmt-col {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+}
+
+.fmt-col:last-child { border-bottom: none; }
+
+.fmt-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.fmt-col-name { font-weight: 500; }
+.fmt-col-ex   { color: var(--t3); font-size: 11px; margin-left: auto; }
+
+/* ═══════════════════════════════════════════════
+   DASHBOARD PAGE
+═══════════════════════════════════════════════ */
+.page-inner {
+  padding: 28px 32px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.page-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.page-hd-left h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.page-hd-left p {
+  font-size: 13px;
+  color: var(--t2);
+  margin-top: 3px;
+}
+
+/* Stat cards */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(5,1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.stat-c {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-c:hover { transform: translateY(-2px); }
+
+.stat-c::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+}
+
+.stat-c.s-all::after  { background: var(--gold); }
+.stat-c.s-crit::after { background: var(--crit); }
+.stat-c.s-ord::after  { background: var(--order); }
+.stat-c.s-warn::after { background: var(--warn); }
+.stat-c.s-good::after { background: var(--good); }
+
+.stat-c.s-crit:hover { border-color: rgba(255,61,61,0.3); background: rgba(255,61,61,0.05); }
+.stat-c.s-ord:hover  { border-color: rgba(139,92,246,0.3); background: rgba(139,92,246,0.05); }
+.stat-c.s-good:hover { border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.05); }
+
+.stat-lbl { font-size: 11px; color: var(--t3); letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; margin-bottom: 8px; }
+.stat-val { font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 800; line-height: 1; }
+.stat-val.red    { color: var(--crit); }
+.stat-val.purple { color: var(--order); }
+.stat-val.green  { color: var(--good); }
+.stat-sub { font-size: 11.5px; color: var(--t3); margin-top: 6px; }
+
+/* Alert Banner */
+.alert-banner {
+  background: linear-gradient(135deg, rgba(255,61,61,0.12), rgba(255,61,61,0.06));
+  border: 1px solid rgba(255,61,61,0.25);
+  border-radius: var(--r);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.ab-icon {
+  width: 36px; height: 36px;
+  background: var(--crit-bg);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.ab-icon svg { width: 16px; height: 16px; color: var(--crit); }
+.ab-text { flex: 1; font-size: 13.5px; font-weight: 600; color: var(--t1); }
+.ab-text span { color: var(--crit); }
+
+.ab-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: var(--rs);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.18s;
+}
+
+.ab-btn.red { background: var(--crit); color: #fff; }
+.ab-btn.red:hover { background: #ff5555; transform: translateY(-1px); }
+.ab-btn.ghost { background: transparent; border: 1px solid rgba(255,61,61,0.3); color: var(--crit); }
+.ab-btn.ghost:hover { background: var(--crit-bg); }
+
+/* Controls Row */
+.ctrl-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-box svg {
+  position: absolute;
+  left: 12px; top: 50%;
+  transform: translateY(-50%);
+  width: 15px; height: 15px;
+  color: var(--t3);
+}
+
+.search-input {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--rs);
+  padding: 8px 14px 8px 36px;
+  color: var(--t1);
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus { border-color: var(--gold); }
+.search-input::placeholder { color: var(--t3); }
+
+.filter-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--rs);
+  padding: 3px;
+}
+
+.ft {
+  padding: 5px 14px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--t2);
+  transition: all 0.15s;
+  border: none;
+  background: transparent;
+  font-family: 'Inter', sans-serif;
+}
+
+.ft.active { background: var(--gold-glow); color: var(--gold); }
+.ft:hover:not(.active) { background: var(--glass); }
+
+.sort-select {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--rs);
+  padding: 7px 14px;
+  color: var(--t1);
+  font-size: 12.5px;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+.expand-all-btn {
+  padding: 7px 14px;
+  border-radius: var(--rs);
+  background: var(--glass);
+  border: 1px solid var(--border);
+  color: var(--t2);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.18s;
+  display: flex; align-items: center; gap: 6px;
+}
+
+.expand-all-btn:hover { background: var(--card2); color: var(--t1); }
+
+/* Item List */
+.item-list { display: flex; flex-direction: column; gap: 8px; }
+
+.item-row {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.item-row:hover { border-color: rgba(255,255,255,0.1); }
+.item-row.is-critical { border-left: 3px solid var(--crit); }
+.item-row.is-warning  { border-left: 3px solid var(--warn); }
+.item-row.is-good     { border-left: 3px solid var(--good); }
+.item-row.is-order    { border-left: 3px solid var(--order); }
+
+.item-header {
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  cursor: pointer;
+  gap: 14px;
+  user-select: none;
+}
+
+.item-name {
+  font-size: 15px;
+  font-weight: 700;
+  font-family: 'Space Grotesk', sans-serif;
+  letter-spacing: 0.04em;
+  min-width: 100px;
+}
+
+.item-meta {
+  font-size: 12px;
+  color: var(--t2);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.item-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.pill.critical { background: var(--crit-bg); color: var(--crit); border: 1px solid rgba(255,61,61,0.2); }
+.pill.warning  { background: var(--warn-bg); color: var(--warn); border: 1px solid rgba(245,158,11,0.2); }
+.pill.good     { background: var(--good-bg); color: var(--good); border: 1px solid rgba(16,185,129,0.2); }
+.pill.order    { background: var(--order-bg); color: var(--order); border: 1px solid rgba(139,92,246,0.2); }
+.pill.gold     { background: var(--gold-glow); color: var(--gold); border: 1px solid rgba(201,168,76,0.2); }
+
+.item-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.email-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: var(--rs);
+  background: var(--gold-glow);
+  border: 1px solid rgba(201,168,76,0.22);
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.18s;
+}
+
+.email-btn:hover { background: rgba(201,168,76,0.2); transform: translateY(-1px); }
+
+.email-btn svg { width: 12px; height: 12px; }
+
+.chevron {
+  width: 20px; height: 20px;
+  color: var(--t3);
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+}
+
+.item-row.open .chevron { transform: rotate(90deg); }
+
+/* Item Detail Table */
+.item-detail {
+  display: none;
+  border-top: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.item-row.open .item-detail { display: block; }
+
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.detail-table thead tr { background: rgba(0,0,0,0.3); }
+.detail-table th {
+  padding: 8px 14px;
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--t3);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.detail-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.03); transition: background 0.15s; }
+.detail-table tbody tr:hover { background: rgba(255,255,255,0.025); }
+.detail-table td { padding: 9px 14px; vertical-align: middle; }
+
+.td-critical { color: var(--crit); font-weight: 700; }
+.td-good     { color: var(--good); font-weight: 700; }
+.td-zero     { color: var(--t3); }
+.td-neg      { color: var(--crit); font-weight: 700; }
+.td-pos      { color: var(--good); font-weight: 700; }
+.td-order    { color: var(--order); font-weight: 600; }
+.td-gray     { color: var(--t3); }
+.td-name     { font-weight: 600; }
+
+.priority-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.pb-critical { background: var(--crit-bg); color: var(--crit); }
+.pb-warning  { background: var(--warn-bg); color: var(--warn); }
+.pb-good     { background: var(--good-bg); color: var(--good); }
+.pb-order    { background: var(--order-bg); color: var(--order); }
+
+/* ═══════════════════════════════════════════════
+   KEY ITEMS PAGE
+═══════════════════════════════════════════════ */
+.ki-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+.ki-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.ki-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.1); }
+
+.ki-card-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ki-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.ki-stock {
+  font-size: 13px;
+  color: var(--t2);
+  margin-top: 3px;
+}
+
+.ki-alerts-badge {
+  background: var(--crit-bg);
+  border: 1px solid rgba(255,61,61,0.2);
+  color: var(--crit);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.ki-expand {
+  width: 16px; height: 16px;
+  color: var(--t3);
+  transition: transform 0.25s;
+}
+
+.ki-card.open .ki-expand { transform: rotate(90deg); }
+
+.ki-colors {
+  display: none;
+  border-top: 1px solid var(--border);
+  padding: 14px 18px;
+}
+
+.ki-card.open .ki-colors { display: block; }
+
+.ki-colors-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--t3);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.color-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--glass);
+  font-size: 12.5px;
+}
+
+.color-name { font-weight: 500; }
+.color-count { font-weight: 700; }
+.color-count.zero   { color: var(--crit); }
+.color-count.low    { color: var(--warn); }
+.color-count.normal { color: var(--good); }
+
+/* ═══════════════════════════════════════════════
+   THRESHOLDS PAGE
+═══════════════════════════════════════════════ */
+.threshold-table { width: 100%; border-collapse: collapse; }
+.threshold-table th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--t3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+
+.threshold-table td { padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+
+.thresh-input {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: var(--t1);
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  width: 90px;
+  outline: none;
+  transition: border-color 0.2s;
+  text-align: right;
+}
+
+.thresh-input:focus { border-color: var(--gold); }
+
+/* ═══════════════════════════════════════════════
+   RECIPIENTS PAGE
+═══════════════════════════════════════════════ */
+.recip-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.recip-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--t2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recip-card-title svg { width: 14px; height: 14px; color: var(--gold); }
+
+.recip-input-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.recip-input {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--rs);
+  padding: 9px 14px;
+  color: var(--t1);
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+  flex: 1;
+}
+
+.recip-input:focus { border-color: var(--gold); }
+.recip-input::placeholder { color: var(--t3); }
+
+.add-btn {
+  padding: 9px 20px;
+  background: var(--gold);
+  color: var(--bg);
+  border: none;
+  border-radius: var(--rs);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+
+.add-btn:hover { background: var(--gold2); }
+
+.recip-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px 5px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 12.5px;
+  color: var(--t2);
+  margin: 4px;
+}
+
+.chip-x {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 10px;
+  transition: background 0.15s;
+}
+
+.chip-x:hover { background: var(--crit-bg); color: var(--crit); }
+
+.send-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  color: var(--bg);
+  padding: 11px 26px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+  letter-spacing: 0.04em;
+}
+
+.send-all-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(201,168,76,0.35); }
+
+/* ═══════════════════════════════════════════════
+   MODALS
+═══════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+}
+
+.modal-overlay.show { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 28px;
+  width: 100%;
+  max-width: 780px;
+  max-height: 80vh;
+  overflow-y: auto;
+  transform: translateY(20px) scale(0.97);
+  transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
+}
+
+.modal-overlay.show .modal { transform: translateY(0) scale(1); }
+
+.modal-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.modal-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.modal-close {
+  width: 32px; height: 32px;
+  border-radius: var(--rs);
+  background: var(--glass);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--t2);
+  font-size: 16px;
+  transition: all 0.18s;
+}
+
+.modal-close:hover { background: var(--crit-bg); color: var(--crit); border-color: rgba(255,61,61,0.2); }
+
+.modal-item-section { margin-bottom: 24px; }
+
+.modal-item-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.modal-table th {
+  padding: 7px 12px;
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--t3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: rgba(0,0,0,0.2);
+}
+
+.modal-table td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+
+/* Healthy modal items */
+.healthy-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--glass);
+  border-radius: var(--rs);
+  margin-bottom: 8px;
+}
+
+.hi-name { font-weight: 700; font-size: 15px; font-family: 'Space Grotesk', sans-serif; letter-spacing: 0.06em; }
+.hi-units { font-size: 22px; font-weight: 800; color: var(--good); font-family: 'Space Grotesk', sans-serif; }
+.hi-lbl { font-size: 11px; color: var(--t3); text-align: right; }
+
+/* ═══════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════ */
+.toast {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: var(--rs);
+  padding: 12px 18px;
+  font-size: 13.5px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 9999;
+  transform: translateY(60px);
+  opacity: 0;
+  transition: all 0.35s cubic-bezier(0.16,1,0.3,1);
+  max-width: 360px;
+}
+
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.gold  { background: rgba(201,168,76,0.12); border-color: rgba(201,168,76,0.25); color: var(--gold); }
+.toast.green { background: var(--good-bg); border-color: rgba(16,185,129,0.25); color: var(--good); }
+
+/* ═══════════════════════════════════════════════
+   HELP PAGE
+═══════════════════════════════════════════════ */
+.help-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.help-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 22px;
+  transition: all 0.2s;
+}
+
+.help-card:hover { border-color: rgba(201,168,76,0.22); transform: translateY(-2px); }
+.help-icon { font-size: 28px; margin-bottom: 12px; }
+.help-title { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+.help-desc { font-size: 13px; color: var(--t2); line-height: 1.6; }
+
+/* ═══════════════════════════════════════════════
+   MISC
+═══════════════════════════════════════════════ */
+.flex-row   { display: flex; align-items: center; }
+.gap-8      { gap: 8px; }
+.gap-12     { gap: 12px; }
+.mb-16      { margin-bottom: 16px; }
+.mb-20      { margin-bottom: 20px; }
+.mb-24      { margin-bottom: 24px; }
+.text-right { text-align: right; }
+.mt-16      { margin-top: 16px; }
+.mt-20      { margin-top: 20px; }
+.fw-700     { font-weight: 700; }
+.text-gold  { color: var(--gold); }
+.text-muted { color: var(--t2); }
+.text-sm    { font-size: 12.5px; }
+.card-box   { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 22px; }
+.card-title { font-size: 11.5px; font-weight: 700; color: var(--t3); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 14px; }
+
+@keyframes fadein { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+.page.active { animation: fadein 0.3s ease; }
+</style>
+</head>
+<body class="page-upload">
+
+<!-- THREE.JS CANVAS -->
+<canvas id="threeCanvas"></canvas>
+
+<!-- ═══════════════════════════════════════════════
+     NAVBAR
+═══════════════════════════════════════════════ -->
+<nav id="navbar">
+  <div class="nav-logo">
+    <div class="nav-logo-crown">👑</div>
+    <div class="nav-logo-text">DANIER</div>
+  </div>
+
+  <div class="nav-links">
+    <div class="nav-link active" id="nl-upload" onclick="goPage('upload')">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
+      Upload
+    </div>
+    <div class="nav-link" id="nl-upload-action" onclick="triggerUpload()" style="cursor:pointer;">
+      <span style="background:var(--crit);color:#fff;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:800;">START</span>
+    </div>
+    <div class="nav-link" id="nl-dashboard" onclick="goPage('dashboard')">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-link" id="nl-thresholds" onclick="goPage('thresholds')">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+      Thresholds
+    </div>
+    <div class="nav-link" id="nl-keyitems" onclick="goPage('keyitems')">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Key Items
+    </div>
+    <div class="nav-link" id="nl-recipients" onclick="goPage('recipients')">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      Recipients
+    </div>
+    <div class="nav-link" id="nl-help" onclick="goPage('help')">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Help
+    </div>
+  </div>
+
+  <div class="nav-right">
+    <div class="session-id">SID: #D24-0891</div>
+    <div class="nav-user">
+      <div class="nav-avatar">DA</div>
+      <span style="font-size:12.5px;color:var(--t2)">danier_admin</span>
+    </div>
+    <div class="nav-icon-btn" onclick="showToast('Dark mode toggled','gold')" title="Toggle theme">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+    </div>
+    <button class="nav-signout" onclick="showToast('Signing out...','')">Sign Out</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════
+     UPLOAD PAGE
+═══════════════════════════════════════════════ -->
+<div class="page active" id="page-upload">
+  <div id="upload-inner" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 58px);padding:40px 24px;">
+
+    <div class="upload-hero">
+      <div class="upload-eyebrow">
+        <span class="pulse"></span>
+        Server Connected · Season Intelligence Active
+      </div>
+      <h1 class="upload-title">
+        Upload Inventory<br><span class="gd">Report</span>
+      </h1>
+      <p class="upload-sub">
+        Drop your season's Excel file. We identify every K100 item, run threshold checks across all SKUs, and surface every shortage before it costs you a season.
+      </p>
+    </div>
+
+    <div class="upload-card-wrap">
+      <!-- Upload Zone -->
+      <div class="upload-card">
+        <div class="upload-dropzone" id="dropzone"
+          onclick="document.getElementById('fileIn').click()"
+          ondragover="dzOver(event)" ondragleave="dzLeave(event)" ondrop="dzDrop(event)">
+          <input type="file" id="fileIn" accept=".xlsx,.xls,.csv" style="display:none" onchange="fileChosen(event)">
+          <div class="upload-cloud-icon">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
+          </div>
+          <div class="upload-dz-title">Choose Excel File (.xlsx)</div>
+          <div class="upload-dz-hint">Drag &amp; drop or click to select — up to 50 MB</div>
+          <button class="upload-main-btn" onclick="event.stopPropagation(); document.getElementById('fileIn').click()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/></svg>
+            Upload &amp; Process Report
+          </button>
+          <div class="upload-fmt">Accepted: .xlsx · .xls · .csv</div>
+
+          <div class="up-progress" id="upProg">
+            <div class="up-prog-lbl">
+              <span id="upLabel">Processing inventory...</span>
+              <span id="upPct">0%</span>
+            </div>
+            <div class="up-prog-bar"><div class="up-prog-fill" id="upFill"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Format Card -->
+      <div class="fmt-card">
+        <div class="fmt-card-title">Expected File Format</div>
+        <div class="fmt-col">
+          <div class="fmt-dot" style="background:var(--good)"></div>
+          <div class="fmt-col-name">Item Description</div>
+          <div class="fmt-col-ex">BRENNA, MONACO…</div>
+        </div>
+        <div class="fmt-col">
+          <div class="fmt-dot" style="background:var(--info)"></div>
+          <div class="fmt-col-name">Variant Code</div>
+          <div class="fmt-col-ex">BLACK-S, SAND-M…</div>
+        </div>
+        <div class="fmt-col">
+          <div class="fmt-dot" style="background:var(--gold)"></div>
+          <div class="fmt-col-name">Season Code</div>
+          <div class="fmt-col-ex">AW24, SS25…</div>
+        </div>
+        <div class="fmt-col">
+          <div class="fmt-dot" style="background:var(--order)"></div>
+          <div class="fmt-col-name">Variant Color</div>
+          <div class="fmt-col-ex">BLACK, SAND…</div>
+        </div>
+        <div class="fmt-col">
+          <div class="fmt-dot" style="background:var(--warn)"></div>
+          <div class="fmt-col-name">Grand Total</div>
+          <div class="fmt-col-ex">Numeric stock count</div>
+        </div>
+
+        <div style="margin-top:18px;padding:12px;background:var(--glass);border-radius:8px;font-size:11.5px;color:var(--t2);line-height:1.6;">
+          💡 <strong style="color:var(--t1)">Tip:</strong> The system auto-detects K100 items and classifies all SKUs by tier — no manual tagging needed.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     DASHBOARD PAGE
+═══════════════════════════════════════════════ -->
+<div class="page" id="page-dashboard">
+  <div class="page-inner">
+    <div class="page-hd">
+      <div class="page-hd-left">
+        <h1>Key Items Dashboard</h1>
+        <p>Season AW25 · Last processed: Today 14:30 · 1,190 variants tracked</p>
+      </div>
+      <div class="flex-row gap-8">
+        <button class="email-btn" style="padding:9px 18px;font-size:13px;" onclick="showToast('Alert email sent via danieraletersystem.com ✓','green')">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Send Alert Email
+        </button>
+      </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stats-row mb-20">
+      <div class="stat-c s-all">
+        <div class="stat-lbl">Total Items</div>
+        <div class="stat-val">81</div>
+        <div class="stat-sub">Key SKUs in season</div>
+      </div>
+      <div class="stat-c s-warn">
+        <div class="stat-lbl">Active Alerts</div>
+        <div class="stat-val" style="color:var(--warn)">1,190</div>
+        <div class="stat-sub">Variants flagged</div>
+      </div>
+      <div class="stat-c s-crit" onclick="openModal('criticalModal')">
+        <div class="stat-lbl">🔴 Critical</div>
+        <div class="stat-val red">78</div>
+        <div class="stat-sub" style="color:var(--crit);">Click to view ↗</div>
+      </div>
+      <div class="stat-c s-ord" onclick="openModal('ordersModal')">
+        <div class="stat-lbl">🟣 Order Placed</div>
+        <div class="stat-val purple">48</div>
+        <div class="stat-sub" style="color:var(--order);">Click to view ↗</div>
+      </div>
+      <div class="stat-c s-good" onclick="openModal('healthyModal')">
+        <div class="stat-lbl">🟢 Healthy Stock</div>
+        <div class="stat-val green">2</div>
+        <div class="stat-sub" style="color:var(--good);">Click to view ↗</div>
+      </div>
+    </div>
+
+    <!-- Alert Banner -->
+    <div class="alert-banner mb-20">
+      <div class="ab-icon">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div class="ab-text"><span>78 items</span> need immediate attention today — stock levels are critically low and season sales are at risk</div>
+      <button class="ab-btn red" onclick="openModal('criticalModal')">View Critical</button>
+      <button class="ab-btn ghost" onclick="showToast('Downloading critical items report...','gold')">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download
+      </button>
+    </div>
+
+    <!-- Controls -->
+    <div class="ctrl-row mb-20">
+      <div class="search-box">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="search-input" id="dashSearch" placeholder="Search items..." oninput="filterDash()">
+      </div>
+      <div class="filter-tabs">
+        <button class="ft active" onclick="setFilter('all',this)">All</button>
+        <button class="ft" onclick="setFilter('critical',this)">Critical</button>
+        <button class="ft" onclick="setFilter('warning',this)">Alerts</button>
+        <button class="ft" onclick="setFilter('good',this)">Healthy</button>
+      </div>
+      <select class="sort-select" onchange="sortItems(this.value)">
+        <option value="urgency">Sort: Urgency</option>
+        <option value="name">Sort: Name</option>
+        <option value="stock">Sort: Stock (Low)</option>
+        <option value="alerts">Sort: Alerts</option>
+      </select>
+      <button class="expand-all-btn" onclick="toggleExpandAll()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        Expand All
+      </button>
+    </div>
+
+    <!-- Item List -->
+    <div class="item-list" id="itemList"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     KEY ITEMS PAGE
+═══════════════════════════════════════════════ -->
+<div class="page" id="page-keyitems">
+  <div class="page-inner">
+    <div class="page-hd">
+      <div class="page-hd-left">
+        <h1>Key Items</h1>
+        <p>Color-by-color breakdown for every key product this season</p>
+      </div>
+    </div>
+    <div class="ki-grid" id="kiGrid"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     THRESHOLDS PAGE
+═══════════════════════════════════════════════ -->
+<div class="page" id="page-thresholds">
+  <div class="page-inner">
+    <div class="page-hd">
+      <div class="page-hd-left">
+        <h1>Threshold Settings</h1>
+        <p>Set minimum stock levels that trigger alerts for each category</p>
+      </div>
+      <button class="send-all-btn" onclick="showToast('Thresholds saved ✓','green')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Save Thresholds
+      </button>
+    </div>
+
+    <div class="card-box">
+      <div class="card-title">Category Thresholds</div>
+      <table class="threshold-table">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Item Example</th>
+            <th style="text-align:right">Critical (units)</th>
+            <th style="text-align:right">Low Stock (units)</th>
+            <th style="text-align:right">Reorder (units)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="pill critical">Critical</span></td>
+            <td style="color:var(--t2);font-size:12.5px;">MAGALIE, JULIETTE</td>
+            <td style="text-align:right"><input class="thresh-input" value="10"></td>
+            <td style="text-align:right"><input class="thresh-input" value="25"></td>
+            <td style="text-align:right"><input class="thresh-input" value="40"></td>
+          </tr>
+          <tr>
+            <td><span class="pill warning">Jackets</span></td>
+            <td style="color:var(--t2);font-size:12.5px;">BRENNA, KELVIN</td>
+            <td style="text-align:right"><input class="thresh-input" value="15"></td>
+            <td style="text-align:right"><input class="thresh-input" value="30"></td>
+            <td style="text-align:right"><input class="thresh-input" value="50"></td>
+          </tr>
+          <tr>
+            <td><span class="pill order">Bags</span></td>
+            <td style="color:var(--t2);font-size:12.5px;">MARIAM, EDITH</td>
+            <td style="text-align:right"><input class="thresh-input" value="8"></td>
+            <td style="text-align:right"><input class="thresh-input" value="20"></td>
+            <td style="text-align:right"><input class="thresh-input" value="35"></td>
+          </tr>
+          <tr>
+            <td><span class="pill gold">Coats</span></td>
+            <td style="color:var(--t2);font-size:12.5px;">DARIA, ELIZA</td>
+            <td style="text-align:right"><input class="thresh-input" value="12"></td>
+            <td style="text-align:right"><input class="thresh-input" value="28"></td>
+            <td style="text-align:right"><input class="thresh-input" value="45"></td>
+          </tr>
+          <tr>
+            <td><span class="pill good">Accessories</span></td>
+            <td style="color:var(--t2);font-size:12.5px;">CESAR, PARKER</td>
+            <td style="text-align:right"><input class="thresh-input" value="20"></td>
+            <td style="text-align:right"><input class="thresh-input" value="50"></td>
+            <td style="text-align:right"><input class="thresh-input" value="80"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     RECIPIENTS PAGE
+═══════════════════════════════════════════════ -->
+<div class="page" id="page-recipients">
+  <div class="page-inner">
+    <div class="page-hd">
+      <div class="page-hd-left">
+        <h1>Email Recipients</h1>
+        <p>Who gets notified when critical stock alerts fire — emails sent from danieraletersystem.com</p>
+      </div>
+      <button class="send-all-btn" onclick="sendAllEmail()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Send Email Now
+      </button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="recip-card">
+        <div class="recip-card-title">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          Critical Stock Alerts
+        </div>
+        <div class="recip-input-row">
+          <input class="recip-input" id="critEmail" placeholder="name@company.com">
+          <button class="add-btn" onclick="addRecip('crit','critEmail')">+ Add</button>
+        </div>
+        <div id="critRecips">
+          <span class="recip-chip">inventory@danier.com<span class="chip-x" onclick="removeChip(this)">×</span></span>
+          <span class="recip-chip">operations@danier.com<span class="chip-x" onclick="removeChip(this)">×</span></span>
+        </div>
+      </div>
+      <div class="recip-card">
+        <div class="recip-card-title">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Low Stock Alerts
+        </div>
+        <div class="recip-input-row">
+          <input class="recip-input" id="lowEmail" placeholder="name@company.com">
+          <button class="add-btn" onclick="addRecip('low','lowEmail')">+ Add</button>
+        </div>
+        <div id="lowRecips">
+          <span class="recip-chip">purchasing@danier.com<span class="chip-x" onclick="removeChip(this)">×</span></span>
+        </div>
+      </div>
+      <div class="recip-card">
+        <div class="recip-card-title">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          Reorder Alerts
+        </div>
+        <div class="recip-input-row">
+          <input class="recip-input" id="reordEmail" placeholder="name@company.com">
+          <button class="add-btn" onclick="addRecip('reord','reordEmail')">+ Add</button>
+        </div>
+        <div id="reordRecips">
+          <span class="recip-chip">supply-chain@danier.com<span class="chip-x" onclick="removeChip(this)">×</span></span>
+        </div>
+      </div>
+      <div class="recip-card">
+        <div class="recip-card-title">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Management Digest
+        </div>
+        <div class="recip-input-row">
+          <input class="recip-input" id="mgmtEmail" placeholder="name@company.com">
+          <button class="add-btn" onclick="addRecip('mgmt','mgmtEmail')">+ Add</button>
+        </div>
+        <div id="mgmtRecips">
+          <span class="recip-chip">ceo@danier.com<span class="chip-x" onclick="removeChip(this)">×</span></span>
+          <span class="recip-chip">director@danier.com<span class="chip-x" onclick="removeChip(this)">×</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     HELP PAGE
+═══════════════════════════════════════════════ -->
+<div class="page" id="page-help">
+  <div class="page-inner">
+    <div class="page-hd">
+      <div class="page-hd-left">
+        <h1>Help &amp; Documentation</h1>
+        <p>Everything you need to get the most out of Danier Inventory Intelligence</p>
+      </div>
+    </div>
+    <div class="help-grid">
+      <div class="help-card">
+        <div class="help-icon">📤</div>
+        <div class="help-title">Uploading Your Report</div>
+        <div class="help-desc">Upload your Excel file with columns: Item Description, Variant Code, Season Code, Variant Color, Grand Total. The system processes it automatically.</div>
+      </div>
+      <div class="help-card">
+        <div class="help-icon">🎯</div>
+        <div class="help-title">K100 Detection</div>
+        <div class="help-desc">The algorithm automatically identifies your top 100 key items based on sales velocity, value, and seasonal patterns — no manual selection needed.</div>
+      </div>
+      <div class="help-card">
+        <div class="help-icon">🚨</div>
+        <div class="help-title">Understanding Alerts</div>
+        <div class="help-desc">Critical = stock below threshold, urgent reorder. Warning = approaching threshold. Orders Placed = reorder already initiated. Healthy = well stocked.</div>
+      </div>
+      <div class="help-card">
+        <div class="help-icon">📊</div>
+        <div class="help-title">Shortage Calculation</div>
+        <div class="help-desc">Shortage = Current Stock − Required Stock. Negative values (shown in red) indicate how many units are missing to meet the season's demand forecast.</div>
+      </div>
+      <div class="help-card">
+        <div class="help-icon">✉️</div>
+        <div class="help-title">Email Alerts</div>
+        <div class="help-desc">Set up your recipients under the Recipients tab. When you click "Send Alert Email", a formatted report is dispatched from danieraletersystem.com instantly.</div>
+      </div>
+      <div class="help-card">
+        <div class="help-icon">⚙️</div>
+        <div class="help-title">Thresholds</div>
+        <div class="help-desc">Adjust minimum stock levels per category under the Thresholds tab. These values determine when the system fires Critical, Warning, or Reorder alerts.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     MODALS
+═══════════════════════════════════════════════ -->
+<!-- Healthy Stock Modal -->
+<div class="modal-overlay" id="healthyModal" onclick="if(event.target===this)closeModal('healthyModal')">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">🟢 Healthy Stock Items</div>
+      <div class="modal-close" onclick="closeModal('healthyModal')">×</div>
+    </div>
+    <div class="healthy-item">
+      <div>
+        <div class="hi-name">CESAR</div>
+        <div style="font-size:12px;color:var(--t3);margin-top:3px;">Leather Accessory · All variants stocked</div>
+      </div>
+      <div>
+        <div class="hi-units">116</div>
+        <div class="hi-lbl">total units</div>
+      </div>
+    </div>
+    <div class="healthy-item">
+      <div>
+        <div class="hi-name">PARKER</div>
+        <div style="font-size:12px;color:var(--t3);margin-top:3px;">Men's Bag · All variants stocked</div>
+      </div>
+      <div>
+        <div class="hi-units">77</div>
+        <div class="hi-lbl">total units</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Orders Placed Modal -->
+<div class="modal-overlay" id="ordersModal" onclick="if(event.target===this)closeModal('ordersModal')">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">🟣 Items with Orders Placed</div>
+      <div class="modal-close" onclick="closeModal('ordersModal')">×</div>
+    </div>
+    <div class="modal-item-section">
+      <div class="modal-item-name">
+        BRENNA <span class="pill order">5 variants</span>
+      </div>
+      <table class="modal-table">
+        <thead><tr><th>Color - Size</th><th>Item #</th><th>Stock</th><th>Required</th><th>Shortage</th><th>Order Qty</th><th>Order Date</th></tr></thead>
+        <tbody>
+          <tr><td class="td-name">SAND - 2XS</td><td class="td-gray">101760</td><td>3</td><td>15</td><td class="td-neg">-12</td><td class="td-order">32</td><td class="td-gray">2024-10-14</td></tr>
+          <tr><td class="td-name">SAND - XS</td><td class="td-gray">101760</td><td>7</td><td>15</td><td class="td-neg">-8</td><td class="td-order">12</td><td class="td-gray">2024-10-14</td></tr>
+          <tr><td class="td-name">SAND - L</td><td class="td-gray">101760</td><td>2</td><td>15</td><td class="td-neg">-13</td><td class="td-order">19</td><td class="td-gray">2024-10-14</td></tr>
+          <tr><td class="td-name">LIGHT GREY - 3XS</td><td class="td-gray">101760</td><td>0</td><td>15</td><td class="td-neg">-15</td><td class="td-order">56</td><td class="td-gray">2024-10-14</td></tr>
+          <tr><td class="td-name">LIGHT GREY - 2XS</td><td class="td-gray">101760</td><td>4</td><td>15</td><td class="td-neg">-11</td><td class="td-order">10</td><td class="td-gray">2024-10-14</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-item-section">
+      <div class="modal-item-name">
+        DALIANE <span class="pill order">1 variant</span>
+      </div>
+      <table class="modal-table">
+        <thead><tr><th>Color - Size</th><th>Item #</th><th>Stock</th><th>Required</th><th>Shortage</th><th>Order Qty</th><th>Order Date</th></tr></thead>
+        <tbody>
+          <tr><td class="td-name">BLACK - XS</td><td class="td-gray">102041</td><td>1</td><td>15</td><td class="td-neg">-14</td><td class="td-order">20</td><td class="td-gray">2024-10-16</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Critical Modal -->
+<div class="modal-overlay" id="criticalModal" onclick="if(event.target===this)closeModal('criticalModal')">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">🔴 Critical Stock Items</div>
+      <div class="modal-close" onclick="closeModal('criticalModal')">×</div>
+    </div>
+    <p style="font-size:13px;color:var(--t2);margin-bottom:16px;">These 78 items require immediate reorder. Reorder lead time is ~3 months — act now to protect the season.</p>
+    <div id="criticalList"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toastTxt"></span>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  THREE.JS SCENE
+// ═══════════════════════════════════════════
+const canvas3 = document.getElementById('threeCanvas');
+const renderer = new THREE.WebGLRenderer({ canvas: canvas3, antialias: true, alpha: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setClearColor(0x000000, 0);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x08080f, 0.03);
+
+const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 200);
+camera.position.set(0, 8, 22);
+camera.lookAt(0, 0, 0);
+
+// Resize
+function resizeRenderer() {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+}
+resizeRenderer();
+window.addEventListener('resize', resizeRenderer);
+
+// Lights
+scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+const dl = new THREE.DirectionalLight(0xffffff, 0.8);
+dl.position.set(10, 20, 10);
+scene.add(dl);
+
+// Grid floor
+const gridHelper = new THREE.GridHelper(80, 40, 0x1a1a35, 0x111128);
+gridHelper.position.y = -4;
+scene.add(gridHelper);
+
+// Inventory cubes
+const cubeColors = [
+  0xff3d3d, // critical - red
+  0xff3d3d,
+  0xff3d3d,
+  0xf59e0b, // warning - amber
+  0xf59e0b,
+  0x8b5cf6, // order - purple
+  0x10b981, // healthy - green
+  0xc9a84c, // gold
+];
+
+const cubes = [];
+const cubeCount = 80;
+
+for (let i = 0; i < cubeCount; i++) {
+  const size = Math.random() * 0.5 + 0.2;
+  const geo = new THREE.BoxGeometry(size, size * (Math.random() * 2 + 0.5), size);
+  const colorHex = cubeColors[Math.floor(Math.random() * cubeColors.length)];
+  const mat = new THREE.MeshPhongMaterial({
+    color: colorHex,
+    emissive: colorHex,
+    emissiveIntensity: 0.3,
+    transparent: true,
+    opacity: Math.random() * 0.6 + 0.3,
+    wireframe: Math.random() > 0.7,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  const angle = Math.random() * Math.PI * 2;
+  const radius = Math.random() * 18 + 4;
+  mesh.position.set(
+    Math.cos(angle) * radius,
+    Math.random() * 8 - 2,
+    Math.sin(angle) * radius
+  );
+  mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+  mesh.userData = {
+    speed: Math.random() * 0.008 + 0.002,
+    bobAmp: Math.random() * 1.2 + 0.3,
+    bobFreq: Math.random() * 1.5 + 0.5,
+    baseY: mesh.position.y,
+    rotSpeed: (Math.random() - 0.5) * 0.01,
+    colorHex,
+    emittimer: 0,
+  };
+  scene.add(mesh);
+  cubes.push(mesh);
+}
+
+// Particles
+const ptCount = 300;
+const ptPositions = new Float32Array(ptCount * 3);
+for (let i = 0; i < ptCount; i++) {
+  ptPositions[i*3]   = (Math.random()-0.5)*60;
+  ptPositions[i*3+1] = Math.random()*20-4;
+  ptPositions[i*3+2] = (Math.random()-0.5)*60;
+}
+const ptGeo = new THREE.BufferGeometry();
+ptGeo.setAttribute('position', new THREE.BufferAttribute(ptPositions, 3));
+const ptMat = new THREE.PointsMaterial({ color: 0xc9a84c, size: 0.08, transparent: true, opacity: 0.5 });
+const pts = new THREE.Points(ptGeo, ptMat);
+scene.add(pts);
+
+// Central floating ring
+const ringGeo = new THREE.TorusGeometry(3, 0.04, 16, 80);
+const ringMat = new THREE.MeshBasicMaterial({ color: 0xc9a84c, transparent: true, opacity: 0.4 });
+const ring = new THREE.Mesh(ringGeo, ringMat);
+ring.rotation.x = Math.PI * 0.35;
+scene.add(ring);
+
+const ring2 = new THREE.Mesh(
+  new THREE.TorusGeometry(5, 0.025, 16, 100),
+  new THREE.MeshBasicMaterial({ color: 0x8b5cf6, transparent: true, opacity: 0.25 })
+);
+ring2.rotation.x = Math.PI * 0.5;
+ring2.rotation.z = Math.PI * 0.2;
+scene.add(ring2);
+
+// Animate
+let t = 0;
+let camAngle = 0;
+
+function animate3D() {
+  requestAnimationFrame(animate3D);
+  t += 0.01;
+  camAngle += 0.0012;
+
+  // Camera orbit
+  camera.position.x = Math.sin(camAngle) * 22;
+  camera.position.z = Math.cos(camAngle) * 22;
+  camera.position.y = 8 + Math.sin(t * 0.3) * 1.5;
+  camera.lookAt(0, 0, 0);
+
+  // Cubes
+  cubes.forEach(c => {
+    c.position.y = c.userData.baseY + Math.sin(t * c.userData.bobFreq) * c.userData.bobAmp;
+    c.rotation.y += c.userData.rotSpeed;
+    c.rotation.x += c.userData.rotSpeed * 0.5;
+    // Pulse emissive
+    c.material.emissiveIntensity = 0.2 + Math.sin(t * 1.5 + c.userData.bobFreq) * 0.15;
+  });
+
+  // Rings
+  ring.rotation.z += 0.004;
+  ring2.rotation.y += 0.003;
+
+  // Particles drift
+  pts.rotation.y += 0.0005;
+  pts.position.y = Math.sin(t * 0.1) * 0.5;
+
+  renderer.render(scene, camera);
+}
+
+animate3D();
+
+// ═══════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════
+const itemsData = [
+  {
+    name: 'MAGALIE', status: 'critical', totalUnits: 367, alertCount: 99,
+    desc: "Women's Jacket",
+    variants: [
+      { color:'BLACK', size:'S', itemNo:'101028', stock:0, req:40, order:0, orderDate:'—', priority:'critical' },
+      { color:'FIRE RED', size:'S', itemNo:'101028', stock:0, req:40, order:0, orderDate:'—', priority:'critical' },
+      { color:'FIRE RED', size:'M', itemNo:'101028', stock:0, req:40, order:0, orderDate:'—', priority:'critical' },
+      { color:'DARK TAUPE', size:'XS', itemNo:'101028', stock:2, req:40, order:0, orderDate:'—', priority:'critical' },
+      { color:'EGGPLANT', size:'S', itemNo:'101028', stock:5, req:40, order:0, orderDate:'—', priority:'critical' },
+      { color:'BLACK', size:'M', itemNo:'101028', stock:12, req:40, order:0, orderDate:'—', priority:'warning' },
+    ]
+  },
+  {
+    name: 'JULIETTE', status: 'critical', totalUnits: 500, alertCount: 89,
+    desc: "Women's Coat",
+    variants: [
+      { color:'CAMEL', size:'XS', itemNo:'101135', stock:0, req:35, order:0, orderDate:'—', priority:'critical' },
+      { color:'BLACK', size:'S', itemNo:'101135', stock:3, req:35, order:0, orderDate:'—', priority:'critical' },
+      { color:'CAMEL', size:'S', itemNo:'101135', stock:8, req:35, order:0, orderDate:'—', priority:'critical' },
+      { color:'DARK NAVY', size:'M', itemNo:'101135', stock:15, req:35, order:0, orderDate:'—', priority:'warning' },
+    ]
+  },
+  {
+    name: 'ELIZA', status: 'critical', totalUnits: 164, alertCount: 70,
+    desc: "Leather Jacket",
+    variants: [
+      { color:'SAND', size:'2XS', itemNo:'101290', stock:0, req:30, order:0, orderDate:'—', priority:'critical' },
+      { color:'BLACK', size:'XS', itemNo:'101290', stock:1, req:30, order:0, orderDate:'—', priority:'critical' },
+      { color:'SAND', size:'XS', itemNo:'101290', stock:4, req:30, order:35, orderDate:'2024-10-12', priority:'order' },
+      { color:'CAMEL', size:'S', itemNo:'101290', stock:9, req:30, order:0, orderDate:'—', priority:'critical' },
+    ]
+  },
+  {
+    name: 'DARIA', status: 'critical', totalUnits: 132, alertCount: 65,
+    desc: "Women's Coat",
+    variants: [
+      { color:'BLACK', size:'S', itemNo:'101445', stock:0, req:25, order:0, orderDate:'—', priority:'critical' },
+      { color:'DARK CAMEL', size:'XS', itemNo:'101445', stock:0, req:25, order:0, orderDate:'—', priority:'critical' },
+      { color:'BLACK', size:'M', itemNo:'101445', stock:6, req:25, order:0, orderDate:'—', priority:'critical' },
+      { color:'CAMEL', size:'L', itemNo:'101445', stock:18, req:25, order:20, orderDate:'2024-10-15', priority:'order' },
+    ]
+  },
+  {
+    name: 'BRENNA', status: 'critical', totalUnits: 169, alertCount: 59,
+    desc: "Leather Jacket",
+    variants: [
+      { color:'BLACK', size:'XS', itemNo:'101760', stock:14, req:15, order:0, orderDate:'—', priority:'warning' },
+      { color:'CAMEL', size:'XS', itemNo:'101760', stock:4, req:15, order:0, orderDate:'—', priority:'critical' },
+      { color:'DARK CAMEL', size:'S', itemNo:'101760', stock:0, req:15, order:0, orderDate:'—', priority:'critical' },
+      { color:'DARK NAVY', size:'M', itemNo:'101760', stock:7, req:15, order:0, orderDate:'—', priority:'critical' },
+      { color:'DUSK', size:'L', itemNo:'101760', stock:45, req:15, order:0, orderDate:'—', priority:'good' },
+      { color:'LIGHT GREY', size:'XL', itemNo:'101760', stock:34, req:15, order:0, orderDate:'—', priority:'good' },
+      { color:'SAND', size:'2XS', itemNo:'101760', stock:3, req:15, order:32, orderDate:'2024-10-14', priority:'order' },
+      { color:'SAND', size:'XS', itemNo:'101760', stock:7, req:15, order:12, orderDate:'2024-10-14', priority:'order' },
+    ]
+  },
+  {
+    name: 'KELVIN', status: 'warning', totalUnits: 1526, alertCount: 50,
+    desc: "Men's Jacket",
+    variants: [
+      { color:'BROWN', size:'S', itemNo:'101882', stock:18, req:20, order:0, orderDate:'—', priority:'warning' },
+      { color:'BLACK', size:'XS', itemNo:'101882', stock:22, req:20, order:0, orderDate:'—', priority:'good' },
+      { color:'BROWN', size:'M', itemNo:'101882', stock:35, req:20, order:0, orderDate:'—', priority:'good' },
+    ]
+  },
+  {
+    name: 'GISELE', status: 'critical', totalUnits: 474, alertCount: 43,
+    desc: "Women's Handbag",
+    variants: [
+      { color:'BLACK', size:'NS', itemNo:'102001', stock:0, req:20, order:0, orderDate:'—', priority:'critical' },
+      { color:'COGNAC', size:'NS', itemNo:'102001', stock:5, req:20, order:0, orderDate:'—', priority:'critical' },
+      { color:'SAND', size:'NS', itemNo:'102001', stock:11, req:20, order:0, orderDate:'—', priority:'critical' },
+    ]
+  },
+  {
+    name: 'CESAR', status: 'good', totalUnits: 116, alertCount: 0,
+    desc: "Leather Accessory",
+    variants: [
+      { color:'BLACK', size:'NS', itemNo:'103012', stock:54, req:15, order:0, orderDate:'—', priority:'good' },
+      { color:'BROWN', size:'NS', itemNo:'103012', stock:62, req:15, order:0, orderDate:'—', priority:'good' },
+    ]
+  },
+];
+
+const kiData = [
+  { name:'BRENNA', stock:169, alerts:59, colors:[ {name:'BLACK',count:14},{name:'CAMEL',count:4},{name:'DARK CAMEL',count:0},{name:'DARK NAVY',count:7},{name:'DUSK',count:45},{name:'LIGHT GREY',count:34},{name:'RED',count:34},{name:'SAND',count:31} ] },
+  { name:'DALIANE', stock:25, alerts:24, colors:[ {name:'BLACK',count:5},{name:'BROWN',count:2},{name:'CAMEL',count:0},{name:'SAND',count:18} ] },
+  { name:'DARIA', stock:132, alerts:65, colors:[ {name:'BLACK',count:6},{name:'DARK CAMEL',count:0},{name:'CAMEL',count:18},{name:'NAVY',count:7} ] },
+  { name:'GISELE', stock:474, alerts:43, colors:[ {name:'BLACK',count:0},{name:'COGNAC',count:5},{name:'SAND',count:11},{name:'WHITE',count:22} ] },
+  { name:'MAGALIE', stock:367, alerts:99, colors:[ {name:'BLACK',count:12},{name:'FIRE RED',count:0},{name:'DARK TAUPE',count:2},{name:'EGGPLANT',count:5} ] },
+  { name:'KELVIN', stock:1526, alerts:50, colors:[ {name:'BROWN',count:18},{name:'BLACK',count:22},{name:'COGNAC',count:35} ] },
+  { name:'CESAR', stock:116, alerts:0, colors:[ {name:'BLACK',count:54},{name:'BROWN',count:62} ] },
+  { name:'JULIETTE', stock:500, alerts:89, colors:[ {name:'CAMEL',count:0},{name:'BLACK',count:3},{name:'DARK NAVY',count:15} ] },
+];
+
+// ═══════════════════════════════════════════
+//  PAGE NAVIGATION
+// ═══════════════════════════════════════════
+const navMap = {
+  upload:'nl-upload', dashboard:'nl-dashboard', thresholds:'nl-thresholds',
+  keyitems:'nl-keyitems', recipients:'nl-recipients', help:'nl-help'
+};
+
+let rendered = {};
+
+function goPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  const nav = document.getElementById(navMap[id]);
+  if (nav) nav.classList.add('active');
+
+  document.body.className = 'page-' + id;
+
+  if (id==='dashboard' && !rendered.dashboard) { buildDashboard(); rendered.dashboard=true; }
+  if (id==='keyitems'  && !rendered.ki)        { buildKI(); rendered.ki=true; }
+  if (id==='dashboard' && rendered.dashboard)  { /* already built */ }
+}
+
+// ═══════════════════════════════════════════
+//  UPLOAD
+// ═══════════════════════════════════════════
+function dzOver(e) { e.preventDefault(); document.getElementById('dropzone').classList.add('drag'); }
+function dzLeave()  { document.getElementById('dropzone').classList.remove('drag'); }
+function dzDrop(e)  { e.preventDefault(); dzLeave(); if (e.dataTransfer.files[0]) runUpload(e.dataTransfer.files[0]); }
+function fileChosen(e) { if (e.target.files[0]) runUpload(e.target.files[0]); }
+
+function triggerUpload() { document.getElementById('fileIn').click(); }
+
+function runUpload(file) {
+  const prog = document.getElementById('upProg');
+  const fill = document.getElementById('upFill');
+  const pct  = document.getElementById('upPct');
+  const lbl  = document.getElementById('upLabel');
+  prog.style.display = 'block';
+
+  const steps = ['Validating format…','Parsing inventory data…','Detecting K100 items…','Running tier classification…','Calculating shortages…','Generating alerts…','Done!'];
+  let p=0, si=0;
+  const iv = setInterval(()=>{
+    p += Math.random()*14+4;
+    if (p>100) p=100;
+    fill.style.width = p+'%';
+    pct.textContent = Math.round(p)+'%';
+    if (Math.round(p) > si*16) { lbl.textContent = steps[Math.min(si,steps.length-1)]; si++; }
+    if (p>=100) {
+      clearInterval(iv);
+      lbl.textContent = '✓ ' + file.name + ' processed successfully';
+      showToast(file.name + ' processed — 1190 alerts generated','green');
+      setTimeout(()=>goPage('dashboard'), 1400);
+    }
+  }, 240);
+}
+
+// ═══════════════════════════════════════════
+//  DASHBOARD
+// ═══════════════════════════════════════════
+let activeFilter = 'all';
+let isAllExpanded = false;
+
+function buildDashboard() {
+  buildCriticalModal();
+  renderItemList();
+}
+
+function buildCriticalModal() {
+  const el = document.getElementById('criticalList');
+  const critItems = itemsData.filter(i=>i.status==='critical');
+  el.innerHTML = critItems.map(item=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--glass);border-radius:8px;margin-bottom:6px;">
+      <div>
+        <div style="font-weight:700;font-family:'Space Grotesk',sans-serif;font-size:14px;letter-spacing:0.06em;">${item.name}</div>
+        <div style="font-size:11.5px;color:var(--t2);">${item.alertCount} variants below threshold · ${item.totalUnits} total units</div>
+      </div>
+      <span class="pill critical">${item.alertCount} alerts</span>
+    </div>`).join('');
+}
+
+function renderItemList() {
+  const search = (document.getElementById('dashSearch')||{}).value?.toLowerCase() || '';
+  let items = itemsData.filter(item=>{
+    const ms = !search || item.name.toLowerCase().includes(search);
+    if (activeFilter==='all') return ms;
+    if (activeFilter==='critical') return ms && item.status==='critical';
+    if (activeFilter==='warning')  return ms && (item.status==='warning'||item.status==='critical');
+    if (activeFilter==='good')     return ms && item.status==='good';
+    return ms;
+  });
+
+  const el = document.getElementById('itemList');
+  if (!el) return;
+  el.innerHTML = '';
+
+  items.forEach(item=>{
+    const div = document.createElement('div');
+    div.className = 'item-row is-'+item.status + (isAllExpanded?' open':'');
+    div.innerHTML = buildItemHTML(item);
+    el.appendChild(div);
+  });
+}
+
+function buildItemHTML(item) {
+  const statusPill = item.status==='critical'
+    ? `<span class="pill critical">🔴 CRITICAL</span>`
+    : item.status==='warning'
+    ? `<span class="pill warning">⚠ ALERTS</span>`
+    : `<span class="pill good">✓ HEALTHY</span>`;
+
+  const orderVariants = item.variants.filter(v=>v.priority==='order');
+  const orderPill = orderVariants.length ? `<span class="pill order">📦 ${orderVariants.length} orders placed</span>` : '';
+
+  const varRows = item.variants.map(v=>{
+    const shortage = v.stock - v.req;
+    const newOrder = v.order > 0 ? `<span class="td-order">${v.order}</span>` : `<span class="td-gray">—</span>`;
+    const pb = v.priority==='critical'?'pb-critical':v.priority==='warning'?'pb-warning':v.priority==='order'?'pb-order':'pb-good';
+    const pbl = v.priority==='critical'?'CRITICAL':v.priority==='warning'?'WARNING':v.priority==='order'?'ORDER':'HEALTHY';
+    return `<tr>
+      <td class="td-name">${v.color}</td>
+      <td style="color:var(--t2);font-size:12px;">${v.size}</td>
+      <td style="color:var(--t3);font-size:12px;">${v.itemNo}</td>
+      <td style="font-weight:600;color:${v.stock===0?'var(--crit)':v.stock<=10?'var(--warn)':'var(--good)'};">${v.stock}</td>
+      <td style="color:var(--t2);">${v.req}</td>
+      <td class="${shortage<0?'td-neg':'td-pos'}">${shortage<0?shortage:'+'+shortage}</td>
+      <td>${newOrder}</td>
+      <td style="color:var(--t3);font-size:12px;">${v.orderDate}</td>
+      <td><span class="priority-badge ${pb}">${pbl}</span></td>
+    </tr>`;
+  }).join('');
+
+  return `
+    <div class="item-header" onclick="this.closest('.item-row').classList.toggle('open')">
+      <div class="item-name">${item.name}</div>
+      <div class="item-meta">${item.totalUnits} units · ${item.variants.length} variants</div>
+      <div class="item-pills">
+        ${statusPill}
+        ${orderPill}
+        <span class="pill gold">${item.alertCount} below threshold</span>
+      </div>
+      <div class="item-actions">
+        <button class="email-btn" onclick="event.stopPropagation();sendItemEmail('${item.name}')">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email
+        </button>
+        <svg class="chevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+    <div class="item-detail">
+      <table class="detail-table">
+        <thead><tr>
+          <th>Color</th><th>Size</th><th>Item #</th><th>Stock</th>
+          <th>Required</th><th>Shortage</th><th>New Order</th><th>Order Date</th><th>Priority</th>
+        </tr></thead>
+        <tbody>${varRows}</tbody>
+      </table>
+    </div>`;
+}
+
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.ft').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderItemList();
+}
+
+function filterDash() { renderItemList(); }
+
+function sortItems(val) {
+  if (val==='name') itemsData.sort((a,b)=>a.name.localeCompare(b.name));
+  else if (val==='alerts') itemsData.sort((a,b)=>b.alertCount-a.alertCount);
+  else if (val==='stock') itemsData.sort((a,b)=>a.totalUnits-b.totalUnits);
+  else itemsData.sort((a,b)=>(a.status==='critical'?0:1)-(b.status==='critical'?0:1));
+  renderItemList();
+}
+
+function toggleExpandAll() {
+  isAllExpanded = !isAllExpanded;
+  document.querySelectorAll('.item-row').forEach(r=>{
+    if (isAllExpanded) r.classList.add('open'); else r.classList.remove('open');
+  });
+  document.querySelector('.expand-all-btn').innerHTML = isAllExpanded
+    ? '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg> Collapse All'
+    : '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg> Expand All';
+}
+
+function sendItemEmail(name) {
+  showToast('Alert sent for ' + name + ' via danieraletersystem.com ✓', 'green');
+}
+
+// ═══════════════════════════════════════════
+//  KEY ITEMS
+// ═══════════════════════════════════════════
+function buildKI() {
+  const grid = document.getElementById('kiGrid');
+  grid.innerHTML = kiData.map((item, idx)=>{
+    const colorRows = item.colors.map(c=>{
+      const cls = c.count===0?'zero':c.count<10?'low':'normal';
+      return `<div class="color-row"><div class="color-name">${c.name}</div><div class="color-count ${cls}">${c.count}</div></div>`;
+    }).join('');
+
+    return `
+      <div class="ki-card" id="ki-${idx}">
+        <div class="ki-card-hd" onclick="document.getElementById('ki-${idx}').classList.toggle('open')">
+          <div>
+            <div class="ki-name">${item.name}</div>
+            <div class="ki-stock">Total stock: ${item.stock}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            ${item.alerts>0?`<span class="ki-alerts-badge">${item.alerts} alerts</span>`:'<span style="font-size:12px;color:var(--good);">✓ Healthy</span>'}
+            <svg class="ki-expand" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+        <div class="ki-colors">
+          <div class="ki-colors-title">Total by Colour</div>
+          <div class="color-grid">${colorRows}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+//  MODALS
+// ═══════════════════════════════════════════
+function openModal(id)  { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+// ═══════════════════════════════════════════
+//  RECIPIENTS
+// ═══════════════════════════════════════════
+function addRecip(type, inputId) {
+  const input = document.getElementById(inputId);
+  const email = input.value.trim();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showToast('Enter a valid email address','');
+    return;
+  }
+  const container = document.getElementById(type+'Recips');
+  const chip = document.createElement('span');
+  chip.className = 'recip-chip';
+  chip.innerHTML = email + '<span class="chip-x" onclick="removeChip(this)">×</span>';
+  container.appendChild(chip);
+  input.value = '';
+  showToast('Recipient added: ' + email, 'green');
+}
+
+function removeChip(el) {
+  el.closest('.recip-chip').remove();
+  showToast('Recipient removed','');
+}
+
+function sendAllEmail() {
+  showToast('✉️ Alert emails sent to all recipients via danieraletersystem.com', 'green');
+}
+
+// ═══════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════
+let _toastTimer;
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  const tx = document.getElementById('toastTxt');
+  tx.textContent = msg;
+  t.className = 'toast show ' + (type||'');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(()=>t.classList.remove('show'), 3400);
+}
+</script>
+</body>
+</html>

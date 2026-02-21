@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Danier · Inventory Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+<style>
+:root {
+  --bg:       #070A0F;
+  --surf:     #0E1420;
+  --elev:     #141C2B;
+  --txt:      #EEF2F7;
+  --muted:    #A8B3C5;
+  --gold:     #D6B77C;
+  --gold2:    #E7CFA0;
+  --stroke:   #22304A;
+  --crit:     #FF4D4D;
+  --good:     #10B981;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+
+body {
+  background: radial-gradient(circle at 20% 10%, #121A2A 0%, #070A0F 55%, #05070C 100%);
+  color: var(--txt);
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* grain overlay */
+body::after {
+  content:'';
+  position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:9000;opacity:.45;
+}
+
+
+/* ─── HERO ────────────────────────────── */
+#hero {
+  height:100vh;display:grid;
+  grid-template-columns:1fr 1fr;
+  align-items:center;
+  padding:0 64px;
+  position:relative;overflow:hidden;
+}
+.hero-copy{z-index:2;position:relative;}
+.hero-badge {
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 16px;border-radius:999px;
+  border:1px solid rgba(214,183,124,.28);
+  background:rgba(214,183,124,.06);
+  font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:2rem;
+}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:var(--good);animation:pdot 2s infinite;}
+@keyframes pdot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(1.4);}}
+
+h1.htitle {
+  font-family:'Space Grotesk',sans-serif;
+  font-size:clamp(3rem,5vw,5.5rem);
+  font-weight:800;line-height:1.0;letter-spacing:-.035em;
+  margin-bottom:1.5rem;
+}
+h1.htitle .gw {
+  background:linear-gradient(135deg,#D6B77C 0%,#E7CFA0 50%,#D6B77C 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  display:block;
+}
+.hsub {
+  font-size:1.05rem;color:var(--muted);line-height:1.75;
+  max-width:430px;margin-bottom:2.5rem;
+}
+.hctas{display:flex;gap:1rem;align-items:center;margin-bottom:3rem;}
+
+.btn-g {
+  display:inline-flex;align-items:center;gap:8px;
+  padding:14px 32px;border-radius:999px;
+  background:linear-gradient(135deg,#D6B77C,#E7CFA0);
+  color:#070A0F;font-weight:700;font-size:.9rem;letter-spacing:.02em;
+  border:none;cursor:pointer;text-decoration:none;
+  transition:all .3s;
+}
+.btn-g:hover{box-shadow:0 0 32px rgba(214,183,124,.45),0 8px 24px rgba(0,0,0,.35);transform:translateY(-2px);}
+.btn-o {
+  display:inline-flex;align-items:center;gap:8px;
+  padding:14px 28px;border-radius:999px;
+  border:1px solid var(--stroke);background:transparent;
+  color:var(--muted);font-size:.9rem;font-weight:500;cursor:pointer;
+  text-decoration:none;transition:all .3s;
+}
+.btn-o:hover{border-color:var(--gold);color:var(--gold);}
+
+.scroll-cue{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;opacity:.55;}
+.scline{width:40px;height:1px;background:var(--muted);}
+
+#hero-canvas{position:absolute;top:0;right:0;width:50%!important;height:100%!important;pointer-events:none;}
+
+/* ─── PROOF BAR ───────────────────────── */
+#proof {
+  display:grid;grid-template-columns:repeat(4,1fr);
+  padding:52px 64px;
+  background:rgba(14,20,32,.6);
+  border-top:1px solid var(--stroke);border-bottom:1px solid var(--stroke);
+}
+.proof-item{text-align:center;}
+.pnum {
+  display:block;
+  font-family:'Space Grotesk',sans-serif;
+  font-size:clamp(2.2rem,3.5vw,3.2rem);font-weight:800;line-height:1;margin-bottom:.5rem;
+  background:linear-gradient(135deg,#D6B77C,#E7CFA0);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.plabel{font-size:.75rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;}
+
+/* ─── SCROLL SCENES ───────────────────── */
+#scenes{position:relative;}
+.scene-track{height:400vh;position:relative;}
+.scene-sticky {
+  position:sticky;top:0;height:100vh;
+  display:grid;grid-template-columns:1fr 1fr;
+  align-items:center;padding:0 64px;
+}
+.sc-copy{z-index:2;}
+.sc-label {
+  font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:1.1rem;opacity:0;transform:translateY(18px);
+}
+.sc-title {
+  font-family:'Space Grotesk',sans-serif;
+  font-size:clamp(2rem,3.5vw,3.6rem);font-weight:800;line-height:1.08;letter-spacing:-.025em;
+  margin-bottom:1.1rem;opacity:0;transform:translateY(18px);
+}
+.sc-desc{font-size:1rem;color:var(--muted);line-height:1.72;max-width:390px;opacity:0;transform:translateY(18px);}
+
+#scroll-canvas {
+  position:fixed;top:0;right:0;
+  width:50vw!important;height:100vh!important;
+  pointer-events:none;z-index:10;opacity:0;
+}
+
+/* ─── SECTION COMMON ──────────────────── */
+.sec-label{font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);text-align:center;margin-bottom:.9rem;}
+.sec-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(2rem,3vw,3rem);font-weight:800;letter-spacing:-.025em;text-align:center;margin-bottom:3.5rem;}
+
+/* ─── BENTO GRID ──────────────────────── */
+#features{padding:130px 64px;}
+.bento{
+  display:grid;
+  grid-template-columns:2fr 1fr 1fr;
+  grid-template-rows:auto auto;
+  gap:14px;max-width:1200px;margin:0 auto;
+}
+.bcard {
+  background:var(--surf);border:1px solid var(--stroke);border-radius:20px;
+  padding:36px;position:relative;overflow:hidden;
+  transition:border-color .3s,transform .3s,box-shadow .3s;
+}
+.bcard::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(214,183,124,.25),transparent);
+}
+.bcard:hover{border-color:rgba(214,183,124,.3);transform:translateY(-4px);box-shadow:0 16px 48px rgba(0,0,0,.4);}
+.bcard.tall{grid-row:span 2;background:linear-gradient(150deg,#0E1420,#141C2B);}
+.bcard.wide{grid-column:span 2;}
+.bicon {
+  width:48px;height:48px;border-radius:12px;
+  background:rgba(214,183,124,.08);border:1px solid rgba(214,183,124,.18);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;margin-bottom:1.5rem;
+}
+.bcard h3{font-family:'Space Grotesk',sans-serif;font-size:1.15rem;font-weight:700;margin-bottom:.75rem;letter-spacing:-.01em;}
+.bcard p{font-size:.875rem;color:var(--muted);line-height:1.68;}
+.bcard .btag{
+  display:inline-block;margin-top:1.25rem;
+  font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:rgba(214,183,124,.6);padding:4px 10px;border:1px solid rgba(214,183,124,.15);border-radius:6px;
+}
+
+/* mini chart visual */
+.bviz{
+  margin-top:1.75rem;height:110px;border-radius:12px;
+  background:rgba(5,8,14,.7);border:1px solid rgba(34,48,74,.8);
+  display:flex;align-items:flex-end;justify-content:center;gap:7px;padding:0 20px 14px;
+  overflow:hidden;
+}
+.bar{width:20px;border-radius:4px 4px 0 0;transition:height 1.2s cubic-bezier(.34,1.56,.64,1);}
+
+/* ─── HOW IT WORKS ────────────────────── */
+#hiw{padding:130px 64px;background:rgba(14,20,32,.35);border-top:1px solid var(--stroke);}
+.steps{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;
+  max-width:960px;margin:0 auto;position:relative;
+}
+.steps::before{
+  content:'';position:absolute;top:36px;
+  left:calc(16.7% + 36px);right:calc(16.7% + 36px);
+  height:1px;background:linear-gradient(90deg,rgba(214,183,124,.5),rgba(214,183,124,.15),rgba(214,183,124,.5));
+}
+.step{text-align:center;position:relative;}
+.snum{
+  width:72px;height:72px;border-radius:50%;
+  background:rgba(214,183,124,.07);border:1px solid rgba(214,183,124,.3);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 1.5rem;
+  font-family:'Space Grotesk',sans-serif;font-size:1.5rem;font-weight:800;color:var(--gold);
+  position:relative;z-index:1;
+}
+.step h3{font-family:'Space Grotesk',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:.75rem;}
+.step p{font-size:.875rem;color:var(--muted);line-height:1.68;}
+
+/* ─── SECURITY ────────────────────────── */
+#trust{padding:100px 64px;border-top:1px solid var(--stroke);}
+.tgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:900px;margin:2.5rem auto 0;}
+.tcard{
+  text-align:center;padding:28px 20px;
+  border:1px solid var(--stroke);border-radius:16px;background:var(--surf);
+  transition:border-color .3s,transform .3s;
+}
+.tcard:hover{border-color:rgba(214,183,124,.3);transform:translateY(-3px);}
+.tcard span{font-size:1.9rem;display:block;margin-bottom:1rem;}
+.tcard h4{font-family:'Space Grotesk',sans-serif;font-size:.88rem;font-weight:700;margin-bottom:.4rem;}
+.tcard p{font-size:.78rem;color:var(--muted);line-height:1.55;}
+
+/* ─── FINAL CTA ───────────────────────── */
+#cta{
+  padding:160px 64px;text-align:center;
+  position:relative;overflow:hidden;
+}
+#cta::before{
+  content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:700px;height:500px;
+  background:radial-gradient(circle,rgba(214,183,124,.07) 0%,transparent 65%);
+  pointer-events:none;
+}
+.cta-hl{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:clamp(2.8rem,5.5vw,5.5rem);font-weight:800;letter-spacing:-.035em;line-height:1.0;
+  margin-bottom:1.5rem;position:relative;
+}
+.cta-sub{font-size:1.05rem;color:var(--muted);max-width:420px;margin:0 auto 3rem;line-height:1.72;}
+
+/* ─── FOOTER ──────────────────────────── */
+footer{
+  padding:40px 64px;border-top:1px solid var(--stroke);
+  display:flex;align-items:center;justify-content:space-between;
+}
+footer p{font-size:.78rem;color:var(--muted);}
+footer small{font-size:.7rem;color:rgba(168,179,197,.35);}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-copy">
+    <div class="hero-badge"><div class="badge-dot"></div>Live System Active</div>
+    <h1 class="htitle">
+      Your Inventory,
+      <span class="gw">Intelligently</span>
+      Guarded.
+    </h1>
+    <p class="hsub">Upload an Excel file. Get an automated database, real-time shortage detection, and precision email alerts — all in seconds.</p>
+    <div class="hctas">
+      <a href="#" class="btn-g">Upload Report →</a>
+      <a href="#scenes" class="btn-o">See how it works</a>
+    </div>
+    <div class="scroll-cue"><div class="scline"></div>Scroll to explore</div>
+  </div>
+  <canvas id="hero-canvas"></canvas>
+</section>
+
+<!-- PROOF BAR -->
+<section id="proof">
+  <div class="proof-item"><span class="pnum" data-to="50" data-suffix="+">0</span><div class="plabel">Files processed</div></div>
+  <div class="proof-item"><span class="pnum" data-to="1200" data-suffix="+">0</span><div class="plabel">Alerts generated</div></div>
+  <div class="proof-item"><span class="pnum" data-to="99.9" data-suffix="%" data-dec="1">0%</span><div class="plabel">Uptime reliability</div></div>
+  <div class="proof-item"><span class="pnum" data-to="3" data-suffix="s">0s</span><div class="plabel">Avg. processing time</div></div>
+</section>
+
+<!-- SCROLL SCENES -->
+<section id="scenes">
+  <canvas id="scroll-canvas"></canvas>
+  <div class="scene-track">
+    <div class="scene-sticky">
+      <div class="sc-copy">
+        <div class="sc-label" id="sc-lbl">01 / UPLOAD</div>
+        <div class="sc-title" id="sc-ttl">Excel Becomes<br>a Living Database</div>
+        <div class="sc-desc" id="sc-dsc">Drop your .xlsx file and watch as rows transform into structured data layers — organized, queryable, instantly ready for analysis.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BENTO FEATURES -->
+<section id="features">
+  <p class="sec-label">Platform</p>
+  <h2 class="sec-title">Everything in One Vault</h2>
+  <div class="bento">
+    <div class="bcard tall">
+      <div class="bicon">📊</div>
+      <h3>Upload & Process</h3>
+      <p>Drop any Excel file from your ERP or WMS. The system instantly parses SKUs, quantities, variants, and season codes — structuring them into a queryable database layer.</p>
+      <div class="bviz" id="bviz">
+        <div class="bar" style="height:0;background:#10B981;" data-h="42%"></div>
+        <div class="bar" style="height:0;background:#10B981;" data-h="68%"></div>
+        <div class="bar" style="height:0;background:#FF4D4D;" data-h="22%"></div>
+        <div class="bar" style="height:0;background:#10B981;" data-h="85%"></div>
+        <div class="bar" style="height:0;background:#FF4D4D;" data-h="18%"></div>
+        <div class="bar" style="height:0;background:#D6B77C;" data-h="55%"></div>
+        <div class="bar" style="height:0;background:#10B981;" data-h="90%"></div>
+        <div class="bar" style="height:0;background:#FF4D4D;" data-h="28%"></div>
+      </div>
+      <div class="btag">KI00 · Key Items · Auto-sizing</div>
+    </div>
+    <div class="bcard">
+      <div class="bicon">🔔</div>
+      <h3>Alerts Dashboard</h3>
+      <p>Critical, High, Medium, and Order Placed — every SKU ranked by shortage severity with one-click email dispatch.</p>
+    </div>
+    <div class="bcard">
+      <div class="bicon">⚖️</div>
+      <h3>Threshold Manager</h3>
+      <p>Global default of 30 units, or per-SKU overrides. The system adapts every time you upload.</p>
+    </div>
+    <div class="bcard wide">
+      <div class="bicon">✉️</div>
+      <h3>Recipients & Email Alerts</h3>
+      <p>Add as many recipients as needed. One click sends a formatted shortage report via Gmail SMTP to every address on your list — simultaneously, every time.</p>
+    </div>
+    <div class="bcard">
+      <div class="bicon">🔑</div>
+      <h3>Key Items View</h3>
+      <p>KI00-flagged products isolated and visualized by color group, size, and shortage depth.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="hiw">
+  <p class="sec-label">Process</p>
+  <h2 class="sec-title">Three steps. Zero complexity.</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="snum">1</div>
+      <h3>Upload Excel</h3>
+      <p>Drop your detailed inventory report. Any column layout, any size. The parser handles variant codes, season flags, and grand totals automatically.</p>
+    </div>
+    <div class="step">
+      <div class="snum">2</div>
+      <h3>Vault Processes</h3>
+      <p>Data flows into a structured database. Shortages are computed against your thresholds instantly — no manual formulas.</p>
+    </div>
+    <div class="step">
+      <div class="snum">3</div>
+      <h3>Alerts Sent</h3>
+      <p>A rich shortage report hits every inbox. Critical items surface first. One upload, one click, every recipient covered.</p>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST -->
+<section id="trust">
+  <p class="sec-label">Reliability</p>
+  <h2 class="sec-title">Built to trust.</h2>
+  <div class="tgrid">
+    <div class="tcard"><span>🔒</span><h4>Session Auth</h4><p>Secure login with session tokens and email-based password reset flow</p></div>
+    <div class="tcard"><span>⚡</span><h4>FastAPI Backend</h4><p>Python FastAPI on Render with GZip compression and intelligent caching</p></div>
+    <div class="tcard"><span>☁️</span><h4>Cloud Deployed</h4><p>Vercel frontend + Render backend. Zero infrastructure overhead for you.</p></div>
+    <div class="tcard"><span>📧</span><h4>Gmail SMTP</h4><p>Reliable email delivery built on Google's infrastructure — always delivered</p></div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <p class="sec-label">Ready?</p>
+  <h2 class="cta-hl">
+    Stop guessing.<br>
+    <span style="background:linear-gradient(135deg,#D6B77C,#E7CFA0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Start knowing.</span>
+  </h2>
+  <p class="cta-sub">Your next inventory upload becomes a dashboard, a database, and a set of precision alerts — automatically.</p>
+  <a href="#" class="btn-g" style="font-size:.95rem;padding:16px 40px;">Upload Your First Report →</a>
+</section>
+
+<footer>
+  <div class="nav-logo">DANIER</div>
+  <p>© 2026 Danier Inventory Intelligence. All rights reserved.</p>
+  <small>Inventory Intelligence System</small>
+</footer>
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+/* ══════════════════════════════════════════════════
+   SHARED THREE.JS HELPERS
+══════════════════════════════════════════════════ */
+function buildVault(scene) {
+  const g = new THREE.Group();
+  const discs = [], rings = [];
+  for (let i = 0; i < 9; i++) {
+    const y = (i - 4) * 0.44;
+    // Glass disc
+    const dg = new THREE.CylinderGeometry(1.8, 1.8, 0.07, 64);
+    const dm = new THREE.MeshPhongMaterial({ color:0x1a3055, emissive:0x061020, transparent:true, opacity:0.18+i*0.018, side:THREE.DoubleSide, shininess:100 });
+    const d = new THREE.Mesh(dg, dm); d.position.y = y; g.add(d); discs.push(d);
+    // Gold ring
+    const rg = new THREE.TorusGeometry(1.82, 0.022, 8, 64);
+    const rm = new THREE.MeshPhongMaterial({ color:0xD6B77C, emissive:0x3a2005, shininess:130 });
+    const r = new THREE.Mesh(rg, rm); r.rotation.x = Math.PI/2; r.position.y = y; g.add(r); rings.push(r);
+  }
+  // cylinder wall
+  const wg = new THREE.CylinderGeometry(1.8,1.8,3.9,64,1,true);
+  g.add(new THREE.Mesh(wg, new THREE.MeshPhongMaterial({ color:0x1a3055, transparent:true, opacity:0.04, side:THREE.DoubleSide })));
+  scene.add(g);
+  return { group:g, discs, rings };
+}
+
+function buildNodes(parent) {
+  const ndefs = [
+    [-0.8, 0.5, 0.4, 0xFF4D4D, true],  [0.6, 0.2,-0.3, 0x10B981, false],
+    [ 0.2,-0.6, 0.5, 0x10B981, false],  [-0.3, 1.0,-0.4, 0xFF4D4D, true],
+    [ 0.9,-0.3, 0.2, 0x10B981, false],  [-0.5,-1.0,-0.3, 0x10B981, false],
+    [ 0.4, 1.2, 0.3, 0xFF4D4D, true],   [-1.0,-0.1, 0.2, 0x10B981, false],
+    [ 0.7, 0.8,-0.6, 0xD6B77C, false],
+  ];
+  return ndefs.map(([x,y,z,col,red]) => {
+    const m = new THREE.Mesh(
+      new THREE.SphereGeometry(0.08,16,16),
+      new THREE.MeshPhongMaterial({ color:col, emissive:col, emissiveIntensity:0.4 })
+    );
+    m.position.set(x,y,z);
+    m.userData = { isRed:red, phase:Math.random()*Math.PI*2 };
+    parent.add(m);
+    return m;
+  });
+}
+
+function buildExcel(scene, x, y) {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(
+    new THREE.BoxGeometry(1.4,1.0,0.05),
+    new THREE.MeshPhongMaterial({ color:0x1a6b3a, emissive:0x082818, shininess:80 })
+  ));
+  for (let i=0;i<4;i++) {
+    const l = new THREE.Mesh(new THREE.BoxGeometry(1.35,0.01,0.06), new THREE.MeshBasicMaterial({color:0x2a9b5a,transparent:true,opacity:.7}));
+    l.position.set(0,-0.35+i*0.23,0.026); g.add(l);
+  }
+  for (let i=0;i<3;i++) {
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.01,0.95,0.06), new THREE.MeshBasicMaterial({color:0x2a9b5a,transparent:true,opacity:.7}));
+    l.position.set(-0.45+i*0.45,0,0.026); g.add(l);
+  }
+  g.position.set(x,y,0); g.rotation.set(0.1,0.3,-0.1);
+  scene.add(g); return g;
+}
+
+function buildStream(scene, count) {
+  const pos = new Float32Array(count*3);
+  const prog = new Float32Array(count).map(()=>Math.random());
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  const pts = new THREE.Points(geo, new THREE.PointsMaterial({color:0xD6B77C,size:0.04,transparent:true,opacity:.75}));
+  scene.add(pts);
+  return { pts, pos, prog, geo };
+}
+
+function standardLighting(scene) {
+  scene.add(new THREE.AmbientLight(0x08101e, 1.2));
+  const gl = new THREE.PointLight(0xD6B77C, 4, 22); gl.position.set(2,4,6); scene.add(gl);
+  const bl = new THREE.PointLight(0x1a3a7a, 2, 18); bl.position.set(-4,-2,4); scene.add(bl);
+  return gl;
+}
+
+/* ══════════════════════════════════════════════════
+   HERO SCENE
+══════════════════════════════════════════════════ */
+(function() {
+  const canvas = document.getElementById('hero-canvas');
+  const W = window.innerWidth/2, H = window.innerHeight;
+  const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+  renderer.setSize(W,H); renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setClearColor(0,0);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(50,W/H,0.1,100);
+  camera.position.set(0,0,7);
+
+  const goldLight = standardLighting(scene);
+  const { group:vault, discs, rings } = buildVault(scene);
+  const nodes = buildNodes(vault);
+  const excel = buildExcel(scene,-3.5,0.5);
+  const { pts:stream, pos:spos, prog:sprog, geo:sgeo } = buildStream(scene, 100);
+
+  // ambient bg particles
+  const bpos = new Float32Array(220*3).map(()=>(Math.random()-.5)*20);
+  const bgeo = new THREE.BufferGeometry();
+  bgeo.setAttribute('position', new THREE.BufferAttribute(bpos,3));
+  scene.add(new THREE.Points(bgeo, new THREE.PointsMaterial({color:0x1a3888,size:0.022,transparent:true,opacity:.25})));
+
+  let mx=0,my=0,tx=0,ty=0;
+  window.addEventListener('mousemove',e=>{ mx=(e.clientX/innerWidth-.5)*2; my=-(e.clientY/innerHeight-.5)*2; });
+
+  let t=0;
+  (function tick(){
+    requestAnimationFrame(tick); t+=0.016;
+    tx+=(mx-tx)*.04; ty+=(my-ty)*.04;
+    vault.rotation.y = t*0.08+tx*0.4;
+    vault.rotation.x = ty*0.14;
+    excel.position.y = 0.5+Math.sin(t*.55)*.13;
+    excel.rotation.y = 0.3+Math.sin(t*.28)*.1;
+    nodes.forEach(n=>{ if(n.userData.isRed){ const p=0.38+0.38*Math.sin(t*3.2+n.userData.phase); n.material.emissiveIntensity=p; n.scale.setScalar(1+0.22*Math.sin(t*3.2+n.userData.phase)); }});
+    // particle stream: bezier from excel(-3.5,0.5) → vault(0,0)
+    for(let i=0;i<100;i++){
+      sprog[i]+=0.009; if(sprog[i]>1) sprog[i]=Math.random()*0.05;
+      const p=sprog[i];
+      spos[i*3]  =(1-p)**3*(-3.5)+3*(1-p)**2*p*(-2)+3*(1-p)*p*p*(-.8)+0+(Math.random()-.5)*.12;
+      spos[i*3+1]=(1-p)**3*(.5)+3*(1-p)**2*p*(.9)+3*(1-p)*p*p*(.2)+0+(Math.random()-.5)*.08;
+      spos[i*3+2]=(Math.random()-.5)*.3*(1-p);
+    }
+    sgeo.attributes.position.needsUpdate=true;
+    goldLight.position.x=2+Math.sin(t*.35)*.8;
+    renderer.render(scene,camera);
+  })();
+
+  window.addEventListener('resize',()=>{
+    const W2=innerWidth/2,H2=innerHeight;
+    camera.aspect=W2/H2; camera.updateProjectionMatrix();
+    renderer.setSize(W2,H2);
+  });
+})();
+
+/* ══════════════════════════════════════════════════
+   SCROLL SCENE (fixed right-half canvas, 4 states)
+══════════════════════════════════════════════════ */
+(function() {
+  const canvas = document.getElementById('scroll-canvas');
+  let W=innerWidth/2, H=innerHeight;
+  const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+  renderer.setSize(W,H); renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setClearColor(0,0);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(50,W/H,0.1,100);
+  camera.position.set(0,0,7);
+
+  const goldLight = standardLighting(scene);
+  const { group:vault } = buildVault(scene);
+  const nodes = buildNodes(vault);
+  const excel = buildExcel(scene,-3.5,0.5);
+  const { pts:stream, pos:spos, prog:sprog, geo:sgeo } = buildStream(scene, 90);
+
+  // Threshold dial (scene 3)
+  const dialG = new THREE.Group();
+  dialG.add(new THREE.Mesh(new THREE.CylinderGeometry(.9,.9,.18,64), new THREE.MeshPhongMaterial({color:0x141C2B,emissive:0x040810,shininess:100})));
+  const dring = new THREE.Mesh(new THREE.TorusGeometry(.92,.04,8,64), new THREE.MeshPhongMaterial({color:0xD6B77C,emissive:0x3a2005,shininess:120}));
+  dring.rotation.x=Math.PI/2; dialG.add(dring);
+  const needle = new THREE.Mesh(new THREE.BoxGeometry(.04,.65,.04), new THREE.MeshPhongMaterial({color:0xD6B77C}));
+  needle.position.set(0,.32,.12); dialG.add(needle);
+  dialG.position.set(2.8,-1.2,0); dialG.scale.setScalar(0); scene.add(dialG);
+
+  // Envelope (scene 4)
+  const envG = new THREE.Group();
+  envG.add(new THREE.Mesh(new THREE.BoxGeometry(1.3,.85,.05), new THREE.MeshPhongMaterial({color:0xD6B77C,emissive:0x3a2005,shininess:90})));
+  // envelope flap
+  const flapGeo = new THREE.ConeGeometry(.65,.45,3);
+  const flap = new THREE.Mesh(flapGeo, new THREE.MeshPhongMaterial({color:0xE7CFA0,emissive:0x3a2005,shininess:80}));
+  flap.rotation.z=Math.PI; flap.position.set(0,.42,.02); envG.add(flap);
+  envG.position.set(0,0,2.5); envG.scale.setScalar(0); scene.add(envG);
+
+  // Outgoing envelope copies (scene 4)
+  const subs = [-2.5,2.5].map(ox=>{
+    const s = new THREE.Group();
+    s.add(new THREE.Mesh(new THREE.BoxGeometry(.8,.52,.04), new THREE.MeshPhongMaterial({color:0xD6B77C,transparent:true,opacity:.6})));
+    s.position.set(ox,0,1.5); s.scale.setScalar(0); scene.add(s); return s;
+  });
+
+  const SCENES = [
+    { lbl:'01 / UPLOAD',     ttl:'Excel Becomes\na Living Database',   dsc:'Drop your .xlsx file and watch rows transform into structured data layers — organized, queryable, instantly ready for analysis.' },
+    { lbl:'02 / ALERTS',     ttl:'Shortages Surface\nInstantly',        dsc:'Red nodes pulse where stock falls below threshold. CRITICAL, HIGH, MEDIUM — every shortage ranked and ready to act on.' },
+    { lbl:'03 / THRESHOLDS', ttl:'You Set the Rules.\nSystem Adapts.',  dsc:'A global threshold of 30 units or per-SKU overrides. Flip a node from red to green by updating a single value.' },
+    { lbl:'04 / ALERTS SENT',ttl:'One Click.\nEvery Recipient.',        dsc:'The system compiles a formatted report and delivers it via Gmail SMTP to every recipient on your list — simultaneously.' },
+  ];
+
+  let curIdx = 0;
+  function setCopy(idx) {
+    if (idx===curIdx) return;
+    curIdx = idx;
+    const s=SCENES[idx];
+    const els=[document.getElementById('sc-lbl'),document.getElementById('sc-ttl'),document.getElementById('sc-dsc')];
+    gsap.to(els,{opacity:0,y:-14,duration:.25,stagger:.04,onComplete:()=>{
+      document.getElementById('sc-lbl').textContent=s.lbl;
+      document.getElementById('sc-ttl').innerHTML=s.ttl.replace('\n','<br>');
+      document.getElementById('sc-dsc').textContent=s.dsc;
+      gsap.to(els,{opacity:1,y:0,duration:.38,stagger:.07});
+    }});
+  }
+
+  // Show/hide canvas during scroll section
+  ScrollTrigger.create({
+    trigger:'#scenes', start:'top top', end:'bottom bottom',
+    onEnter:()=>gsap.to('#scroll-canvas',{opacity:1,duration:.4}),
+    onLeave:()=>gsap.to('#scroll-canvas',{opacity:0,duration:.4}),
+    onEnterBack:()=>gsap.to('#scroll-canvas',{opacity:1,duration:.4}),
+    onLeaveBack:()=>gsap.to('#scroll-canvas',{opacity:0,duration:.4}),
+    onUpdate(self){
+      const idx = Math.min(3, Math.floor(self.progress*4));
+      setCopy(idx);
+    }
+  });
+
+  // Initial scene copy entrance
+  setTimeout(()=>{
+    gsap.to(['#sc-lbl','#sc-ttl','#sc-dsc'],{opacity:1,y:0,duration:.55,stagger:.1});
+  },600);
+
+  let t=0, sceneIdx=0;
+  (function tick(){
+    requestAnimationFrame(tick); t+=0.016;
+    vault.rotation.y = t*0.065;
+
+    // Read current idx from scroll
+    const st = ScrollTrigger.getById('scenes-update');
+    sceneIdx = curIdx;
+
+    // ── Scene 0: Upload ──
+    excel.visible  = sceneIdx===0;
+    stream.visible = sceneIdx===0 || sceneIdx===3;
+
+    if (sceneIdx===0) {
+      excel.position.y = 0.5+Math.sin(t*.55)*.12;
+      for(let i=0;i<90;i++){
+        sprog[i]+=0.01; if(sprog[i]>1) sprog[i]=0;
+        const p=sprog[i];
+        spos[i*3]  =(1-p)**3*(-3.5)+3*(1-p)**2*p*(-2)+3*(1-p)*p*p*(-.8)+0+(Math.random()-.5)*.12;
+        spos[i*3+1]=(1-p)**3*(.5)+3*(1-p)**2*p*(.9)+3*(1-p)*p*p*(.2)+0+(Math.random()-.5)*.08;
+        spos[i*3+2]=(Math.random()-.5)*.25*(1-p);
+      }
+      sgeo.attributes.position.needsUpdate=true;
+      nodes.forEach(n=>{n.material.emissiveIntensity=0.2;n.scale.setScalar(1);});
+    }
+
+    // ── Scene 1: Alerts ──
+    if (sceneIdx===1) {
+      dialG.scale.setScalar(0); envG.scale.setScalar(0); subs.forEach(s=>s.scale.setScalar(0));
+      nodes.forEach(n=>{
+        if(n.userData.isRed){
+          const p=0.45+0.45*Math.sin(t*4+n.userData.phase);
+          n.material.emissiveIntensity=p; n.scale.setScalar(1+0.38*Math.sin(t*4+n.userData.phase));
+        } else { n.material.emissiveIntensity=0.25; n.scale.setScalar(1); }
+      });
+    }
+
+    // ── Scene 2: Threshold ──
+    if (sceneIdx===2) {
+      envG.scale.setScalar(0); subs.forEach(s=>s.scale.setScalar(0));
+      const ts = 1+Math.sin(t*.04)*0.03;
+      dialG.scale.lerp(new THREE.Vector3(ts,ts,ts), .06);
+      dialG.rotation.y = t*.25;
+      needle.rotation.z = Math.sin(t*.9)*.85;
+      const thresh = (Math.sin(t*.9)+1)/2;
+      nodes.forEach((n,i)=>{
+        const red = i < thresh*6;
+        n.material.color.setHex(red?0xFF4D4D:0x10B981);
+        n.material.emissive.setHex(red?0xFF4D4D:0x10B981);
+        n.material.emissiveIntensity=0.32;
+        n.scale.setScalar(1);
+      });
+    } else {
+      nodes.forEach(n=>{ n.material.color.setHex(n.userData.isRed?0xFF4D4D:0x10B981); n.material.emissive.setHex(n.userData.isRed?0xFF4D4D:0x10B981); });
+      if(sceneIdx!==2) { const ts=new THREE.Vector3(0,0,0); dialG.scale.lerp(ts,.08); }
+    }
+
+    // ── Scene 3: Send ──
+    if (sceneIdx===3) {
+      const es = 1+Math.sin(t*1.5)*.04;
+      envG.scale.set(es,es,es);
+      envG.rotation.y = t*.4;
+      envG.position.z = 2.5+Math.sin(t*1.5)*.25;
+      subs.forEach((s,i)=>{ const ss=0.7+Math.sin(t*.8+i)*.04; s.scale.set(ss,ss,ss); s.position.y=Math.sin(t*.5+i*1.5)*.5; });
+      // radiate out
+      for(let i=0;i<90;i++){
+        sprog[i]+=0.013; if(sprog[i]>1) sprog[i]=0;
+        const p=sprog[i], ang=(i/90)*Math.PI*2;
+        spos[i*3]=Math.cos(ang)*p*3.5+(Math.random()-.5)*.1;
+        spos[i*3+1]=Math.sin(ang)*p*2+(Math.random()-.5)*.1;
+        spos[i*3+2]=0;
+      }
+      sgeo.attributes.position.needsUpdate=true;
+      nodes.forEach(n=>{n.material.emissiveIntensity=.22;n.scale.setScalar(1);});
+    } else { envG.scale.lerp(new THREE.Vector3(0,0,0),.08); subs.forEach(s=>s.scale.lerp(new THREE.Vector3(0,0,0),.08)); }
+
+    goldLight.position.x=2+Math.sin(t*.3)*.7;
+    renderer.render(scene,camera);
+  })();
+
+  window.addEventListener('resize',()=>{
+    W=innerWidth/2; H=innerHeight;
+    camera.aspect=W/H; camera.updateProjectionMatrix();
+    renderer.setSize(W,H);
+  });
+})();
+
+
+/* ══════════════════════════════════════════════════
+   PROOF COUNTERS
+══════════════════════════════════════════════════ */
+const proofObs = new IntersectionObserver(entries=>{
+  if(!entries[0].isIntersecting) return;
+  proofObs.disconnect();
+  document.querySelectorAll('.pnum').forEach(el=>{
+    const to = parseFloat(el.dataset.to);
+    const suf = el.dataset.suffix||'';
+    const dec = parseInt(el.dataset.dec||'0');
+    let cur=0;
+    const step=to/70;
+    const iv=setInterval(()=>{
+      cur+=step; if(cur>=to){cur=to;clearInterval(iv);}
+      el.textContent=(dec?cur.toFixed(dec):Math.floor(cur))+suf;
+    },16);
+  });
+},{threshold:.5});
+proofObs.observe(document.getElementById('proof'));
+
+/* ══════════════════════════════════════════════════
+   BENTO BARS entrance
+══════════════════════════════════════════════════ */
+const barObs = new IntersectionObserver(entries=>{
+  if(!entries[0].isIntersecting) return;
+  barObs.disconnect();
+  document.querySelectorAll('#bviz .bar').forEach((b,i)=>{
+    setTimeout(()=>{ b.style.height=b.dataset.h; },i*90);
+  });
+},{threshold:.4});
+barObs.observe(document.getElementById('bviz'));
+
+/* ══════════════════════════════════════════════════
+   SCROLL-IN ANIMATIONS (GSAP)
+══════════════════════════════════════════════════ */
+gsap.utils.toArray('.bcard').forEach((c,i)=>{
+  gsap.from(c,{ scrollTrigger:{trigger:c,start:'top 88%'}, opacity:0, y:44, duration:.72, delay:i*.07, ease:'power3.out' });
+});
+gsap.utils.toArray('.step').forEach((s,i)=>{
+  gsap.from(s,{ scrollTrigger:{trigger:s,start:'top 88%'}, opacity:0, y:34, duration:.65, delay:i*.14, ease:'power3.out' });
+});
+gsap.utils.toArray('.tcard').forEach((c,i)=>{
+  gsap.from(c,{ scrollTrigger:{trigger:c,start:'top 90%'}, opacity:0, y:30, duration:.6, delay:i*.08, ease:'power3.out' });
+});
+gsap.from('.cta-hl',{ scrollTrigger:{trigger:'#cta',start:'top 82%'}, opacity:0, y:55, duration:.85, ease:'power3.out' });
+gsap.from('.cta-sub',{ scrollTrigger:{trigger:'#cta',start:'top 82%'}, opacity:0, y:30, duration:.7, delay:.15, ease:'power3.out' });
+gsap.from('#cta .btn-g',{ scrollTrigger:{trigger:'#cta',start:'top 82%'}, opacity:0, y:25, duration:.6, delay:.28, ease:'power3.out' });
+</script>
+</body>
+</html>

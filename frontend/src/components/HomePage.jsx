@@ -88,6 +88,58 @@ function Section({ children, className = '' }) {
   return <section ref={ref} className={`hp-section hp-reveal ${className}`}>{children}</section>;
 }
 
+function TimelineCapsule({ containerRef }) {
+  const capsuleRef = useRef(null);
+  const trailRef = useRef(null);
+  useEffect(() => {
+    const container = containerRef.current;
+    const capsule = capsuleRef.current;
+    const trail = trailRef.current;
+    if (!container || !capsule || !trail) return;
+    let raf;
+    let currentY = 0;
+    const dots = container.querySelectorAll('.hp-feat-dot');
+    function update() {
+      const rect = container.getBoundingClientRect();
+      const viewH = window.innerHeight;
+      const totalH = rect.height;
+      const scrolled = -rect.top + viewH * 0.45;
+      const pct = Math.max(0, Math.min(scrolled / totalH, 1));
+      const targetY = pct * totalH;
+      currentY += (targetY - currentY) * 0.1;
+      capsule.style.transform = `translateY(${currentY}px)`;
+      trail.style.height = `${currentY}px`;
+      const capsuleAbsY = currentY + 20;
+      dots.forEach((dot) => {
+        const dotTop = dot.offsetTop;
+        if (capsuleAbsY >= dotTop - 10) {
+          dot.style.background = '#c9a84c';
+          dot.style.borderColor = '#e8c96a';
+          dot.style.boxShadow = '0 0 12px rgba(201,168,76,0.6)';
+        } else {
+          dot.style.background = '#050508';
+          dot.style.borderColor = '';
+          dot.style.boxShadow = '';
+        }
+      });
+      raf = requestAnimationFrame(update);
+    }
+    update();
+    return () => cancelAnimationFrame(raf);
+  }, [containerRef]);
+
+  return (
+    <>
+      <div ref={trailRef} style={{ position: 'absolute', left: 44, top: 28, width: 7, background: 'linear-gradient(180deg, rgba(201,168,76,0.5), rgba(201,168,76,0.15))', borderRadius: 4, zIndex: 1, pointerEvents: 'none', transition: 'none' }} />
+      <div ref={capsuleRef} style={{ position: 'absolute', left: 38, top: 20, width: 19, height: 40, borderRadius: 10, background: 'linear-gradient(180deg, #e8c96a, #c9a84c)', boxShadow: '0 0 20px rgba(201,168,76,0.6), 0 0 48px rgba(201,168,76,0.2)', zIndex: 3, pointerEvents: 'none', willChange: 'transform', animation: 'hp-capsule-pulse 2s ease-in-out infinite' }}>
+        <div style={{ position: 'absolute', top: 6, left: '50%', transform: 'translateX(-50%)', width: 7, height: 7, borderRadius: '50%', background: 'rgba(0,0,0,0.3)' }} />
+        <div style={{ position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)', width: 7, height: 7, borderRadius: '50%', background: 'rgba(0,0,0,0.3)' }} />
+        <div style={{ position: 'absolute', top: 26, left: '50%', transform: 'translateX(-50%)', width: 7, height: 7, borderRadius: '50%', background: 'rgba(0,0,0,0.3)' }} />
+      </div>
+    </>
+  );
+}
+
 function MouseGlow() {
   const ref = useRef(null);
   useEffect(() => {
@@ -168,6 +220,7 @@ function TextBlock({ label, title, desc }) {
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const timelineRef = useRef(null);
 
   useEffect(() => {
     document.body.style.background = '#050508';
@@ -188,6 +241,7 @@ const HomePage = () => {
         .hp-scroll-hint{margin-top:56px;display:flex;flex-direction:column;align-items:center;gap:8px;animation:hp-bob 2.5s ease-in-out infinite;}
         .hp-scroll-hint span{font-size:10px;color:rgba(200,200,220,0.4);letter-spacing:.14em;text-transform:uppercase;}
         @keyframes hp-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(10px)}}
+        @keyframes hp-capsule-pulse{0%,100%{box-shadow:0 0 20px rgba(201,168,76,0.6),0 0 48px rgba(201,168,76,0.2)}50%{box-shadow:0 0 28px rgba(201,168,76,0.85),0 0 56px rgba(201,168,76,0.35)}}
         .hp-stitle{font-family:'Space Grotesk',sans-serif;font-size:clamp(24px,3.2vw,34px);font-weight:700;letter-spacing:-.02em;text-align:center;margin-bottom:12px;line-height:1.25;}
         .hp-stitle em{font-style:normal;color:var(--gold);}
         .hp-sdesc{font-size:15px;color:var(--muted);text-align:center;max-width:560px;margin:0 auto 36px;line-height:1.7;}
@@ -245,11 +299,11 @@ const HomePage = () => {
         .hp-feat-header h2 em{font-style:normal;color:var(--gold);}
         .hp-feat-header p{font-size:15px;color:var(--muted);max-width:480px;margin:0 auto;line-height:1.7;}
         .hp-feat-timeline{position:relative;padding-left:0;}
-        .hp-feat-timeline::before{content:'';position:absolute;left:47px;top:28px;bottom:28px;width:1px;background:linear-gradient(180deg,var(--gold),rgba(201,168,76,.1));z-index:0;}
+        .hp-feat-timeline::before{content:'';position:absolute;left:44px;top:28px;bottom:28px;width:7px;background:rgba(201,168,76,.08);border-radius:4px;z-index:0;}
         .hp-feat-item{display:flex;gap:32px;margin-bottom:8px;position:relative;z-index:1;}
         .hp-feat-left{flex-shrink:0;width:96px;display:flex;flex-direction:column;align-items:center;padding-top:24px;}
-        .hp-feat-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--gold);background:#050508;position:relative;z-index:2;}
-        .hp-feat-dot-inner{position:absolute;top:3px;left:3px;width:4px;height:4px;border-radius:50%;background:var(--gold);}
+        .hp-feat-dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--gold);background:#050508;position:relative;z-index:4;}
+        .hp-feat-dot-inner{position:absolute;top:4px;left:4px;width:6px;height:6px;border-radius:50%;background:var(--gold);}
         .hp-feat-step{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;color:var(--gold);letter-spacing:.08em;margin-top:8px;text-transform:uppercase;}
         .hp-feat-card{flex:1;padding:24px 28px;background:var(--surf);border:1px solid var(--stroke);border-radius:14px;transition:all .4s;cursor:default;}
         .hp-feat-card:hover{border-color:rgba(201,168,76,.2);transform:translateX(4px);box-shadow:0 8px 32px rgba(0,0,0,.3);}
@@ -259,7 +313,7 @@ const HomePage = () => {
         .hp-feat-card p{font-size:14px;color:var(--muted);line-height:1.75;margin:0;}
         .hp-feat-tags{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;}
         .hp-feat-tag{font-size:10px;padding:3px 10px;border-radius:6px;font-weight:600;letter-spacing:.03em;border:1px solid;background:transparent;}
-        @media(max-width:768px){.hp-feat-timeline::before{left:23px;}.hp-feat-left{width:48px;}.hp-feat-item{gap:16px;}.hp-feat-card-num{display:none;}}
+        @media(max-width:768px){.hp-feat-timeline::before{left:20px;}.hp-feat-left{width:48px;}.hp-feat-item{gap:16px;}.hp-feat-card-num{display:none;}}
         .hp-cta-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(34px,5.5vw,52px);font-weight:800;letter-spacing:-.04em;text-align:center;margin-bottom:14px;}
         .hp-cta-title em{font-style:normal;background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
         .hp-cta-sub{font-size:15px;color:var(--muted);text-align:center;margin-bottom:32px;line-height:1.7;}
@@ -294,7 +348,8 @@ const HomePage = () => {
             <p>From a raw Excel file to prioritized stock alerts delivered to your inbox — every step handled, nothing manual.</p>
           </div>
 
-          <div className="hp-feat-timeline">
+          <div ref={timelineRef} className="hp-feat-timeline">
+            <TimelineCapsule containerRef={timelineRef} />
             {[
               { num: '01', step: 'Upload', title: 'Excel Processing', desc: 'Drop any inventory spreadsheet into the system. It parses every row instantly — identifies Key Items by their KI00 season code, extracts all product variants, sizes, and colors, and structures everything into a searchable database.' },
               { num: '02', step: 'Detect', title: 'Low Stock Detection', desc: 'Every item is checked against its configured threshold the moment data is ingested. Items below minimum stock are flagged with priority badges — Critical, High, or Warning — ranked by severity. Zero manual review needed.' },

@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Danier · Inventory Intelligence — Promo</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#070A0F;--surf:#0E1420;--txt:#EEF2F7;--muted:#A8B3C5;--gold:#D6B77C;--gold2:#E7CFA0;--stroke:#22304A;--red:#FF4D4D;--green:#10B981;--blue:#3B82F6;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--txt);font-family:'Inter',sans-serif;overflow:hidden;height:100vh;width:100vw;position:relative;}
+
+/* grain */
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.35;}
+
+/* ─── SCENE CONTAINER ─── */
+#stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+
+/* ─── SCENES ─── */
+.scene{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .8s ease;}
+.scene.active{opacity:1;pointer-events:auto;}
+
+/* ─── SCENE 0: BRAND INTRO ─── */
+#s0{flex-direction:column;gap:16px;}
+#s0 .brand{font-family:'Space Grotesk',sans-serif;font-size:72px;font-weight:800;letter-spacing:-.04em;opacity:0;transform:translateY(30px);}
+#s0 .brand span{background:linear-gradient(135deg,#D6B77C,#E7CFA0,#D6B77C);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+#s0 .sub{font-size:18px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;opacity:0;transform:translateY(20px);}
+#s0 .line{width:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin-top:8px;}
+
+/* ─── SCENE 1: EXCEL FILE ─── */
+#s1{flex-direction:column;gap:32px;}
+.excel-window{width:720px;background:var(--surf);border:1px solid var(--stroke);border-radius:16px;overflow:hidden;opacity:0;transform:scale(.92) translateY(20px);}
+.excel-titlebar{display:flex;align-items:center;padding:12px 16px;background:rgba(20,28,43,.8);border-bottom:1px solid var(--stroke);gap:8px;}
+.dot{width:10px;height:10px;border-radius:50%;}
+.dot.r{background:#FF5F56;}.dot.y{background:#FFBD2E;}.dot.g{background:#27CA3F;}
+.excel-titlebar span{flex:1;text-align:center;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+.excel-grid{padding:0;}
+.excel-header{display:grid;grid-template-columns:180px 100px 80px 100px 80px;background:rgba(27,100,55,.25);border-bottom:1px solid rgba(27,100,55,.3);}
+.excel-header div{padding:10px 14px;font-size:11px;font-weight:600;color:#10B981;font-family:'JetBrains Mono',monospace;letter-spacing:.05em;text-transform:uppercase;}
+.excel-row{display:grid;grid-template-columns:180px 100px 80px 100px 80px;border-bottom:1px solid rgba(34,48,74,.5);opacity:0;transform:translateX(-20px);}
+.excel-row div{padding:10px 14px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--muted);}
+.excel-row div:first-child{color:var(--txt);font-weight:500;}
+.excel-row .ki{color:var(--gold);font-weight:600;}
+.excel-row .low{color:var(--red);font-weight:600;}
+.excel-row .ok{color:var(--green);}
+
+.s1-title{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;letter-spacing:-.02em;opacity:0;transform:translateY(15px);}
+.s1-title span{color:var(--gold);}
+
+/* ─── SCENE 2: PROCESSING ─── */
+#s2{flex-direction:column;gap:40px;}
+.proc-title{font-family:'Space Grotesk',sans-serif;font-size:42px;font-weight:800;letter-spacing:-.03em;text-align:center;opacity:0;transform:translateY(20px);}
+.proc-title span{background:linear-gradient(135deg,#D6B77C,#E7CFA0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.pipeline{display:flex;align-items:center;gap:0;opacity:0;transform:translateY(20px);}
+.pipe-node{display:flex;flex-direction:column;align-items:center;gap:10px;padding:24px 32px;background:var(--surf);border:1px solid var(--stroke);border-radius:16px;min-width:150px;transition:border-color .5s,box-shadow .5s;}
+.pipe-node.lit{border-color:rgba(214,183,124,.5);box-shadow:0 0 30px rgba(214,183,124,.12);}
+.pipe-icon{font-size:28px;}
+.pipe-label{font-size:13px;font-weight:600;color:var(--txt);font-family:'Space Grotesk',sans-serif;}
+.pipe-sub{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+.pipe-arrow{width:48px;display:flex;align-items:center;justify-content:center;position:relative;}
+.pipe-arrow svg{width:32px;height:32px;color:var(--stroke);transition:color .5s;}
+.pipe-arrow.lit svg{color:var(--gold);}
+.pipe-dots{position:absolute;width:100%;height:2px;}
+.pipe-dot{position:absolute;width:6px;height:6px;border-radius:50%;background:var(--gold);opacity:0;top:-2px;}
+
+/* ─── SCENE 3: DASHBOARD ─── */
+#s3{flex-direction:column;gap:24px;}
+.dash-window{width:850px;background:var(--surf);border:1px solid var(--stroke);border-radius:16px;overflow:hidden;opacity:0;transform:scale(.92);}
+.dash-titlebar{display:flex;align-items:center;padding:12px 16px;background:rgba(20,28,43,.8);border-bottom:1px solid var(--stroke);gap:8px;}
+.dash-titlebar span{flex:1;text-align:center;font-size:12px;color:var(--muted);}
+.dash-body{padding:20px;}
+.dash-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.stat-card{background:rgba(5,8,14,.6);border:1px solid var(--stroke);border-radius:12px;padding:16px;text-align:center;opacity:0;transform:translateY(15px);}
+.stat-val{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:800;margin-bottom:4px;}
+.stat-val.gold{background:linear-gradient(135deg,#D6B77C,#E7CFA0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.stat-val.red{color:var(--red);}
+.stat-val.green{color:var(--green);}
+.stat-val.blue{color:var(--blue);}
+.stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;}
+
+.dash-alerts{display:flex;flex-direction:column;gap:8px;}
+.alert-row{display:grid;grid-template-columns:200px 80px 80px 80px 80px 1fr;align-items:center;padding:10px 14px;background:rgba(5,8,14,.4);border:1px solid var(--stroke);border-radius:10px;opacity:0;transform:translateX(-15px);}
+.alert-row div{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted);}
+.alert-row div:first-child{color:var(--txt);font-weight:600;font-family:'Inter',sans-serif;font-size:12px;}
+.alert-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;}
+.badge-crit{background:rgba(255,77,77,.12);color:#FF4D4D;border:1px solid rgba(255,77,77,.25);}
+.badge-high{background:rgba(251,146,60,.12);color:#FB923C;border:1px solid rgba(251,146,60,.25);}
+.badge-order{background:rgba(16,185,129,.12);color:#10B981;border:1px solid rgba(16,185,129,.25);}
+
+.s3-label{font-size:11px;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;font-weight:700;opacity:0;}
+
+/* ─── SCENE 4: EMAIL ─── */
+#s4{flex-direction:column;gap:32px;}
+.email-window{width:600px;background:var(--surf);border:1px solid var(--stroke);border-radius:16px;overflow:hidden;opacity:0;transform:scale(.9) translateY(20px);}
+.email-titlebar{display:flex;align-items:center;padding:12px 16px;background:rgba(20,28,43,.8);border-bottom:1px solid var(--stroke);gap:8px;}
+.email-titlebar span{flex:1;text-align:center;font-size:12px;color:var(--muted);}
+.email-body{padding:24px;}
+.email-from{font-size:11px;color:var(--muted);margin-bottom:4px;}
+.email-from b{color:var(--gold);}
+.email-to{font-size:11px;color:var(--muted);margin-bottom:16px;}
+.email-subject{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:var(--txt);margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--stroke);}
+.email-alert-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:6px;background:rgba(255,77,77,.06);border:1px solid rgba(255,77,77,.15);border-radius:8px;opacity:0;transform:translateX(-10px);}
+.email-alert-item .name{font-size:12px;font-weight:600;color:var(--txt);}
+.email-alert-item .detail{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+.email-alert-item .shortage{font-size:12px;font-weight:700;color:var(--red);}
+
+.sent-indicator{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--green);opacity:0;transform:translateY(10px);}
+.sent-indicator .check{width:28px;height:28px;border-radius:50%;background:rgba(16,185,129,.15);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.email-pulse{position:absolute;width:200px;height:200px;border-radius:50%;border:1px solid rgba(16,185,129,.2);opacity:0;}
+
+/* ─── SCENE 5: FINAL ─── */
+#s5{flex-direction:column;gap:20px;}
+#s5 .fin-title{font-family:'Space Grotesk',sans-serif;font-size:56px;font-weight:800;letter-spacing:-.04em;text-align:center;opacity:0;transform:translateY(30px);}
+#s5 .fin-title span{background:linear-gradient(135deg,#D6B77C,#E7CFA0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+#s5 .fin-sub{font-size:16px;color:var(--muted);text-align:center;opacity:0;transform:translateY(15px);}
+#s5 .fin-url{font-family:'JetBrains Mono',monospace;font-size:18px;color:var(--gold);text-align:center;opacity:0;transform:translateY(15px);letter-spacing:.03em;}
+#s5 .fin-line{width:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:0 auto;}
+
+/* ─── PROGRESS BAR ─── */
+#progress{position:fixed;bottom:0;left:0;height:2px;background:linear-gradient(90deg,var(--gold),var(--gold2));width:0;z-index:100;transition:width .3s linear;}
+
+/* ─── AMBIENT GLOW ─── */
+.glow{position:absolute;width:400px;height:400px;border-radius:50%;filter:blur(120px);pointer-events:none;opacity:.08;}
+.glow1{background:var(--gold);top:20%;left:10%;}
+.glow2{background:var(--blue);bottom:20%;right:10%;}
+</style>
+</head>
+<body>
+
+<div class="glow glow1"></div>
+<div class="glow glow2"></div>
+
+<div id="stage">
+  <!-- SCENE 0: Brand Intro -->
+  <div class="scene active" id="s0">
+    <div class="brand"><span>DANIER</span></div>
+    <div class="line"></div>
+    <div class="sub">Inventory Intelligence</div>
+  </div>
+
+  <!-- SCENE 1: Excel Upload -->
+  <div class="scene" id="s1">
+    <div class="s1-title">Your Excel becomes a <span>living database</span></div>
+    <div class="excel-window">
+      <div class="excel-titlebar">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+        <span>inventory_20260220.xlsx</span>
+      </div>
+      <div class="excel-grid">
+        <div class="excel-header">
+          <div>Item Description</div><div>Season</div><div>Size</div><div>Color</div><div>Stock</div>
+        </div>
+        <div class="excel-row"><div>Leather Bomber Jacket</div><div class="ki">KI00</div><div>M</div><div>Black</div><div class="low">12</div></div>
+        <div class="excel-row"><div>Leather Bomber Jacket</div><div class="ki">KI00</div><div>L</div><div>Black</div><div class="ok">45</div></div>
+        <div class="excel-row"><div>Suede Crossbody Bag</div><div class="ki">KI00</div><div>OS</div><div>Tan</div><div class="low">8</div></div>
+        <div class="excel-row"><div>Leather Moto Jacket</div><div class="ki">KI00</div><div>S</div><div>Cognac</div><div class="low">3</div></div>
+        <div class="excel-row"><div>Leather Moto Jacket</div><div class="ki">KI00</div><div>M</div><div>Cognac</div><div class="ok">52</div></div>
+        <div class="excel-row"><div>Suede A-Line Skirt</div><div class="ki">KI00</div><div>XS</div><div>Camel</div><div class="low">15</div></div>
+        <div class="excel-row"><div>Leather Weekender Bag</div><div class="ki">KI00</div><div>OS</div><div>Brown</div><div class="low">6</div></div>
+        <div class="excel-row"><div>Nappa Leather Gloves</div><div class="ki">KI00</div><div>M</div><div>Black</div><div class="ok">67</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 2: Processing Pipeline -->
+  <div class="scene" id="s2">
+    <div class="proc-title">The system <span>processes</span> everything</div>
+    <div class="pipeline">
+      <div class="pipe-node" id="pn0"><div class="pipe-icon">📄</div><div class="pipe-label">Excel Upload</div><div class="pipe-sub">xlsx parsed</div></div>
+      <div class="pipe-arrow" id="pa0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <div class="pipe-node" id="pn1"><div class="pipe-icon">🗄️</div><div class="pipe-label">Database</div><div class="pipe-sub">structured</div></div>
+      <div class="pipe-arrow" id="pa1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <div class="pipe-node" id="pn2"><div class="pipe-icon">⚡</div><div class="pipe-label">Alert Engine</div><div class="pipe-sub">thresholds</div></div>
+      <div class="pipe-arrow" id="pa2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <div class="pipe-node" id="pn3"><div class="pipe-icon">📊</div><div class="pipe-label">Dashboard</div><div class="pipe-sub">live alerts</div></div>
+    </div>
+  </div>
+
+  <!-- SCENE 3: Dashboard -->
+  <div class="scene" id="s3">
+    <div class="s3-label">Live Dashboard</div>
+    <div class="dash-window">
+      <div class="dash-titlebar">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+        <span>inventoryreport.ca/dashboard</span>
+      </div>
+      <div class="dash-body">
+        <div class="dash-stats">
+          <div class="stat-card"><div class="stat-val gold" data-to="81">0</div><div class="stat-lbl">Key Items</div></div>
+          <div class="stat-card"><div class="stat-val red" data-to="247">0</div><div class="stat-lbl">Active Alerts</div></div>
+          <div class="stat-card"><div class="stat-val blue" data-to="38">0</div><div class="stat-lbl">Critical</div></div>
+          <div class="stat-card"><div class="stat-val green" data-to="43">0</div><div class="stat-lbl">Healthy Stock</div></div>
+        </div>
+        <div class="dash-alerts">
+          <div class="alert-row"><div>Leather Bomber Jacket</div><div>Black</div><div>M</div><div style="color:var(--red);font-weight:600;">12</div><div>30</div><div><span class="alert-badge badge-crit">● CRITICAL</span></div></div>
+          <div class="alert-row"><div>Suede Crossbody Bag</div><div>Tan</div><div>OS</div><div style="color:var(--red);font-weight:600;">8</div><div>30</div><div><span class="alert-badge badge-crit">● CRITICAL</span></div></div>
+          <div class="alert-row"><div>Leather Moto Jacket</div><div>Cognac</div><div>S</div><div style="color:var(--red);font-weight:600;">3</div><div>30</div><div><span class="alert-badge badge-crit">● CRITICAL</span></div></div>
+          <div class="alert-row"><div>Suede A-Line Skirt</div><div>Camel</div><div>XS</div><div style="color:#FB923C;font-weight:600;">15</div><div>30</div><div><span class="alert-badge badge-high">● HIGH</span></div></div>
+          <div class="alert-row"><div>Leather Weekender Bag</div><div>Brown</div><div>OS</div><div style="color:var(--red);font-weight:600;">6</div><div>30</div><div><span class="alert-badge badge-crit">● CRITICAL</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 4: Email Alert -->
+  <div class="scene" id="s4">
+    <div class="email-window">
+      <div class="email-titlebar">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+        <span>Gmail — Danier Stock Alerts</span>
+      </div>
+      <div class="email-body">
+        <div class="email-from">From: <b>Danier Stock Alerts</b> &lt;danieralertsystem@gmail.com&gt;</div>
+        <div class="email-to">To: team@danier.com, manager@danier.com, buyer@danier.com</div>
+        <div class="email-subject">🔴 Low Stock Alert — 5 Critical Items Detected</div>
+        <div class="email-alert-item"><div><span class="name">Leather Bomber Jacket</span><br><span class="detail">Black · M</span></div><div class="shortage">-18 units</div></div>
+        <div class="email-alert-item"><div><span class="name">Suede Crossbody Bag</span><br><span class="detail">Tan · OS</span></div><div class="shortage">-22 units</div></div>
+        <div class="email-alert-item"><div><span class="name">Leather Moto Jacket</span><br><span class="detail">Cognac · S</span></div><div class="shortage">-27 units</div></div>
+        <div class="email-alert-item"><div><span class="name">Suede A-Line Skirt</span><br><span class="detail">Camel · XS</span></div><div class="shortage">-15 units</div></div>
+        <div class="email-alert-item"><div><span class="name">Leather Weekender Bag</span><br><span class="detail">Brown · OS</span></div><div class="shortage">-24 units</div></div>
+      </div>
+    </div>
+    <div class="sent-indicator">
+      <div class="check">✓</div>
+      <span>Delivered to 3 recipients</span>
+    </div>
+  </div>
+
+  <!-- SCENE 5: Final -->
+  <div class="scene" id="s5">
+    <div class="fin-title">Stop guessing.<br><span>Start knowing.</span></div>
+    <div class="fin-line"></div>
+    <div class="fin-sub">Upload. Detect. Alert. — Automatically.</div>
+    <div class="fin-url">inventoryreport.ca</div>
+  </div>
+</div>
+
+<div id="progress"></div>
+
+<script>
+const SCENES = [
+  { id:'s0', dur:3000 },
+  { id:'s1', dur:5500 },
+  { id:'s2', dur:5000 },
+  { id:'s3', dur:6000 },
+  { id:'s4', dur:5500 },
+  { id:'s5', dur:4000 },
+];
+const TOTAL = SCENES.reduce((s,x)=>s+x.dur,0);
+
+let current = -1;
+const progress = document.getElementById('progress');
+
+function anim(el, props, delay=0) {
+  return new Promise(resolve => {
+    setTimeout(()=>{
+      Object.assign(el.style, { transition:`all ${props.dur||600}ms cubic-bezier(.22,1,.36,1)` });
+      requestAnimationFrame(()=>{
+        if(props.opacity!==undefined) el.style.opacity=props.opacity;
+        if(props.y!==undefined) el.style.transform=`translateY(${props.y}px)`;
+        if(props.x!==undefined) el.style.transform=`translateX(${props.x}px)`;
+        if(props.scale!==undefined) el.style.transform=`scale(${props.scale})`;
+        if(props.scaleY!==undefined) el.style.transform+=` translateY(${props.ty||0}px)`;
+        if(props.width!==undefined) el.style.width=props.width;
+        if(props.custom) Object.assign(el.style, props.custom);
+      });
+      setTimeout(resolve, props.dur||600);
+    }, delay);
+  });
+}
+
+function counterAnim(el, to, duration=1200) {
+  const start = performance.now();
+  function tick(now) {
+    const p = Math.min((now-start)/duration,1);
+    const ease = 1-Math.pow(1-p,3);
+    el.textContent = Math.round(to*ease);
+    if(p<1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+async function playScene(idx) {
+  if(current>=0) document.getElementById(SCENES[current].id).classList.remove('active');
+  current=idx;
+  const el = document.getElementById(SCENES[idx].id);
+  el.classList.add('active');
+
+  switch(idx) {
+    case 0: { // Brand
+      const brand = el.querySelector('.brand');
+      const line = el.querySelector('.line');
+      const sub = el.querySelector('.sub');
+      anim(brand,{opacity:1,y:0,dur:800},200);
+      anim(line,{width:'180px',dur:600},700);
+      anim(sub,{opacity:1,y:0,dur:600},1100);
+      break;
+    }
+    case 1: { // Excel
+      const title = el.querySelector('.s1-title');
+      const win = el.querySelector('.excel-window');
+      const rows = el.querySelectorAll('.excel-row');
+      anim(title,{opacity:1,y:0,dur:600},200);
+      await anim(win,{opacity:1,scale:1,dur:700,custom:{transform:'scale(1) translateY(0)'}},500);
+      rows.forEach((r,i)=>{
+        setTimeout(()=>{
+          r.style.transition='all 400ms cubic-bezier(.22,1,.36,1)';
+          r.style.opacity='1'; r.style.transform='translateX(0)';
+        },i*180);
+      });
+      break;
+    }
+    case 2: { // Processing
+      const title = el.querySelector('.proc-title');
+      const pipeline = el.querySelector('.pipeline');
+      const nodes = el.querySelectorAll('.pipe-node');
+      const arrows = el.querySelectorAll('.pipe-arrow');
+      anim(title,{opacity:1,y:0,dur:600},100);
+      anim(pipeline,{opacity:1,y:0,dur:500},400);
+      for(let i=0;i<nodes.length;i++){
+        await new Promise(r=>setTimeout(r,600));
+        nodes[i].classList.add('lit');
+        if(i<arrows.length) arrows[i].classList.add('lit');
+      }
+      break;
+    }
+    case 3: { // Dashboard
+      const label = el.querySelector('.s3-label');
+      const win = el.querySelector('.dash-window');
+      const cards = el.querySelectorAll('.stat-card');
+      const rows = el.querySelectorAll('.alert-row');
+      anim(label,{opacity:1,dur:400},100);
+      await anim(win,{opacity:1,dur:700,custom:{transform:'scale(1)'}},300);
+      cards.forEach((c,i)=>{
+        setTimeout(()=>{
+          c.style.transition='all 500ms cubic-bezier(.22,1,.36,1)';
+          c.style.opacity='1'; c.style.transform='translateY(0)';
+          const val = c.querySelector('.stat-val');
+          counterAnim(val, parseInt(val.dataset.to), 1000);
+        },i*200);
+      });
+      await new Promise(r=>setTimeout(r,1200));
+      rows.forEach((r,i)=>{
+        setTimeout(()=>{
+          r.style.transition='all 400ms cubic-bezier(.22,1,.36,1)';
+          r.style.opacity='1'; r.style.transform='translateX(0)';
+        },i*200);
+      });
+      break;
+    }
+    case 4: { // Email
+      const win = el.querySelector('.email-window');
+      const items = el.querySelectorAll('.email-alert-item');
+      const sent = el.querySelector('.sent-indicator');
+      await anim(win,{opacity:1,dur:700,custom:{transform:'scale(1) translateY(0)'}},200);
+      items.forEach((item,i)=>{
+        setTimeout(()=>{
+          item.style.transition='all 350ms cubic-bezier(.22,1,.36,1)';
+          item.style.opacity='1'; item.style.transform='translateX(0)';
+        },i*220);
+      });
+      await new Promise(r=>setTimeout(r, items.length*220+400));
+      anim(sent,{opacity:1,y:0,dur:500});
+      break;
+    }
+    case 5: { // Final
+      const title = el.querySelector('.fin-title');
+      const line = el.querySelector('.fin-line');
+      const sub = el.querySelector('.fin-sub');
+      const url = el.querySelector('.fin-url');
+      anim(title,{opacity:1,y:0,dur:800},200);
+      anim(line,{width:'200px',dur:600},800);
+      anim(sub,{opacity:1,y:0,dur:600},1200);
+      anim(url,{opacity:1,y:0,dur:600},1700);
+      break;
+    }
+  }
+}
+
+async function playAll() {
+  let elapsed = 0;
+  for(let i=0;i<SCENES.length;i++){
+    await playScene(i);
+    const dur = SCENES[i].dur;
+    const startE = elapsed;
+    const startTime = Date.now();
+    await new Promise(resolve=>{
+      function tick(){
+        const p = Math.min((Date.now()-startTime)/dur,1);
+        progress.style.width = ((startE+dur*p)/TOTAL*100)+'%';
+        if(p<1) requestAnimationFrame(tick); else resolve();
+      }
+      tick();
+    });
+    elapsed += dur;
+  }
+}
+
+playAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,2338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DANIER — Inventory Intelligence System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #07070e;
+  --bg2: #0d0d18;
+  --bg3: #121220;
+  --card: #13131f;
+  --card2: #1a1a2b;
+  --border: rgba(255,255,255,0.055);
+  --gold: #c9a84c;
+  --gold2: #e2c97e;
+  --gold-glow: rgba(201,168,76,0.12);
+  --gold-glow2: rgba(201,168,76,0.22);
+  --text: #f0f0f8;
+  --text2: #9090b0;
+  --text3: #55556e;
+  --success: #10b981;
+  --success-bg: rgba(16,185,129,0.1);
+  --warning: #f59e0b;
+  --warning-bg: rgba(245,158,11,0.1);
+  --danger: #ef4444;
+  --danger-bg: rgba(239,68,68,0.1);
+  --info: #818cf8;
+  --info-bg: rgba(129,140,248,0.1);
+  --sidebar: 230px;
+  --radius: 14px;
+  --radius-sm: 8px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  display: flex;
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+/* ─── SIDEBAR ─── */
+#sidebar {
+  width: var(--sidebar);
+  min-height: 100vh;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  z-index: 100;
+  padding: 0 0 24px;
+  transition: transform 0.3s ease;
+}
+
+.sidebar-logo {
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.logo-mark {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+
+.logo-sub {
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+
+.server-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  background: var(--success-bg);
+  border: 1px solid rgba(16,185,129,0.2);
+  border-radius: 20px;
+  margin: 12px 20px;
+  font-size: 11px;
+  color: var(--success);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+.pulse-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pulse-dot::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: var(--success);
+  opacity: 0.3;
+  animation: pulse 2s ease infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.8); opacity: 0; }
+}
+
+.nav-section {
+  padding: 6px 14px 2px;
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  color: var(--text3);
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  margin: 1px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text2);
+  position: relative;
+  text-decoration: none;
+}
+
+.nav-item:hover {
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+}
+
+.nav-item.active {
+  background: var(--gold-glow);
+  color: var(--gold);
+  border: 1px solid rgba(201,168,76,0.15);
+}
+
+.nav-item.active .nav-icon { color: var(--gold); }
+
+.nav-icon {
+  width: 18px; height: 18px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.nav-badge {
+  margin-left: auto;
+  background: var(--danger);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+  padding: 0 14px;
+}
+
+.sys-info {
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-size: 11px;
+  color: var(--text3);
+  line-height: 1.7;
+}
+
+.sys-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sys-info-val {
+  color: var(--text2);
+  font-weight: 500;
+}
+
+/* ─── MAIN CONTENT ─── */
+#main {
+  margin-left: var(--sidebar);
+  flex: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── TOP BAR ─── */
+#topbar {
+  height: 64px;
+  background: rgba(13,13,24,0.9);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.topbar-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+}
+
+.topbar-date {
+  font-size: 12px;
+  color: var(--text3);
+}
+
+.topbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 16px;
+  background: var(--gold-glow);
+  border: 1px solid rgba(201,168,76,0.25);
+  border-radius: 8px;
+  color: var(--gold);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.02em;
+}
+
+.topbar-btn:hover {
+  background: var(--gold-glow2);
+  border-color: rgba(201,168,76,0.4);
+  transform: translateY(-1px);
+}
+
+/* ─── PAGES ─── */
+.page { display: none; flex: 1; }
+.page.active { display: block; }
+
+/* ─── HOME / LANDING ─── */
+#page-home {
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  padding: 60px 48px 0;
+}
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--gold-glow);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+
+.hero-headline {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 52px;
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+  max-width: 700px;
+}
+
+.hero-headline .accent { color: var(--gold); }
+
+.hero-sub {
+  font-size: 16px;
+  color: var(--text2);
+  line-height: 1.65;
+  max-width: 540px;
+  margin-bottom: 40px;
+}
+
+/* ─── LIVE STATS STRIP ─── */
+.stats-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.stat-card:hover {
+  border-color: rgba(201,168,76,0.2);
+  transform: translateY(-2px);
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+}
+
+.stat-card.gold::before { background: linear-gradient(90deg, var(--gold), transparent); }
+.stat-card.green::before { background: linear-gradient(90deg, var(--success), transparent); }
+.stat-card.orange::before { background: linear-gradient(90deg, var(--warning), transparent); }
+.stat-card.red::before { background: linear-gradient(90deg, var(--danger), transparent); }
+
+.stat-label {
+  font-size: 11px;
+  color: var(--text3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.stat-delta {
+  font-size: 12px;
+  margin-top: 6px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.delta-up { color: var(--success); }
+.delta-down { color: var(--danger); }
+.delta-warn { color: var(--warning); }
+
+/* ─── UPLOAD ZONE ─── */
+.upload-section {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  padding: 0 48px 48px;
+  position: relative;
+  z-index: 1;
+}
+
+.upload-zone {
+  background: var(--card);
+  border: 2px dashed rgba(201,168,76,0.2);
+  border-radius: var(--radius);
+  padding: 48px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.upload-zone:hover, .upload-zone.dragover {
+  border-color: var(--gold);
+  background: var(--gold-glow);
+}
+
+.upload-zone::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, var(--gold-glow), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.upload-zone:hover::after { opacity: 1; }
+
+.upload-icon-wrap {
+  width: 80px; height: 80px;
+  background: var(--gold-glow);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  transition: all 0.3s;
+}
+
+.upload-zone:hover .upload-icon-wrap {
+  background: var(--gold-glow2);
+  border-color: rgba(201,168,76,0.4);
+  transform: scale(1.05);
+}
+
+.upload-icon-wrap svg { width: 36px; height: 36px; color: var(--gold); }
+
+.upload-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.upload-hint {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 20px;
+}
+
+.upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--gold);
+  color: var(--bg);
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.03em;
+}
+
+.upload-btn:hover { background: var(--gold2); transform: translateY(-1px); }
+
+.upload-formats {
+  margin-top: 16px;
+  font-size: 11px;
+  color: var(--text3);
+  letter-spacing: 0.05em;
+}
+
+/* Progress */
+.upload-progress {
+  display: none;
+  margin-top: 24px;
+}
+
+.progress-track {
+  height: 4px;
+  background: var(--bg3);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold2));
+  border-radius: 4px;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: var(--text2);
+  margin-bottom: 6px;
+}
+
+/* ─── UPLOAD SIDE PANEL ─── */
+.upload-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.side-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.side-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.side-card-title svg { width: 14px; height: 14px; color: var(--gold); }
+
+.pipeline-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.pipeline-step:last-child { border-bottom: none; }
+
+.step-num {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--success-bg);
+  border: 1px solid rgba(16,185,129,0.25);
+  color: var(--success);
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.step-text {
+  font-size: 12.5px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+
+.step-title { font-weight: 600; color: var(--text); font-size: 13px; }
+
+/* File history */
+.file-history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+}
+
+.file-history-item:last-child { border-bottom: none; }
+
+.file-icon {
+  width: 32px; height: 32px;
+  background: var(--bg3);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.file-name { font-weight: 500; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-meta { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.file-status { margin-left: auto; flex-shrink: 0; }
+
+/* ─── COMMON PAGE STYLES ─── */
+.page-inner { padding: 32px 48px; }
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.page-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.page-subtitle {
+  font-size: 13px;
+  color: var(--text2);
+  margin-top: 4px;
+}
+
+/* ─── CARDS ─── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+}
+
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+/* ─── GRID UTILS ─── */
+.grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+
+/* ─── KPI CARDS ─── */
+.kpi-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.kpi-card:hover { border-color: rgba(255,255,255,0.1); transform: translateY(-2px); }
+
+.kpi-icon-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.kpi-icon {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kpi-icon svg { width: 18px; height: 18px; }
+
+.kpi-icon.gold { background: var(--gold-glow); color: var(--gold); }
+.kpi-icon.green { background: var(--success-bg); color: var(--success); }
+.kpi-icon.red { background: var(--danger-bg); color: var(--danger); }
+.kpi-icon.purple { background: var(--info-bg); color: var(--info); }
+.kpi-icon.orange { background: var(--warning-bg); color: var(--warning); }
+
+.kpi-label { font-size: 11.5px; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; }
+.kpi-value { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; margin: 6px 0 4px; }
+.kpi-delta { font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 4px; }
+
+/* ─── CHIP / BADGE ─── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.chip.success { background: var(--success-bg); color: var(--success); }
+.chip.warning { background: var(--warning-bg); color: var(--warning); }
+.chip.danger { background: var(--danger-bg); color: var(--danger); }
+.chip.info { background: var(--info-bg); color: var(--info); }
+.chip.gold { background: var(--gold-glow); color: var(--gold); }
+.chip.default { background: var(--bg3); color: var(--text2); }
+
+/* ─── TABLE ─── */
+.table-wrap { overflow-x: auto; border-radius: var(--radius-sm); }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+thead tr { border-bottom: 1px solid var(--border); }
+thead th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+tbody tr {
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  transition: background 0.15s;
+}
+
+tbody tr:hover { background: rgba(255,255,255,0.025); }
+
+tbody td {
+  padding: 12px 14px;
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.td-strong { font-weight: 600; }
+.td-muted { color: var(--text2); font-size: 12px; }
+
+/* ─── ALERTS ─── */
+.alert-item {
+  display: flex;
+  gap: 14px;
+  padding: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+  transition: all 0.2s;
+  align-items: flex-start;
+}
+
+.alert-item:hover { border-color: rgba(255,255,255,0.09); }
+.alert-item.critical { border-left: 3px solid var(--danger); }
+.alert-item.warning { border-left: 3px solid var(--warning); }
+.alert-item.info { border-left: 3px solid var(--info); }
+
+.alert-icon {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.alert-icon svg { width: 16px; height: 16px; }
+.alert-icon.critical { background: var(--danger-bg); color: var(--danger); }
+.alert-icon.warning { background: var(--warning-bg); color: var(--warning); }
+.alert-icon.info { background: var(--info-bg); color: var(--info); }
+
+.alert-body { flex: 1; }
+.alert-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.alert-msg { font-size: 12.5px; color: var(--text2); line-height: 1.5; }
+.alert-meta { font-size: 11.5px; color: var(--text3); margin-top: 6px; display: flex; gap: 14px; flex-wrap: wrap; }
+.alert-action { font-size: 12px; background: var(--bg3); padding: 4px 10px; border-radius: 6px; color: var(--text2); margin-top: 8px; display: inline-block; }
+.alert-time { font-size: 11px; color: var(--text3); flex-shrink: 0; }
+
+/* ─── FILTERS ─── */
+.filter-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.filter-select {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+  appearance: none;
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.filter-select:focus { border-color: var(--gold); }
+
+.search-wrap {
+  position: relative;
+  flex: 1;
+  max-width: 320px;
+}
+
+.search-wrap svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px; height: 16px;
+  color: var(--text3);
+}
+
+.search-input {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px 8px 38px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus { border-color: var(--gold); }
+.search-input::placeholder { color: var(--text3); }
+
+.clear-btn {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 16px;
+  color: var(--text2);
+  font-size: 12.5px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.clear-btn:hover { background: var(--card2); color: var(--text); }
+
+/* ─── CHART CONTAINER ─── */
+.chart-box {
+  position: relative;
+  height: 260px;
+}
+
+/* ─── TIER BARS ─── */
+.tier-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.tier-label-cell { width: 130px; font-size: 12.5px; font-weight: 500; flex-shrink: 0; }
+.tier-track { flex: 1; height: 7px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+.tier-fill { height: 100%; border-radius: 4px; transition: width 1s cubic-bezier(0.16,1,0.3,1); }
+.tier-count { font-size: 12.5px; font-weight: 600; color: var(--text2); width: 45px; text-align: right; flex-shrink: 0; }
+
+/* ─── SETTINGS ─── */
+.tab-row {
+  display: flex;
+  gap: 0;
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  margin-bottom: 22px;
+  width: fit-content;
+}
+
+.tab-btn {
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text2);
+  border: none;
+  background: transparent;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.18s;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.tab-btn svg { width: 14px; height: 14px; }
+.tab-btn.active { background: var(--card2); color: var(--text); }
+
+.email-input-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.input-field {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 14px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+  flex: 1;
+}
+
+.input-field:focus { border-color: var(--gold); }
+.input-field::placeholder { color: var(--text3); }
+
+.add-btn {
+  background: var(--gold);
+  color: var(--bg);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 9px 20px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+
+.add-btn:hover { background: var(--gold2); }
+
+.email-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px 5px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 12px;
+  color: var(--text2);
+  margin: 4px;
+}
+
+.chip-del {
+  width: 16px; height: 16px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.chip-del:hover { background: var(--danger-bg); color: var(--danger); }
+
+.alert-type-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.alert-type-tab {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+
+.alert-type-tab:hover { background: var(--card2); }
+.alert-type-tab.active { background: var(--gold-glow); border-color: rgba(201,168,76,0.2); }
+.alert-type-tab .tab-name { font-size: 13px; font-weight: 500; }
+.alert-type-tab .tab-desc { font-size: 11.5px; color: var(--text3); margin-top: 2px; }
+
+.send-email-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--gold);
+  color: var(--bg);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 11px 24px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+  letter-spacing: 0.03em;
+}
+
+.send-email-btn:hover { background: var(--gold2); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(201,168,76,0.3); }
+
+.success-toast {
+  position: fixed;
+  bottom: 28px; right: 28px;
+  background: var(--success-bg);
+  border: 1px solid rgba(16,185,129,0.3);
+  color: var(--success);
+  padding: 14px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 9999;
+  transform: translateY(80px);
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.16,1,0.3,1);
+}
+
+.success-toast.show { transform: translateY(0); opacity: 1; }
+
+/* ─── DIVIDER ─── */
+hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+/* ─── SECTION HEADER ─── */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.section-sub { font-size: 12px; color: var(--text3); }
+
+/* ─── Empty ─── */
+.empty-state {
+  text-align: center;
+  padding: 48px;
+  color: var(--text3);
+  font-size: 13.5px;
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 1100px) {
+  .grid-4 { grid-template-columns: repeat(2,1fr); }
+  .stats-strip { grid-template-columns: repeat(2,1fr); }
+}
+
+@media (max-width: 768px) {
+  #sidebar { transform: translateX(-100%); }
+  #main { margin-left: 0; }
+  .hero-headline { font-size: 32px; }
+  .page-inner { padding: 20px; }
+  .hero-content { padding: 32px 20px 0; }
+  .upload-section { grid-template-columns: 1fr; padding: 0 20px 32px; }
+  .grid-2, .grid-2-1, .grid-3 { grid-template-columns: 1fr; }
+}
+
+/* ─── ANIMATIONS ─── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page.active > * { animation: fadeUp 0.35s ease; }
+
+.count-anim { transition: all 0.6s ease; }
+
+/* ─── ICON helpers ─── */
+.icon-sm { width: 14px; height: 14px; }
+.icon-md { width: 18px; height: 18px; }
+
+/* start system button */
+.start-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, var(--success), #059669);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 10px 22px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.start-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(16,185,129,0.3); }
+
+.mr-2 { margin-right: 8px; }
+.mb-4 { margin-bottom: 16px; }
+.mb-6 { margin-bottom: 24px; }
+
+.text-right { text-align: right; }
+.flex { display: flex; }
+.flex-between { display: flex; align-items: center; justify-content: space-between; }
+.flex-center { display: flex; align-items: center; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; }
+.mt-4 { margin-top: 16px; }
+.mt-6 { margin-top: 24px; }
+.fw-600 { font-weight: 600; }
+.text-gold { color: var(--gold); }
+.text-muted { color: var(--text2); }
+.text-sm { font-size: 12.5px; }
+.w-full { width: 100%; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════ SIDEBAR ═══ -->
+<aside id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">Danier</div>
+    <div class="logo-sub">Inventory Intelligence</div>
+  </div>
+
+  <div class="server-status">
+    <span class="pulse-dot"></span>
+    Server Connected
+  </div>
+
+  <div class="nav-section">Navigation</div>
+
+  <a class="nav-item active" onclick="showPage('home')" id="nav-home">
+    <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Home &amp; Upload
+  </a>
+
+  <a class="nav-item" onclick="showPage('dashboard')" id="nav-dashboard">
+    <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    Dashboard
+  </a>
+
+  <a class="nav-item" onclick="showPage('inventory')" id="nav-inventory">
+    <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+    Key Items
+  </a>
+
+  <div class="nav-section">Operations</div>
+
+  <a class="nav-item" onclick="showPage('alerts')" id="nav-alerts">
+    <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+    Alerts
+    <span class="nav-badge">45</span>
+  </a>
+
+  <a class="nav-item" onclick="showPage('analytics')" id="nav-analytics">
+    <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    Analytics
+  </a>
+
+  <a class="nav-item" onclick="showPage('settings')" id="nav-settings">
+    <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93L17.66 6.34A8 8 0 104.93 19.07L6.34 17.66a6 6 0 117.32-7.32L15.07 8.93A4 4 0 1119.07 4.93z"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+    Settings
+  </a>
+
+  <div class="sidebar-bottom">
+    <div class="sys-info">
+      <div class="sys-info-row mb-4"><span>ETL Pipeline</span><span class="sys-info-val" style="color:var(--success)">● Ready</span></div>
+      <div class="sys-info-row mb-4"><span>Email System</span><span class="sys-info-val" style="color:var(--success)">● Active</span></div>
+      <div class="sys-info-row mb-4"><span>Alert Engine</span><span class="sys-info-val" style="color:var(--success)">● On</span></div>
+      <div class="sys-info-row"><span>Last Sync</span><span class="sys-info-val">2m ago</span></div>
+    </div>
+  </div>
+</aside>
+
+<!-- ══════════════════════════════════════════ MAIN ══════ -->
+<div id="main">
+
+  <!-- TOP BAR -->
+  <header id="topbar">
+    <div class="topbar-title" id="topbar-title">Home &amp; Upload</div>
+    <div class="topbar-date" id="topbar-date"></div>
+    <button class="start-btn" onclick="triggerStart()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Start System
+    </button>
+    <button class="topbar-btn" onclick="showPage('settings')">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      Send Alert Email
+    </button>
+  </header>
+
+  <!-- ══ HOME / UPLOAD ══ -->
+  <div class="page active" id="page-home">
+    <canvas class="hero-canvas" id="heroCanvas"></canvas>
+
+    <div class="hero-content">
+      <div class="hero-eyebrow">
+        <span class="pulse-dot" style="width:6px;height:6px;"></span>
+        Fashion Season Intelligence
+      </div>
+      <h1 class="hero-headline">
+        Your best sellers<br>
+        <span class="accent">never go out</span><br>
+        of stock again.
+      </h1>
+      <p class="hero-sub">
+        Danier's AI-powered inventory intelligence automatically identifies your K100 key items, tracks thresholds in real time, and alerts your team before stock runs out — so no season is ever lost.
+      </p>
+
+      <!-- Stats strip -->
+      <div class="stats-strip">
+        <div class="stat-card gold">
+          <div class="stat-label">SKUs Monitored</div>
+          <div class="stat-value" id="cnt-skus">0</div>
+          <div class="stat-delta delta-up">↑ 2.5% from last season</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Inventory Value</div>
+          <div class="stat-value" id="cnt-value">$0</div>
+          <div class="stat-delta delta-up">↑ 5.2% growth</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-label">Active Alerts</div>
+          <div class="stat-value" id="cnt-alerts">0</div>
+          <div class="stat-delta delta-warn">+12 new today</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Best Sellers</div>
+          <div class="stat-value" id="cnt-bs">0</div>
+          <div class="stat-delta delta-up">85.5% of inventory</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upload + side -->
+    <div class="upload-section">
+      <div>
+        <div class="section-header mb-4">
+          <div>
+            <div class="section-title">Upload Inventory File</div>
+            <div class="section-sub">Drop your Excel or CSV to run the full ETL pipeline</div>
+          </div>
+        </div>
+
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+          <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleFileSelect(event)">
+          <div class="upload-icon-wrap">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
+          </div>
+          <div class="upload-title">Drag &amp; drop your inventory file</div>
+          <div class="upload-hint">Excel (.xlsx, .xls) or CSV files up to 50 MB</div>
+          <button class="upload-btn" onclick="event.stopPropagation(); document.getElementById('fileInput').click()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
+            Select File
+          </button>
+          <div class="upload-formats">Supported: .xlsx · .xls · .csv &nbsp;|&nbsp; Max 50 MB</div>
+
+          <div class="upload-progress" id="uploadProgress">
+            <div class="progress-label">
+              <span id="progressText">Processing inventory data...</span>
+              <span id="progressPct">0%</span>
+            </div>
+            <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+          </div>
+        </div>
+
+        <!-- File history -->
+        <div class="card mt-4" id="historyCard">
+          <div class="card-title">Recent Uploads</div>
+          <div id="fileHistory">
+            <div class="file-history-item">
+              <div class="file-icon"><svg width="16" height="16" fill="none" stroke="var(--gold)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+              <div style="flex:1;overflow:hidden">
+                <div class="file-name">inventory_SS25_final.xlsx</div>
+                <div class="file-meta">2.4 MB · Processed Jul 22, 2025 · 1,000 items</div>
+              </div>
+              <div class="file-status"><span class="chip success">✓ Done</span></div>
+            </div>
+            <div class="file-history-item">
+              <div class="file-icon"><svg width="16" height="16" fill="none" stroke="var(--gold)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+              <div style="flex:1;overflow:hidden">
+                <div class="file-name">inventory_FW24_update.xlsx</div>
+                <div class="file-meta">1.8 MB · Processed Jun 15, 2025 · 856 items</div>
+              </div>
+              <div class="file-status"><span class="chip success">✓ Done</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side panel -->
+      <div class="upload-side">
+        <div class="side-card">
+          <div class="side-card-title">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+            ETL Pipeline Steps
+          </div>
+          <div class="pipeline-step">
+            <div class="step-num">1</div>
+            <div class="step-text"><div class="step-title">File Validation</div>Format check &amp; column mapping</div>
+          </div>
+          <div class="pipeline-step">
+            <div class="step-num">2</div>
+            <div class="step-text"><div class="step-title">K100 Detection</div>Identifies your top key items</div>
+          </div>
+          <div class="pipeline-step">
+            <div class="step-num">3</div>
+            <div class="step-text"><div class="step-title">Tier Classification</div>Best Sellers / Doing Good / Progress</div>
+          </div>
+          <div class="pipeline-step">
+            <div class="step-num">4</div>
+            <div class="step-text"><div class="step-title">Threshold Analysis</div>Flags items below reorder level</div>
+          </div>
+          <div class="pipeline-step">
+            <div class="step-num">5</div>
+            <div class="step-text"><div class="step-title">Alert Generation</div>Critical / Low Stock / Reorder alerts</div>
+          </div>
+        </div>
+
+        <div class="side-card">
+          <div class="side-card-title">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Season Readiness
+          </div>
+          <div style="margin-bottom:12px;">
+            <div class="flex-between mb-4" style="margin-bottom:6px;">
+              <span class="text-sm text-muted">Best Sellers Stocked</span>
+              <span class="text-sm fw-600 text-gold">87%</span>
+            </div>
+            <div class="tier-track"><div class="tier-fill" style="width:87%;background:var(--success);"></div></div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <div class="flex-between mb-4" style="margin-bottom:6px;">
+              <span class="text-sm text-muted">Reorder Coverage</span>
+              <span class="text-sm fw-600 text-gold">73%</span>
+            </div>
+            <div class="tier-track"><div class="tier-fill" style="width:73%;background:var(--warning);"></div></div>
+          </div>
+          <div>
+            <div class="flex-between mb-4" style="margin-bottom:6px;">
+              <span class="text-sm text-muted">Critical Items Clear</span>
+              <span class="text-sm fw-600" style="color:var(--danger)">41%</span>
+            </div>
+            <div class="tier-track"><div class="tier-fill" style="width:41%;background:var(--danger);"></div></div>
+          </div>
+          <hr>
+          <div class="text-sm text-muted" style="font-size:12px;">Next season opens in <span class="fw-600 text-gold">43 days</span> — reorder window closing.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ DASHBOARD ══ -->
+  <div class="page" id="page-dashboard">
+    <div class="page-inner">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Inventory Dashboard</div>
+          <div class="page-subtitle">Real-time overview of your season's inventory health</div>
+        </div>
+        <button class="topbar-btn" onclick="showToast('Dashboard refreshed')">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          Refresh
+        </button>
+      </div>
+
+      <div class="grid-4 mb-6">
+        <div class="kpi-card">
+          <div class="kpi-icon-row">
+            <div class="kpi-label">Total SKUs</div>
+            <div class="kpi-icon gold"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg></div>
+          </div>
+          <div class="kpi-value">1,000</div>
+          <div class="kpi-delta delta-up"><span>↑</span> +2.5% vs last season</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon-row">
+            <div class="kpi-label">Total Value</div>
+            <div class="kpi-icon green"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+          </div>
+          <div class="kpi-value">$116.7M</div>
+          <div class="kpi-delta delta-up"><span>↑</span> +5.2% growth</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon-row">
+            <div class="kpi-label">Total Quantity</div>
+            <div class="kpi-icon purple"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+          </div>
+          <div class="kpi-value">338,287</div>
+          <div class="kpi-delta delta-down"><span>↓</span> -1.8% units</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon-row">
+            <div class="kpi-label">Active Alerts</div>
+            <div class="kpi-icon red"><svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></div>
+          </div>
+          <div class="kpi-value">882</div>
+          <div class="kpi-delta delta-warn"><span>⚠</span> +12 new today</div>
+        </div>
+      </div>
+
+      <div class="grid-2 mb-6">
+        <div class="card">
+          <div class="card-title">Tier Distribution</div>
+          <div class="chart-box"><canvas id="dashTierChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Top Items by Value</div>
+          <div class="chart-box"><canvas id="dashTopChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Alert Summary</div>
+        <div class="grid-3">
+          <div>
+            <div class="flex-center gap-2 mb-4" style="margin-bottom:8px;">
+              <div style="width:10px;height:10px;border-radius:50%;background:var(--danger);flex-shrink:0;"></div>
+              <span class="text-muted text-sm">Critical Stock</span>
+            </div>
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:700;margin-bottom:6px;">45</div>
+            <div class="tier-track"><div class="tier-fill" style="width:5.1%;background:var(--danger);"></div></div>
+            <div class="text-sm text-muted mt-4" style="margin-top:6px;">5.1% of total alerts</div>
+          </div>
+          <div>
+            <div class="flex-center gap-2" style="margin-bottom:8px;">
+              <div style="width:10px;height:10px;border-radius:50%;background:var(--warning);flex-shrink:0;"></div>
+              <span class="text-muted text-sm">Low Stock</span>
+            </div>
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:700;margin-bottom:6px;">156</div>
+            <div class="tier-track"><div class="tier-fill" style="width:17.7%;background:var(--warning);"></div></div>
+            <div class="text-sm text-muted mt-4" style="margin-top:6px;">17.7% of total alerts</div>
+          </div>
+          <div>
+            <div class="flex-center gap-2" style="margin-bottom:8px;">
+              <div style="width:10px;height:10px;border-radius:50%;background:var(--info);flex-shrink:0;"></div>
+              <span class="text-muted text-sm">Reorder Required</span>
+            </div>
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:700;margin-bottom:6px;">681</div>
+            <div class="tier-track"><div class="tier-fill" style="width:77.2%;background:var(--info);"></div></div>
+            <div class="text-sm text-muted mt-4" style="margin-top:6px;">77.2% of total alerts</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ KEY ITEMS / INVENTORY ══ -->
+  <div class="page" id="page-inventory">
+    <div class="page-inner">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Key Items</div>
+          <div class="page-subtitle">All K100 items with tier classification and stock levels</div>
+        </div>
+        <button class="topbar-btn">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export CSV
+        </button>
+      </div>
+
+      <div class="grid-4 mb-6">
+        <div class="kpi-card">
+          <div class="kpi-label">Filtered Items</div>
+          <div class="kpi-value" id="inv-count">5</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Filtered Value</div>
+          <div class="kpi-value" id="inv-value">$894K</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Filtered Quantity</div>
+          <div class="kpi-value" id="inv-qty">1,929</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Avg. Price</div>
+          <div class="kpi-value" id="inv-avg">$462</div>
+        </div>
+      </div>
+
+      <div class="filter-row mb-6">
+        <div class="search-wrap">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="search-input" id="invSearch" placeholder="Search style, description, variant..." oninput="filterInventory()">
+        </div>
+        <select class="filter-select" id="invTierFilter" onchange="filterInventory()">
+          <option value="all">All Tiers</option>
+          <option value="best_sellers">Best Sellers</option>
+          <option value="doing_good">Doing Good</option>
+          <option value="making_progress">Making Progress</option>
+        </select>
+        <select class="filter-select" id="invCatFilter" onchange="filterInventory()">
+          <option value="all">All Categories</option>
+          <option value="WOMEN'S LEATHER JACKETS">Women's Leather Jackets</option>
+          <option value="WOMEN'S HANDBAGS">Women's Handbags</option>
+          <option value="MEN'S LAPTOP BAGS">Men's Laptop Bags</option>
+          <option value="WOMEN'S COATS">Women's Coats</option>
+        </select>
+        <button class="clear-btn" onclick="clearInvFilters()">Clear</button>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table id="inventoryTable">
+            <thead>
+              <tr>
+                <th>Style</th>
+                <th>Variant</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th style="text-align:right">Price</th>
+                <th style="text-align:right">Qty</th>
+                <th style="text-align:right">Value</th>
+                <th>Tier</th>
+                <th style="text-align:right">Reorder Qty</th>
+              </tr>
+            </thead>
+            <tbody id="inventoryBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ALERTS ══ -->
+  <div class="page" id="page-alerts">
+    <div class="page-inner">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Alert Management</div>
+          <div class="page-subtitle">Inventory shortage and reorder alerts requiring attention</div>
+        </div>
+        <button class="send-email-btn" onclick="sendAlertEmail()">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Send Email Alert
+        </button>
+      </div>
+
+      <div class="grid-4 mb-6">
+        <div class="kpi-card">
+          <div class="kpi-label">Total Alerts</div>
+          <div class="kpi-value">5</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Critical</div>
+          <div class="kpi-value" style="color:var(--danger)">2</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Pending</div>
+          <div class="kpi-value" style="color:var(--warning)">3</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Resolved</div>
+          <div class="kpi-value" style="color:var(--success)">1</div>
+        </div>
+      </div>
+
+      <div class="filter-row mb-6">
+        <select class="filter-select" id="alertSevFilter" onchange="filterAlerts()">
+          <option value="all">All Severities</option>
+          <option value="critical">Critical</option>
+          <option value="warning">Warning</option>
+          <option value="info">Info</option>
+        </select>
+        <select class="filter-select" id="alertTypeFilter" onchange="filterAlerts()">
+          <option value="all">All Types</option>
+          <option value="critical_stock">Critical Stock</option>
+          <option value="low_stock">Low Stock</option>
+          <option value="reorder">Reorder</option>
+        </select>
+        <button class="clear-btn" onclick="clearAlertFilters()">Clear Filters</button>
+      </div>
+
+      <div id="alertsList"></div>
+    </div>
+  </div>
+
+  <!-- ══ ANALYTICS ══ -->
+  <div class="page" id="page-analytics">
+    <div class="page-inner">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Analytics &amp; Insights</div>
+          <div class="page-subtitle">Performance trends, tier analysis, and category breakdown</div>
+        </div>
+      </div>
+
+      <div class="grid-4 mb-6">
+        <div class="kpi-card">
+          <div class="kpi-label">Inventory Value</div>
+          <div class="kpi-value">$116.7M</div>
+          <div class="kpi-delta delta-up">↑ +5.2% from last month</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Total Items</div>
+          <div class="kpi-value">1,000</div>
+          <div class="kpi-delta delta-up">↑ +2.5% from last month</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Active Alerts</div>
+          <div class="kpi-value" style="color:var(--warning)">882</div>
+          <div class="kpi-delta delta-warn">+12 new today</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Best Sellers</div>
+          <div class="kpi-value" style="color:var(--success)">855</div>
+          <div class="kpi-delta delta-up">85.5% of inventory</div>
+        </div>
+      </div>
+
+      <div class="grid-2 mb-6">
+        <div class="card">
+          <div class="card-title">Tier Distribution</div>
+          <div class="chart-box"><canvas id="anaTierChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Category Distribution</div>
+          <div class="chart-box"><canvas id="anaCatChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid-2-1 mb-6">
+        <div class="card">
+          <div class="card-title">Monthly Inventory Value Trend</div>
+          <div class="chart-box"><canvas id="anaMonthChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Weekly Alert Trends</div>
+          <div class="chart-box"><canvas id="anaWeekChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Top Performing Items by Value</div>
+        <div style="height:300px;"><canvas id="anaTopChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SETTINGS ══ -->
+  <div class="page" id="page-settings">
+    <div class="page-inner">
+      <div class="page-header">
+        <div>
+          <div class="page-title">System Settings</div>
+          <div class="page-subtitle">Manage email recipients, alert groups, and notification rules</div>
+        </div>
+        <button class="send-email-btn" onclick="sendAlertEmail()">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Send Alert Email
+        </button>
+      </div>
+
+      <div class="tab-row">
+        <button class="tab-btn active" id="tab-recipients" onclick="switchSettingsTab('recipients')">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email Recipients
+        </button>
+        <button class="tab-btn" id="tab-groups" onclick="switchSettingsTab('groups')">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Email Groups
+        </button>
+      </div>
+
+      <!-- Recipients Tab -->
+      <div id="tab-panel-recipients">
+        <div class="grid-2-1">
+          <div class="card">
+            <div class="card-title">Recipients for <span id="recipientAlertName" style="color:var(--gold);text-transform:none;letter-spacing:0;">Critical Stock Alerts</span></div>
+
+            <div class="email-input-row mb-6">
+              <input class="input-field" id="newRecipEmail" placeholder="Email address" type="email">
+              <input class="input-field" id="newRecipName" placeholder="Name (optional)" style="max-width:180px;">
+              <button class="add-btn" onclick="addRecipient()">+ Add</button>
+            </div>
+
+            <div id="recipientsList"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Alert Types</div>
+            <div class="alert-type-tabs" id="alertTypeTabs"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Groups Tab -->
+      <div id="tab-panel-groups" style="display:none;">
+        <div class="grid-2-1">
+          <div class="card">
+            <div class="card-title">Manage Group Members</div>
+            <div id="groupMembersPanel"></div>
+          </div>
+          <div>
+            <div class="card mb-4">
+              <div class="card-title">Create New Group</div>
+              <div class="email-input-row">
+                <input class="input-field" id="newGroupName" placeholder="Group name">
+                <button class="add-btn" onclick="addGroup()">+ Create</button>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">All Groups</div>
+              <div id="groupsList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-right mt-6">
+        <button class="send-email-btn" style="background:var(--success);box-shadow:none;" onclick="showToast('Settings saved successfully!')">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Save Settings
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- TOAST -->
+<div class="success-toast" id="toast">
+  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toastMsg">Done!</span>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────
+const inventoryData = [
+  { id:1, style:'MONACO', variant:'549.L', desc:"MONACO — Women's Leather Jacket in Dark Taupe", cat:"WOMEN'S LEATHER JACKETS", price:768.25, qty:441, value:338798.25, tier:'best_sellers', reorder:660 },
+  { id:2, style:'AERYN',  variant:'730.S', desc:"AERYN — Women's Leather Jacket in Eggplant",   cat:"WOMEN'S LEATHER JACKETS", price:792.91, qty:397, value:314785.27, tier:'best_sellers', reorder:660 },
+  { id:3, style:'MARIAM', variant:'440NS', desc:"MARIAM — Women's Handbag in Black",             cat:"WOMEN'S HANDBAGS", price:199.00, qty:523, value:104077.00, tier:'best_sellers', reorder:390 },
+  { id:4, style:'EDITH',  variant:'620.NS', desc:"EDITH — Women's Handbag in Saddle",            cat:"WOMEN'S HANDBAGS", price:199.00, qty:412, value:81988.00, tier:'doing_good', reorder:300 },
+  { id:5, style:'ELIAM',  variant:'660.NS', desc:"ELIAM — Men's Laptop Bag in Brown",            cat:"MEN'S LAPTOP BAGS", price:349.00, qty:156, value:54444.00, tier:'making_progress', reorder:240 },
+];
+
+const alertsData = [
+  { id:1, type:'critical_stock', severity:'critical', title:'Critical Stock Alert', msg:'MONACO Jacket (549.L) has only 5 units remaining — immediate action required!', item:'MONACO - 549.L', stock:5, action:'Immediate reorder of 660 units recommended.', time:'2025-07-22 14:30', status:'pending' },
+  { id:2, type:'low_stock', severity:'warning', title:'Low Stock Alert', msg:'AERYN Jacket (730.S) has 25 units remaining. Season sales at risk.', item:'AERYN - 730.S', stock:25, action:'Consider reordering 660 units within 2 weeks.', time:'2025-07-22 14:25', status:'pending' },
+  { id:3, type:'reorder', severity:'info', title:'Reorder Alert', msg:'MARIAM Bag (440NS) has dropped below the Best Sellers reorder threshold.', item:'MARIAM - 440NS', stock:45, action:'Reorder 390 units based on best_sellers tier analysis.', time:'2025-07-22 14:20', status:'acknowledged' },
+  { id:4, type:'critical_stock', severity:'critical', title:'Critical Stock Alert', msg:'EDITH Bag (620.NS) has only 3 units remaining! Revenue impact imminent.', item:'EDITH - 620.NS', stock:3, action:'Immediate reorder of 300 units recommended.', time:'2025-07-22 14:15', status:'pending' },
+  { id:5, type:'reorder', severity:'info', title:'Reorder Alert', msg:'ELIAM Laptop Bag (660.NS) approaching reorder point.', item:'ELIAM - 660.NS', stock:78, action:'Reorder 240 units based on making_progress tier analysis.', time:'2025-07-22 14:10', status:'resolved' },
+];
+
+const emailRecipients = {
+  critical_stock: [{ email:'inventory-manager@danier.com', name:'Inventory Manager' }, { email:'operations-director@danier.com', name:'Operations Director' }],
+  low_stock:      [{ email:'inventory-team@danier.com', name:'Inventory Team' }, { email:'purchasing@danier.com', name:'Purchasing Team' }],
+  reorder:        [{ email:'purchasing@danier.com', name:'Purchasing Team' }, { email:'supply-chain@danier.com', name:'Supply Chain' }],
+  daily_digest:   [{ email:'management@danier.com', name:'Management' }, { email:'inventory-manager@danier.com', name:'Inventory Manager' }],
+};
+
+const alertTypes = [
+  { key:'critical_stock', label:'Critical Stock Alerts', desc:'Items with ≤10 units' },
+  { key:'low_stock',      label:'Low Stock Alerts',      desc:'Items with ≤50 units' },
+  { key:'reorder',        label:'Reorder Alerts',        desc:'Items below tier thresholds' },
+  { key:'daily_digest',   label:'Daily Digest',          desc:'Morning summary reports' },
+];
+
+let emailGroups = [
+  { name:'management',      emails:['ceo@danier.com','operations-director@danier.com','inventory-director@danier.com'] },
+  { name:'inventory_team',  emails:['inventory-manager@danier.com','inventory-specialist@danier.com'] },
+  { name:'purchasing_team', emails:['purchasing-manager@danier.com','purchasing-specialist@danier.com'] },
+];
+
+let selectedAlertType = 'critical_stock';
+
+// ── PAGE NAV ─────────────────────────────────────────
+const pageNames = {
+  home:'Home & Upload', dashboard:'Dashboard', inventory:'Key Items',
+  alerts:'Alert Management', analytics:'Analytics & Insights', settings:'System Settings'
+};
+
+let chartsInit = {};
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  const nav = document.getElementById('nav-' + id);
+  if (nav) nav.classList.add('active');
+  document.getElementById('topbar-title').textContent = pageNames[id];
+
+  if (id === 'dashboard' && !chartsInit.dashboard) { initDashCharts(); chartsInit.dashboard = true; }
+  if (id === 'analytics' && !chartsInit.analytics) { initAnaCharts(); chartsInit.analytics = true; }
+  if (id === 'inventory') renderInventoryTable();
+  if (id === 'alerts') renderAlerts();
+  if (id === 'settings') renderSettings();
+}
+
+// ── DATE ─────────────────────────────────────────────
+function updateDate() {
+  const now = new Date();
+  const opts = { weekday:'short', year:'numeric', month:'short', day:'numeric' };
+  document.getElementById('topbar-date').textContent = now.toLocaleDateString('en-US', opts);
+}
+updateDate();
+
+// ── HERO CANVAS ──────────────────────────────────────
+const canvas = document.getElementById('heroCanvas');
+const ctx2d = canvas.getContext('2d');
+let particles = [];
+
+function resizeCanvas() {
+  canvas.width = canvas.parentElement.offsetWidth;
+  canvas.height = canvas.parentElement.offsetHeight;
+}
+
+function initParticles() {
+  particles = [];
+  for (let i = 0; i < 60; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 1.5 + 0.3,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      o: Math.random() * 0.4 + 0.1,
+    });
+  }
+}
+
+function drawParticles() {
+  ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+  // Gradient overlay
+  const grad = ctx2d.createRadialGradient(canvas.width*0.3, canvas.height*0.4, 0, canvas.width*0.3, canvas.height*0.4, canvas.width*0.6);
+  grad.addColorStop(0, 'rgba(201,168,76,0.04)');
+  grad.addColorStop(1, 'transparent');
+  ctx2d.fillStyle = grad;
+  ctx2d.fillRect(0, 0, canvas.width, canvas.height);
+
+  particles.forEach(p => {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0) p.x = canvas.width;
+    if (p.x > canvas.width) p.x = 0;
+    if (p.y < 0) p.y = canvas.height;
+    if (p.y > canvas.height) p.y = 0;
+    ctx2d.beginPath();
+    ctx2d.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx2d.fillStyle = `rgba(201,168,76,${p.o})`;
+    ctx2d.fill();
+  });
+
+  // Grid lines
+  ctx2d.strokeStyle = 'rgba(255,255,255,0.025)';
+  ctx2d.lineWidth = 0.5;
+  for (let x = 0; x < canvas.width; x += 80) {
+    ctx2d.beginPath(); ctx2d.moveTo(x, 0); ctx2d.lineTo(x, canvas.height); ctx2d.stroke();
+  }
+  for (let y = 0; y < canvas.height; y += 80) {
+    ctx2d.beginPath(); ctx2d.moveTo(0, y); ctx2d.lineTo(canvas.width, y); ctx2d.stroke();
+  }
+
+  requestAnimationFrame(drawParticles);
+}
+
+resizeCanvas();
+initParticles();
+drawParticles();
+window.addEventListener('resize', () => { resizeCanvas(); initParticles(); });
+
+// ── COUNTER ANIMATION ────────────────────────────────
+function animateCounter(el, target, prefix, suffix, duration) {
+  const start = performance.now();
+  function step(now) {
+    const p = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 4);
+    const val = Math.round(ease * target);
+    el.textContent = prefix + val.toLocaleString() + suffix;
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+setTimeout(() => {
+  animateCounter(document.getElementById('cnt-skus'), 1000, '', '', 1600);
+  animateCounter(document.getElementById('cnt-value'), 116.7, '$', 'M', 1800);
+  animateCounter(document.getElementById('cnt-alerts'), 882, '', '', 1400);
+  animateCounter(document.getElementById('cnt-bs'), 855, '', '', 1600);
+}, 300);
+
+// ── UPLOAD ───────────────────────────────────────────
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.add('dragover');
+}
+
+function handleDragLeave(e) {
+  document.getElementById('uploadZone').classList.remove('dragover');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('dragover');
+  const files = e.dataTransfer.files;
+  if (files.length) processUpload(files[0]);
+}
+
+function handleFileSelect(e) {
+  if (e.target.files.length) processUpload(e.target.files[0]);
+}
+
+function processUpload(file) {
+  const prog = document.getElementById('uploadProgress');
+  const fill = document.getElementById('progressFill');
+  const pct  = document.getElementById('progressPct');
+  const txt  = document.getElementById('progressText');
+  prog.style.display = 'block';
+
+  const steps = ['Validating file format...','Extracting inventory data...','Detecting K100 items...','Running tier classification...','Generating threshold alerts...','Finalising report...'];
+  let p = 0; let si = 0;
+
+  const iv = setInterval(() => {
+    p += Math.random() * 15 + 5;
+    if (p > 100) p = 100;
+    fill.style.width = p + '%';
+    pct.textContent = Math.round(p) + '%';
+    if (Math.round(p) > si * 17) { txt.textContent = steps[Math.min(si, steps.length-1)]; si++; }
+    if (p >= 100) {
+      clearInterval(iv);
+      txt.textContent = '✓ Processing complete!';
+      addFileHistory(file);
+      showToast('File processed — ' + file.name);
+    }
+  }, 220);
+}
+
+function addFileHistory(file) {
+  const hist = document.getElementById('fileHistory');
+  const item = document.createElement('div');
+  item.className = 'file-history-item';
+  const sz = (file.size / 1024 / 1024).toFixed(1);
+  const now = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+  item.innerHTML = `
+    <div class="file-icon"><svg width="16" height="16" fill="none" stroke="var(--gold)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+    <div style="flex:1;overflow:hidden">
+      <div class="file-name">${file.name}</div>
+      <div class="file-meta">${sz} MB · Processed ${now}</div>
+    </div>
+    <div class="file-status"><span class="chip success">✓ Done</span></div>`;
+  hist.insertBefore(item, hist.firstChild);
+}
+
+// ── START SYSTEM ─────────────────────────────────────
+function triggerStart() {
+  showToast('System pipeline started — processing inventory data');
+  const btn = document.querySelector('.start-btn');
+  btn.textContent = '● Running...';
+  btn.style.background = 'linear-gradient(135deg, var(--warning), #d97706)';
+  setTimeout(() => {
+    btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start System';
+    btn.style.background = '';
+    showToast('System run complete — 882 alerts generated');
+  }, 3500);
+}
+
+// ── INVENTORY TABLE ──────────────────────────────────
+function tierChip(tier) {
+  const map = { best_sellers:['success','Best Sellers'], doing_good:['info','Doing Good'], making_progress:['warning','Making Progress'], okay:['default','Okay'] };
+  const [cls, lbl] = map[tier] || ['default', tier];
+  return `<span class="chip ${cls}">${lbl}</span>`;
+}
+
+function qtyColor(qty) {
+  if (qty <= 10) return 'var(--danger)';
+  if (qty <= 50) return 'var(--warning)';
+  return 'var(--success)';
+}
+
+function fmtUSD(v) { return '$' + v.toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtNum(v) { return v.toLocaleString('en-US'); }
+
+let filteredInv = [...inventoryData];
+
+function renderInventoryTable() {
+  const tbody = document.getElementById('inventoryBody');
+  tbody.innerHTML = '';
+  filteredInv.forEach(item => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="td-strong">${item.style}</td>
+      <td class="td-muted">${item.variant}</td>
+      <td style="max-width:220px;font-size:12.5px;">${item.desc}</td>
+      <td class="td-muted" style="font-size:12px;">${item.cat}</td>
+      <td style="text-align:right;font-weight:600;">${fmtUSD(item.price)}</td>
+      <td style="text-align:right;font-weight:700;color:${qtyColor(item.qty)};">${fmtNum(item.qty)}</td>
+      <td style="text-align:right;font-weight:600;">${fmtUSD(item.value)}</td>
+      <td>${tierChip(item.tier)}</td>
+      <td style="text-align:right;" class="td-muted">${fmtNum(item.reorder)}</td>`;
+    tbody.appendChild(tr);
+  });
+  updateInvStats();
+}
+
+function updateInvStats() {
+  const total = filteredInv.reduce((s,i)=>s+i.value,0);
+  const qty   = filteredInv.reduce((s,i)=>s+i.qty,0);
+  const avg   = filteredInv.length ? filteredInv.reduce((s,i)=>s+i.price,0)/filteredInv.length : 0;
+  document.getElementById('inv-count').textContent = filteredInv.length;
+  document.getElementById('inv-value').textContent = '$' + (total/1000).toFixed(0) + 'K';
+  document.getElementById('inv-qty').textContent = qty.toLocaleString();
+  document.getElementById('inv-avg').textContent = '$' + avg.toFixed(0);
+}
+
+function filterInventory() {
+  const s = document.getElementById('invSearch').value.toLowerCase();
+  const t = document.getElementById('invTierFilter').value;
+  const c = document.getElementById('invCatFilter').value;
+  filteredInv = inventoryData.filter(item => {
+    const ms = !s || item.style.toLowerCase().includes(s) || item.desc.toLowerCase().includes(s) || item.variant.toLowerCase().includes(s);
+    const mt = t==='all' || item.tier===t;
+    const mc = c==='all' || item.cat===c;
+    return ms && mt && mc;
+  });
+  renderInventoryTable();
+}
+
+function clearInvFilters() {
+  document.getElementById('invSearch').value = '';
+  document.getElementById('invTierFilter').value = 'all';
+  document.getElementById('invCatFilter').value = 'all';
+  filteredInv = [...inventoryData];
+  renderInventoryTable();
+}
+
+// ── ALERTS ───────────────────────────────────────────
+let filteredAlerts = [...alertsData];
+
+function severityIcon(sev) {
+  if (sev==='critical') return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+  if (sev==='warning')  return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+  return `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`;
+}
+
+function statusChip(status) {
+  const map = { pending:'danger', acknowledged:'warning', resolved:'success' };
+  return `<span class="chip ${map[status]||'default'}">${status.toUpperCase()}</span>`;
+}
+
+function renderAlerts() {
+  const el = document.getElementById('alertsList');
+  if (!filteredAlerts.length) { el.innerHTML = '<div class="empty-state">No alerts match the current filters.</div>'; return; }
+  el.innerHTML = filteredAlerts.map(a => `
+    <div class="alert-item ${a.severity}">
+      <div class="alert-icon ${a.severity}">${severityIcon(a.severity)}</div>
+      <div class="alert-body">
+        <div class="alert-title">${a.title} &nbsp; ${statusChip(a.status)}</div>
+        <div class="alert-msg">${a.msg}</div>
+        <div class="alert-meta">
+          <span><strong style="color:var(--text)">Item:</strong> ${a.item}</span>
+          <span><strong style="color:var(--text)">Current Stock:</strong> ${a.stock} units</span>
+        </div>
+        <div class="alert-action">Recommended: ${a.action}</div>
+      </div>
+      <div class="alert-time">${a.time}</div>
+    </div>`).join('');
+}
+
+function filterAlerts() {
+  const sev  = document.getElementById('alertSevFilter').value;
+  const type = document.getElementById('alertTypeFilter').value;
+  filteredAlerts = alertsData.filter(a => {
+    return (sev==='all'||a.severity===sev) && (type==='all'||a.type===type);
+  });
+  renderAlerts();
+}
+
+function clearAlertFilters() {
+  document.getElementById('alertSevFilter').value = 'all';
+  document.getElementById('alertTypeFilter').value = 'all';
+  filteredAlerts = [...alertsData];
+  renderAlerts();
+}
+
+// ── SETTINGS ─────────────────────────────────────────
+function switchSettingsTab(tab) {
+  document.getElementById('tab-panel-recipients').style.display = tab==='recipients' ? '' : 'none';
+  document.getElementById('tab-panel-groups').style.display = tab==='groups' ? '' : 'none';
+  document.getElementById('tab-recipients').classList.toggle('active', tab==='recipients');
+  document.getElementById('tab-groups').classList.toggle('active', tab==='groups');
+  if (tab==='groups') renderGroups();
+}
+
+function renderSettings() {
+  renderAlertTypeTabs();
+  renderRecipients();
+  renderGroups();
+}
+
+function renderAlertTypeTabs() {
+  const el = document.getElementById('alertTypeTabs');
+  el.innerHTML = alertTypes.map(t => `
+    <div class="alert-type-tab ${t.key===selectedAlertType?'active':''}" onclick="selectAlertType('${t.key}')">
+      <div class="tab-name">${t.label}</div>
+      <div class="tab-desc">${t.desc}</div>
+    </div>`).join('');
+}
+
+function selectAlertType(key) {
+  selectedAlertType = key;
+  const label = alertTypes.find(t=>t.key===key).label;
+  document.getElementById('recipientAlertName').textContent = label;
+  renderAlertTypeTabs();
+  renderRecipients();
+}
+
+function renderRecipients() {
+  const el = document.getElementById('recipientsList');
+  const recips = emailRecipients[selectedAlertType] || [];
+  if (!recips.length) {
+    el.innerHTML = '<div class="text-sm text-muted" style="padding:16px 0;">No recipients configured for this alert type.</div>';
+    return;
+  }
+  el.innerHTML = recips.map((r,i) => `
+    <div class="flex-between" style="padding:10px 0;border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-size:13.5px;font-weight:500;">${r.email}</div>
+        ${r.name ? `<div class="text-sm text-muted">${r.name}</div>` : ''}
+      </div>
+      <button onclick="removeRecipient(${i})" style="background:var(--danger-bg);border:1px solid rgba(239,68,68,0.2);border-radius:6px;color:var(--danger);padding:5px 12px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;">Remove</button>
+    </div>`).join('');
+}
+
+function addRecipient() {
+  const email = document.getElementById('newRecipEmail').value.trim();
+  const name  = document.getElementById('newRecipName').value.trim();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showToast('Please enter a valid email address', true); return;
+  }
+  emailRecipients[selectedAlertType].push({ email, name: name || undefined });
+  document.getElementById('newRecipEmail').value = '';
+  document.getElementById('newRecipName').value = '';
+  renderRecipients();
+  showToast('Recipient added successfully!');
+}
+
+function removeRecipient(i) {
+  emailRecipients[selectedAlertType].splice(i, 1);
+  renderRecipients();
+  showToast('Recipient removed.');
+}
+
+function renderGroups() {
+  // Group list
+  const gl = document.getElementById('groupsList');
+  gl.innerHTML = emailGroups.map(g => `
+    <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="font-size:13px;font-weight:600;">${g.name.replace(/_/g,' ').toUpperCase()}</div>
+      <div class="text-sm text-muted">${g.emails.length} members</div>
+    </div>`).join('');
+
+  // Group members panel
+  const gm = document.getElementById('groupMembersPanel');
+  gm.innerHTML = emailGroups.map((g, gi) => `
+    <div style="margin-bottom:24px;">
+      <div style="font-size:13.5px;font-weight:700;margin-bottom:10px;">${g.name.replace(/_/g,' ').toUpperCase()}</div>
+      <div class="email-input-row" style="margin-bottom:10px;">
+        <input class="input-field" id="grpEmail_${gi}" placeholder="Add email to group">
+        <button class="add-btn" onclick="addEmailToGroup(${gi})">+ Add</button>
+      </div>
+      <div>${g.emails.map((e,ei) => `<span class="email-chip">${e}<span class="chip-del" onclick="removeFromGroup(${gi},${ei})">×</span></span>`).join('')}</div>
+      ${!g.emails.length ? '<div class="text-sm text-muted" style="padding:8px 0;">No members yet.</div>' : ''}
+    </div>`).join('');
+}
+
+function addGroup() {
+  const name = document.getElementById('newGroupName').value.trim();
+  if (!name) { showToast('Enter a group name', true); return; }
+  if (emailGroups.some(g=>g.name===name)) { showToast('Group already exists', true); return; }
+  emailGroups.push({ name, emails:[] });
+  document.getElementById('newGroupName').value = '';
+  renderGroups();
+  showToast('Group created!');
+}
+
+function addEmailToGroup(gi) {
+  const input = document.getElementById('grpEmail_' + gi);
+  const email = input.value.trim();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Invalid email', true); return; }
+  emailGroups[gi].emails.push(email);
+  input.value = '';
+  renderGroups();
+  showToast('Email added to group!');
+}
+
+function removeFromGroup(gi, ei) {
+  emailGroups[gi].emails.splice(ei, 1);
+  renderGroups();
+  showToast('Email removed from group.');
+}
+
+// ── SEND EMAIL ────────────────────────────────────────
+function sendAlertEmail() {
+  showToast('✉️ Alert email sent via danieraletersystem.com!');
+}
+
+// ── TOAST ─────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  const m = document.getElementById('toastMsg');
+  m.textContent = msg;
+  t.style.background = isError ? 'rgba(239,68,68,0.1)' : '';
+  t.style.borderColor = isError ? 'rgba(239,68,68,0.3)' : '';
+  t.style.color = isError ? 'var(--danger)' : '';
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ── CHARTS ────────────────────────────────────────────
+const chartDefaults = {
+  color: 'rgba(255,255,255,0.7)',
+  borderColor: 'rgba(255,255,255,0.08)',
+};
+
+Chart.defaults.color = '#888899';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.font.family = 'Inter';
+Chart.defaults.font.size = 11;
+
+function initDashCharts() {
+  // Tier pie
+  new Chart(document.getElementById('dashTierChart'), {
+    type:'doughnut',
+    data:{
+      labels:['Best Sellers','Doing Good','Making Progress'],
+      datasets:[{ data:[855,125,20], backgroundColor:['#10b981','#818cf8','#f59e0b'], borderWidth:0, hoverOffset:6 }]
+    },
+    options:{ plugins:{ legend:{ position:'right', labels:{ padding:16, usePointStyle:true } } }, cutout:'65%', maintainAspectRatio:false }
+  });
+
+  // Top items bar
+  new Chart(document.getElementById('dashTopChart'), {
+    type:'bar',
+    data:{
+      labels:['MONACO','AERYN','ALYSON','MARIAM','EDITH'],
+      datasets:[{ label:'Value ($)', data:[338798,314785,298456,245678,198234], backgroundColor:'rgba(201,168,76,0.7)', borderRadius:6, borderSkipped:false }]
+    },
+    options:{
+      indexAxis:'y', plugins:{ legend:{ display:false } },
+      scales:{ x:{ ticks:{ callback: v => '$'+Math.round(v/1000)+'K' } }, y:{} },
+      maintainAspectRatio:false
+    }
+  });
+}
+
+function initAnaCharts() {
+  // Tier donut
+  new Chart(document.getElementById('anaTierChart'), {
+    type:'doughnut',
+    data:{
+      labels:['Best Sellers','Doing Good','Making Progress'],
+      datasets:[{ data:[855,125,20], backgroundColor:['#10b981','#818cf8','#f59e0b'], borderWidth:0, hoverOffset:6 }]
+    },
+    options:{ plugins:{ legend:{ position:'right', labels:{ padding:14, usePointStyle:true } } }, cutout:'65%', maintainAspectRatio:false }
+  });
+
+  // Category donut
+  new Chart(document.getElementById('anaCatChart'), {
+    type:'doughnut',
+    data:{
+      labels:["Women's Jackets","Women's Handbags","Men's Bags","Women's Coats"],
+      datasets:[{ data:[45,35,15,5], backgroundColor:['#c9a84c','#ef4444','#818cf8','#10b981'], borderWidth:0, hoverOffset:6 }]
+    },
+    options:{ plugins:{ legend:{ position:'right', labels:{ padding:14, usePointStyle:true } } }, cutout:'65%', maintainAspectRatio:false }
+  });
+
+  // Monthly area
+  new Chart(document.getElementById('anaMonthChart'), {
+    type:'line',
+    data:{
+      labels:['Jan','Feb','Mar','Apr','May','Jun','Jul'],
+      datasets:[{
+        label:'Inventory Value', data:[120000,135000,142000,158000,165000,172000,185000],
+        borderColor:'#c9a84c', backgroundColor:'rgba(201,168,76,0.1)',
+        fill:true, tension:0.4, pointBackgroundColor:'#c9a84c', pointRadius:4
+      }]
+    },
+    options:{
+      plugins:{ legend:{ display:false } },
+      scales:{ y:{ ticks:{ callback: v => '$'+Math.round(v/1000)+'K' } } },
+      maintainAspectRatio:false
+    }
+  });
+
+  // Weekly line
+  new Chart(document.getElementById('anaWeekChart'), {
+    type:'line',
+    data:{
+      labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+      datasets:[
+        { label:'Critical', data:[12,8,15,10,18,5,3], borderColor:'#ef4444', backgroundColor:'transparent', tension:0.4, pointRadius:3 },
+        { label:'Low',      data:[25,18,22,20,28,12,8], borderColor:'#f59e0b', backgroundColor:'transparent', tension:0.4, pointRadius:3 },
+        { label:'Reorder',  data:[45,38,52,41,58,25,15], borderColor:'#818cf8', backgroundColor:'transparent', tension:0.4, pointRadius:3 },
+      ]
+    },
+    options:{
+      plugins:{ legend:{ position:'bottom', labels:{ padding:12, usePointStyle:true } } },
+      scales:{ y:{ beginAtZero:true } },
+      maintainAspectRatio:false
+    }
+  });
+
+  // Top performers horizontal bar
+  new Chart(document.getElementById('anaTopChart'), {
+    type:'bar',
+    data:{
+      labels:['MONACO Jacket','AERYN Jacket','ALYSON Jacket','MARIAM Bag','EDITH Bag'],
+      datasets:[{ label:'Value ($)', data:[338798,314785,298456,245678,198234], backgroundColor:['#10b981','#818cf8','#c9a84c','#ef4444','#f59e0b'], borderRadius:6, borderSkipped:false }]
+    },
+    options:{
+      indexAxis:'y', plugins:{ legend:{ display:false } },
+      scales:{ x:{ ticks:{ callback: v => '$'+Math.round(v/1000)+'K' } } },
+      maintainAspectRatio:false
+    }
+  });
+}
+</script>
+</body>
+</html>

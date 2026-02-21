@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Upload, BarChart3, Users, Package, AlertTriangle, LogOut, Moon, Sun, Home, Headphones } from 'lucide-react';
+import { Upload, BarChart3, Users, Package, AlertTriangle, LogOut, Home, Headphones } from 'lucide-react';
 import UploadPage from './components/UploadPage';
 import Dashboard from './components/Dashboard';
 import Recipients from './components/Recipients';
@@ -14,12 +14,7 @@ import { startHeartbeat } from './services/api';
 import { DataProvider } from './DataContext';
 
 function App() {
-  const [dark, setDark] = React.useState(() => {
-    const saved = localStorage.getItem('theme');
-    if (saved === 'dark') return true;
-    if (saved === 'light') return false;
-    return true;
-  });
+  const dark = true;
 
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   const [user, setUser] = React.useState(null);
