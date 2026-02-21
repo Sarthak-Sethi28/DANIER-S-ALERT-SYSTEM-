@@ -71,13 +71,7 @@ function App() {
         <header style={{ background: 'rgba(7,7,14,0.92)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(201,168,76,0.12)' }}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
-              <Link to="/" className="flex items-center space-x-4" style={{ textDecoration: 'none' }}>
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #c9a84c, #e8c96a)', boxShadow: '0 4px 20px rgba(201,168,76,0.4)' }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                    <path d="M7 4C7 4 7 20 7 20C7 20 12.5 20 15.5 20C19 20 21 17 21 14C21 11 19 8 15.5 8C13.5 8 11.5 8 11.5 8C11.5 8 11.5 4 11.5 4L7 4Z" fill="#000" fillOpacity="0.9"/>
-                    <path d="M11 8.5C11 8.5 14.5 8.5 16 9C18 9.7 19 11.5 19 13.5C19 15.5 18 17.2 16 17.8C14.5 18.2 11 18 11 18" stroke="#c9a84c" strokeWidth="1" fill="none" opacity="0.4"/>
-                  </svg>
-                </div>
+              <Link to="/" className="flex items-center" style={{ textDecoration: 'none' }}>
                 <div>
                   <h1 className="text-2xl font-bold font-elegant tracking-tight" style={{ background: 'linear-gradient(135deg, #c9a84c, #e8c96a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                     DANIER

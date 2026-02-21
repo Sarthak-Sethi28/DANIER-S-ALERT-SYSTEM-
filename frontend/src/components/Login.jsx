@@ -230,12 +230,6 @@ const Login = ({ onLogin }) => {
       <div className="animate-fade-in" style={{ position: 'relative', zIndex: 2, width: '100%', maxWidth: '420px' }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{ display: 'inline-flex', width: '72px', height: '72px', background: 'linear-gradient(135deg, #c9a84c, #e8c96a)', borderRadius: '18px', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 32px rgba(201,168,76,0.35)', marginBottom: '1.25rem' }}>
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-              <path d="M7 4C7 4 7 20 7 20C7 20 12.5 20 15.5 20C19 20 21 17 21 14C21 11 19 8 15.5 8C13.5 8 11.5 8 11.5 8C11.5 8 11.5 4 11.5 4L7 4Z" fill="#000" fillOpacity="0.9"/>
-              <path d="M11 8.5C11 8.5 14.5 8.5 16 9C18 9.7 19 11.5 19 13.5C19 15.5 18 17.2 16 17.8C14.5 18.2 11 18 11 18" stroke="#c9a84c" strokeWidth="1" fill="none" opacity="0.4"/>
-            </svg>
-          </div>
           <h2 style={{ fontSize: '2rem', fontWeight: '800', letterSpacing: '-0.02em', margin: '0 0 0.25rem', fontFamily: "'Space Grotesk', sans-serif", background: 'linear-gradient(135deg, #c9a84c, #e8c96a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             DANIER
           </h2>
