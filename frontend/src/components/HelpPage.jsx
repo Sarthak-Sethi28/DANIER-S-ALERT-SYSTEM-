@@ -5,7 +5,6 @@ import {
   Gem,
   Star,
   Shield,
-  Zap,
   Users,
   Award,
   Globe,
@@ -266,19 +265,6 @@ const HelpPage = () => {
         ))}
       </div>
 
-      {/* Premium Footer */}
-      <div className="card-premium dark:card-premium-dark p-8 text-center animate-fade-in shadow-fashion-3d" style={{ animationDelay: '0.6s' }}>
-        <div className="flex items-center justify-center space-x-4 mb-4">
-          <Zap className="w-6 h-6 text-danier-gold animate-diamond-sparkle" />
-          <span className="text-lg font-semibold text-danier-dark dark:text-white font-luxury">
-            Premium $100M+ Fashion Brand Support
-          </span>
-          <Zap className="w-6 h-6 text-danier-gold animate-diamond-sparkle" />
-        </div>
-        <p className="text-gray-600 dark:text-gray-400 font-luxury">
-          Engineered for luxury operations • Senior-level technical expertise • Enterprise-grade solutions
-        </p>
-      </div>
     </div>
   );
 };
