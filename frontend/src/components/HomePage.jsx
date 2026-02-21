@@ -239,14 +239,21 @@ const HomePage = () => {
         .hp-check{width:24px;height:24px;border-radius:50%;background:rgba(16,185,129,.1);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;}
         .hp-bar-track{height:5px;background:rgba(255,255,255,.03);border-radius:3px;overflow:hidden;margin-top:4px;}
         .hp-bar-fill{height:100%;border-radius:3px;transition:width 1.2s ease;}
-        .hp-text-section{max-width:720px;margin:0 auto;padding:60px 24px;}
-        .hp-text-section h3{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--txt);margin-bottom:20px;text-align:center;}
-        .hp-text-section h3 em{font-style:normal;color:var(--gold);}
-        .hp-text-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
-        .hp-text-card{padding:20px;background:var(--surf);border:1px solid var(--stroke);border-radius:12px;transition:all .3s;cursor:default;}
-        .hp-text-card:hover{border-color:rgba(201,168,76,.2);transform:translateY(-2px);}
-        .hp-text-card-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--txt);margin-bottom:6px;display:flex;align-items:center;gap:8px;}
-        .hp-text-card-desc{font-size:13px;color:var(--muted);line-height:1.65;}
+        .hp-feat-section{max-width:900px;margin:0 auto;padding:40px 24px 0;}
+        .hp-feat-header{text-align:center;margin-bottom:64px;}
+        .hp-feat-header h2{font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin-bottom:14px;}
+        .hp-feat-header h2 em{font-style:normal;color:var(--gold);}
+        .hp-feat-header p{font-size:16px;color:var(--muted);max-width:500px;margin:0 auto;line-height:1.7;}
+        .hp-feat-row{display:flex;align-items:center;gap:48px;margin-bottom:72px;}
+        .hp-feat-row.hp-feat-reverse{flex-direction:row-reverse;}
+        .hp-feat-num{flex-shrink:0;width:100px;text-align:center;}
+        .hp-feat-num-val{font-family:'Space Grotesk',sans-serif;font-size:56px;font-weight:800;line-height:1;background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+        .hp-feat-num-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:6px;}
+        .hp-feat-content{flex:1;}
+        .hp-feat-content h4{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--txt);margin-bottom:10px;display:flex;align-items:center;gap:10px;}
+        .hp-feat-content p{font-size:15px;color:var(--muted);line-height:1.75;margin:0;}
+        .hp-feat-accent{width:40px;height:2px;background:linear-gradient(90deg,var(--gold),transparent);margin:14px 0 0;border-radius:2px;}
+        @media(max-width:768px){.hp-feat-row,.hp-feat-row.hp-feat-reverse{flex-direction:column;gap:20px;text-align:center;}.hp-feat-num{width:auto;}.hp-feat-accent{margin:14px auto 0;}}
         .hp-cta-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(34px,5.5vw,52px);font-weight:800;letter-spacing:-.04em;text-align:center;margin-bottom:14px;}
         .hp-cta-title em{font-style:normal;background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
         .hp-cta-sub{font-size:15px;color:var(--muted);text-align:center;margin-bottom:32px;line-height:1.7;}
@@ -273,34 +280,65 @@ const HomePage = () => {
         <style>{`@keyframes hp-fade-in{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`}</style>
       </section>
 
-      {/* WHAT IT DOES — text section */}
+      {/* WHAT IT DOES */}
       <Section>
-        <div className="hp-text-section">
-          <h3>What <em>Danier Intelligence</em> automates</h3>
-          <div className="hp-text-grid">
-            <div className="hp-text-card">
-              <div className="hp-text-card-title">📄 Excel Processing</div>
-              <div className="hp-text-card-desc">Upload any inventory spreadsheet — the system parses it instantly, identifies Key Items (KI00 season codes), and structures all product variants into a searchable database.</div>
+        <div className="hp-feat-section">
+          <div className="hp-feat-header">
+            <h2>What <em>Danier Intelligence</em> automates</h2>
+            <p>From a raw Excel file to prioritized stock alerts delivered to your inbox — every step handled, nothing manual.</p>
+          </div>
+
+          <div className="hp-feat-row">
+            <div className="hp-feat-num"><div className="hp-feat-num-val">01</div><div className="hp-feat-num-lbl">Upload</div></div>
+            <div className="hp-feat-content">
+              <h4>Excel Processing</h4>
+              <p>Drop any inventory spreadsheet into the system. It parses every row instantly — identifies Key Items by their KI00 season code, extracts all product variants, sizes, and colors, and structures everything into a searchable, queryable database. No manual data entry. No formatting requirements.</p>
+              <div className="hp-feat-accent" />
             </div>
-            <div className="hp-text-card">
-              <div className="hp-text-card-title">⚡ Low Stock Detection</div>
-              <div className="hp-text-card-desc">Every item is checked against configurable thresholds. When stock drops below your limit, the system flags it with priority levels — Critical, High, or Warning — automatically.</div>
+          </div>
+
+          <div className="hp-feat-row hp-feat-reverse">
+            <div className="hp-feat-num"><div className="hp-feat-num-val">02</div><div className="hp-feat-num-lbl">Detect</div></div>
+            <div className="hp-feat-content">
+              <h4>Automatic Low Stock Detection</h4>
+              <p>The moment your data is ingested, every single item is checked against its configured threshold. Items below their minimum stock level are flagged with priority badges — Critical when dangerously low, High when approaching zero, Warning when trending down. No human review needed.</p>
+              <div className="hp-feat-accent" />
             </div>
-            <div className="hp-text-card">
-              <div className="hp-text-card-title">🎯 Custom Thresholds</div>
-              <div className="hp-text-card-desc">Set unique minimum stock levels per item, per size, per color. A black Medium bomber jacket can have a different threshold than a Cognac Small — full granular control.</div>
+          </div>
+
+          <div className="hp-feat-row">
+            <div className="hp-feat-num"><div className="hp-feat-num-val">03</div><div className="hp-feat-num-lbl">Configure</div></div>
+            <div className="hp-feat-content">
+              <h4>Granular Threshold Control</h4>
+              <p>Set unique minimum stock levels per item, per size, per color. A Black Medium Leather Bomber can have a threshold of 30 while a Cognac Small has 15 — each one independently configurable. Override the global default for any specific variant whenever you need to.</p>
+              <div className="hp-feat-accent" />
             </div>
-            <div className="hp-text-card">
-              <div className="hp-text-card-title">📧 Email Alerts</div>
-              <div className="hp-text-card-desc">When low stock is detected, the system composes detailed alert emails with shortage breakdowns and sends them via Gmail SMTP to all your configured recipients.</div>
+          </div>
+
+          <div className="hp-feat-row hp-feat-reverse">
+            <div className="hp-feat-num"><div className="hp-feat-num-val">04</div><div className="hp-feat-num-lbl">Alert</div></div>
+            <div className="hp-feat-content">
+              <h4>Smart Email Alerts</h4>
+              <p>When low stock is detected, the system composes a detailed alert email — listing every item below threshold, its current stock vs required level, and the exact shortage amount. Sent automatically via Gmail SMTP to every configured recipient. Your team knows before customers notice.</p>
+              <div className="hp-feat-accent" />
             </div>
-            <div className="hp-text-card">
-              <div className="hp-text-card-title">📊 Live Dashboard</div>
-              <div className="hp-text-card-desc">A real-time overview of all Key Items, active alerts, stock levels, and priority breakdowns. Filter, sort, and drill into any item — everything updates the moment you upload.</div>
+          </div>
+
+          <div className="hp-feat-row">
+            <div className="hp-feat-num"><div className="hp-feat-num-val">05</div><div className="hp-feat-num-lbl">Monitor</div></div>
+            <div className="hp-feat-content">
+              <h4>Live Dashboard & Key Items</h4>
+              <p>A real-time command center showing every Key Item, every active alert, and every stock level across your entire inventory. Filter by priority, sort by shortage severity, drill into any item's color and size breakdown. Updated the moment you upload a new report — zero delay.</p>
+              <div className="hp-feat-accent" />
             </div>
-            <div className="hp-text-card">
-              <div className="hp-text-card-title">🔐 Secure Access</div>
-              <div className="hp-text-card-desc">Password-protected login with session management. Only authorized team members can access the portal, upload reports, or modify threshold configurations.</div>
+          </div>
+
+          <div className="hp-feat-row hp-feat-reverse">
+            <div className="hp-feat-num"><div className="hp-feat-num-val">06</div><div className="hp-feat-num-lbl">Secure</div></div>
+            <div className="hp-feat-content">
+              <h4>Protected Access</h4>
+              <p>Every feature sits behind password-protected authentication with session management. Only authorized team members can access the portal, upload inventory reports, configure thresholds, or manage email recipients. Built for enterprise-grade operations.</p>
+              <div className="hp-feat-accent" />
             </div>
           </div>
         </div>
