@@ -93,19 +93,6 @@ function App() {
                 </div>
 
                 <button
-                  onClick={() => setDark(v => !v)}
-                  className="p-2 rounded-lg transition-colors duration-200"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
-                  title="Toggle theme"
-                >
-                  {dark ? (
-                    <Sun className="w-5 h-5" style={{ color: '#c9a84c' }} />
-                  ) : (
-                    <Moon className="w-5 h-5" style={{ color: '#c9a84c' }} />
-                  )}
-                </button>
-
-                <button
                   onClick={handleLogout}
                   className="flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105"
                   style={{ background: 'rgba(255,61,61,0.1)', border: '1px solid rgba(255,61,61,0.2)', color: '#ff6b6b' }}

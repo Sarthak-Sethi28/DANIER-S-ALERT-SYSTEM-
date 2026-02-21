@@ -296,12 +296,12 @@ const HomePage = () => {
 
           <div className="hp-feat-timeline">
             {[
-              { num: '01', step: 'Upload', title: 'Excel Processing', desc: 'Drop any inventory spreadsheet into the system. It parses every row instantly — identifies Key Items by their KI00 season code, extracts all product variants, sizes, and colors, and structures everything into a searchable database.', tags: [{ label: '.xlsx', color: '#10b981' }, { label: 'Auto-Parse', color: '#3b82f6' }, { label: 'KI00 Detection', color: '#c9a84c' }] },
-              { num: '02', step: 'Detect', title: 'Low Stock Detection', desc: 'Every item is checked against its configured threshold the moment data is ingested. Items below minimum stock are flagged with priority badges — Critical, High, or Warning — ranked by severity. Zero manual review needed.', tags: [{ label: 'Critical', color: '#ff4d4d' }, { label: 'High', color: '#fb923c' }, { label: 'Warning', color: '#eab308' }] },
-              { num: '03', step: 'Configure', title: 'Threshold Control', desc: 'Set unique minimum stock levels per item, per size, per color. A Black Medium Bomber can have a threshold of 30 while a Cognac Small has 15 — each independently configurable. Override defaults for any variant.', tags: [{ label: 'Per-Item', color: '#c9a84c' }, { label: 'Per-Size', color: '#8b5cf6' }, { label: 'Per-Color', color: '#3b82f6' }] },
-              { num: '04', step: 'Alert', title: 'Email Notifications', desc: 'When low stock triggers, the system composes a detailed email — every item below threshold, current stock vs required, and exact shortage. Sent via Gmail SMTP to all configured recipients automatically.', tags: [{ label: 'Gmail SMTP', color: '#ff4d4d' }, { label: 'Auto-Send', color: '#10b981' }, { label: 'Multi-Recipient', color: '#3b82f6' }] },
-              { num: '05', step: 'Monitor', title: 'Live Dashboard', desc: 'A real-time command center — every Key Item, every alert, every stock level. Filter by priority, sort by shortage severity, drill into any item\'s color and size breakdown. Updates the moment you upload.', tags: [{ label: 'Real-Time', color: '#10b981' }, { label: 'Filterable', color: '#c9a84c' }, { label: 'Key Items', color: '#8b5cf6' }] },
-              { num: '06', step: 'Secure', title: 'Protected Access', desc: 'Password-protected login with session management. Only authorized team members can access the portal, upload reports, configure thresholds, or manage recipients. Enterprise-grade security by default.', tags: [{ label: 'Auth', color: '#3b82f6' }, { label: 'Sessions', color: '#10b981' }, { label: 'Role-Based', color: '#c9a84c' }] },
+              { num: '01', step: 'Upload', title: 'Excel Processing', desc: 'Drop any inventory spreadsheet into the system. It parses every row instantly — identifies Key Items by their KI00 season code, extracts all product variants, sizes, and colors, and structures everything into a searchable database.' },
+              { num: '02', step: 'Detect', title: 'Low Stock Detection', desc: 'Every item is checked against its configured threshold the moment data is ingested. Items below minimum stock are flagged with priority badges — Critical, High, or Warning — ranked by severity. Zero manual review needed.' },
+              { num: '03', step: 'Configure', title: 'Threshold Control', desc: 'Set unique minimum stock levels per item, per size, per color. A Black Medium Bomber can have a threshold of 30 while a Cognac Small has 15 — each independently configurable. Override defaults for any variant.' },
+              { num: '04', step: 'Alert', title: 'Email Notifications', desc: 'When low stock triggers, the system composes a detailed email — every item below threshold, current stock vs required, and exact shortage. Sent via Gmail SMTP to all configured recipients automatically.' },
+              { num: '05', step: 'Monitor', title: 'Live Dashboard', desc: 'A real-time command center — every Key Item, every alert, every stock level. Filter by priority, sort by shortage severity, drill into any item\'s color and size breakdown. Updates the moment you upload.' },
+              { num: '06', step: 'Secure', title: 'Protected Access', desc: 'Password-protected login with session management. Only authorized team members can access the portal, upload reports, configure thresholds, or manage recipients. Enterprise-grade security by default.' },
             ].map((f, i) => (
               <div key={i} className="hp-feat-item">
                 <div className="hp-feat-left">
@@ -314,11 +314,6 @@ const HomePage = () => {
                     <div className="hp-feat-card-num">{f.num}</div>
                   </div>
                   <p>{f.desc}</p>
-                  <div className="hp-feat-tags">
-                    {f.tags.map((t, j) => (
-                      <span key={j} className="hp-feat-tag" style={{ color: t.color, borderColor: `${t.color}30` }}>{t.label}</span>
-                    ))}
-                  </div>
                 </div>
               </div>
             ))}
