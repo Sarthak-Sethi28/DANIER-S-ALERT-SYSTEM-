@@ -23,9 +23,16 @@ services:
         value: Danier2024!
       - key: APP_USER_EMAIL
         value: sarthak.sethi@volarisgroup.com
-      # Optional: comma-separated list to add more CORS origins (e.g. new Vercel preview URLs)
-      # - key: CORS_ORIGINS
-      #   value: "https://inventoryreport.ca,https://your-preview.vercel.app"
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        value: danieralertsystem@gmail.com
+      - key: SMTP_PASS
+        value: "pojc nsir pjaw hhbq"
+      - key: EMAIL_FROM
+        value: "Danier Stock Alerts <danieralertsystem@gmail.com>"
     disk:
       name: data
       mountPath: /var/data

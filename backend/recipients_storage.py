@@ -8,10 +8,25 @@ import os
 from datetime import datetime
 from typing import List, Dict, Optional
 
+DEFAULT_RECIPIENTS = [
+    {
+        "email": "danieralertsystem@gmail.com",
+        "name": "Danier Alerts",
+        "department": "System",
+    },
+    {
+        "email": "sarthaksethi2803@gmail.com",
+        "name": "Sarthak Sethi",
+        "department": "Management",
+    },
+]
+
+
 class RecipientsStorage:
     def __init__(self, file_path: str = "recipients.json"):
         self.file_path = file_path
         self.recipients = self._load_recipients()
+        self._seed_defaults()
     
     def _load_recipients(self) -> List[Dict]:
         """Load recipients from JSON file"""
@@ -22,6 +37,27 @@ class RecipientsStorage:
             except:
                 return []
         return []
+
+    def _seed_defaults(self):
+        """Ensure default recipients exist (survives ephemeral disk resets)."""
+        existing_emails = {r['email'] for r in self.recipients}
+        added = False
+        for idx, dflt in enumerate(DEFAULT_RECIPIENTS):
+            if dflt['email'] not in existing_emails:
+                self.recipients.append({
+                    "id": len(self.recipients) + 1,
+                    "email": dflt['email'],
+                    "name": dflt.get('name', 'Unknown'),
+                    "department": dflt.get('department', 'General'),
+                    "created_at": datetime.now().isoformat(),
+                    "last_sent": None,
+                    "email_count": 0,
+                    "active": True,
+                    "preferences": {}
+                })
+                added = True
+        if added:
+            self._save_recipients()
     
     def _save_recipients(self):
         """Save recipients to JSON file"""

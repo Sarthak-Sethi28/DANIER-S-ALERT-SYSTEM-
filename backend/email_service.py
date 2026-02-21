@@ -19,7 +19,7 @@ class EmailService:
         self.smtp_host = os.getenv('SMTP_HOST', 'smtp.gmail.com')
         self.smtp_port = int(os.getenv('SMTP_PORT', '587'))
         self.smtp_user = os.getenv('SMTP_USER', 'danieralertsystem@gmail.com')
-        self.smtp_pass = os.getenv('SMTP_PASS', 'Danieralertsystem2018')
+        self.smtp_pass = os.getenv('SMTP_PASS', 'pojc nsir pjaw hhbq')
         self.email_from = os.getenv('EMAIL_FROM', 'Danier Stock Alerts <danieralertsystem@gmail.com>')
         
         # Create emails directory if it doesn't exist
