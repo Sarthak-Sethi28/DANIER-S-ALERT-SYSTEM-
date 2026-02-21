@@ -178,8 +178,8 @@ const HomePage = () => {
     <div className="hp-root">
       <style>{`
         .hp-root{--gold:#c9a84c;--gold2:#e8c96a;--bg:#050508;--surf:rgba(10,10,20,0.92);--stroke:rgba(255,255,255,0.05);--txt:#f0f0f8;--muted:rgba(200,200,220,0.8);--red:#ff4d4d;--green:#10b981;--blue:#3b82f6;font-family:'Inter',sans-serif;color:var(--txt);position:relative;overflow:hidden;background:#050508;}
-        .hp-section{min-height:50vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px;position:relative;z-index:1;}
-        .hp-hero-section{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;position:relative;z-index:1;}
+        .hp-section{min-height:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:64px 24px;position:relative;z-index:1;}
+        .hp-hero-section{min-height:88vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;position:relative;z-index:1;}
         .hp-reveal{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease;}
         .hp-visible{opacity:1;transform:translateY(0);}
         .hp-brand{font-family:'Space Grotesk',sans-serif;font-size:clamp(56px,10vw,96px);font-weight:800;letter-spacing:-.04em;background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
@@ -239,21 +239,27 @@ const HomePage = () => {
         .hp-check{width:24px;height:24px;border-radius:50%;background:rgba(16,185,129,.1);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;}
         .hp-bar-track{height:5px;background:rgba(255,255,255,.03);border-radius:3px;overflow:hidden;margin-top:4px;}
         .hp-bar-fill{height:100%;border-radius:3px;transition:width 1.2s ease;}
-        .hp-feat-section{max-width:900px;margin:0 auto;padding:40px 24px 0;}
-        .hp-feat-header{text-align:center;margin-bottom:64px;}
+        .hp-feat-section{max-width:860px;margin:0 auto;padding:20px 24px 0;}
+        .hp-feat-header{text-align:center;margin-bottom:56px;}
         .hp-feat-header h2{font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin-bottom:14px;}
         .hp-feat-header h2 em{font-style:normal;color:var(--gold);}
-        .hp-feat-header p{font-size:16px;color:var(--muted);max-width:500px;margin:0 auto;line-height:1.7;}
-        .hp-feat-row{display:flex;align-items:center;gap:48px;margin-bottom:72px;}
-        .hp-feat-row.hp-feat-reverse{flex-direction:row-reverse;}
-        .hp-feat-num{flex-shrink:0;width:100px;text-align:center;}
-        .hp-feat-num-val{font-family:'Space Grotesk',sans-serif;font-size:56px;font-weight:800;line-height:1;background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-        .hp-feat-num-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:6px;}
-        .hp-feat-content{flex:1;}
-        .hp-feat-content h4{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--txt);margin-bottom:10px;display:flex;align-items:center;gap:10px;}
-        .hp-feat-content p{font-size:15px;color:var(--muted);line-height:1.75;margin:0;}
-        .hp-feat-accent{width:40px;height:2px;background:linear-gradient(90deg,var(--gold),transparent);margin:14px 0 0;border-radius:2px;}
-        @media(max-width:768px){.hp-feat-row,.hp-feat-row.hp-feat-reverse{flex-direction:column;gap:20px;text-align:center;}.hp-feat-num{width:auto;}.hp-feat-accent{margin:14px auto 0;}}
+        .hp-feat-header p{font-size:15px;color:var(--muted);max-width:480px;margin:0 auto;line-height:1.7;}
+        .hp-feat-timeline{position:relative;padding-left:0;}
+        .hp-feat-timeline::before{content:'';position:absolute;left:47px;top:28px;bottom:28px;width:1px;background:linear-gradient(180deg,var(--gold),rgba(201,168,76,.1));z-index:0;}
+        .hp-feat-item{display:flex;gap:32px;margin-bottom:8px;position:relative;z-index:1;}
+        .hp-feat-left{flex-shrink:0;width:96px;display:flex;flex-direction:column;align-items:center;padding-top:24px;}
+        .hp-feat-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--gold);background:#050508;position:relative;z-index:2;}
+        .hp-feat-dot-inner{position:absolute;top:3px;left:3px;width:4px;height:4px;border-radius:50%;background:var(--gold);}
+        .hp-feat-step{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;color:var(--gold);letter-spacing:.08em;margin-top:8px;text-transform:uppercase;}
+        .hp-feat-card{flex:1;padding:24px 28px;background:var(--surf);border:1px solid var(--stroke);border-radius:14px;transition:all .4s;cursor:default;}
+        .hp-feat-card:hover{border-color:rgba(201,168,76,.2);transform:translateX(4px);box-shadow:0 8px 32px rgba(0,0,0,.3);}
+        .hp-feat-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+        .hp-feat-card h4{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--txt);margin:0;}
+        .hp-feat-card-num{font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:800;line-height:1;background:linear-gradient(135deg,rgba(201,168,76,.2),rgba(201,168,76,.05));-webkit-background-clip:text;-webkit-text-fill-color:transparent;user-select:none;}
+        .hp-feat-card p{font-size:14px;color:var(--muted);line-height:1.75;margin:0;}
+        .hp-feat-tags{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;}
+        .hp-feat-tag{font-size:10px;padding:3px 10px;border-radius:6px;font-weight:600;letter-spacing:.03em;border:1px solid;background:transparent;}
+        @media(max-width:768px){.hp-feat-timeline::before{left:23px;}.hp-feat-left{width:48px;}.hp-feat-item{gap:16px;}.hp-feat-card-num{display:none;}}
         .hp-cta-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(34px,5.5vw,52px);font-weight:800;letter-spacing:-.04em;text-align:center;margin-bottom:14px;}
         .hp-cta-title em{font-style:normal;background:linear-gradient(135deg,var(--gold),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
         .hp-cta-sub{font-size:15px;color:var(--muted);text-align:center;margin-bottom:32px;line-height:1.7;}
@@ -288,58 +294,34 @@ const HomePage = () => {
             <p>From a raw Excel file to prioritized stock alerts delivered to your inbox — every step handled, nothing manual.</p>
           </div>
 
-          <div className="hp-feat-row">
-            <div className="hp-feat-num"><div className="hp-feat-num-val">01</div><div className="hp-feat-num-lbl">Upload</div></div>
-            <div className="hp-feat-content">
-              <h4>Excel Processing</h4>
-              <p>Drop any inventory spreadsheet into the system. It parses every row instantly — identifies Key Items by their KI00 season code, extracts all product variants, sizes, and colors, and structures everything into a searchable, queryable database. No manual data entry. No formatting requirements.</p>
-              <div className="hp-feat-accent" />
-            </div>
-          </div>
-
-          <div className="hp-feat-row hp-feat-reverse">
-            <div className="hp-feat-num"><div className="hp-feat-num-val">02</div><div className="hp-feat-num-lbl">Detect</div></div>
-            <div className="hp-feat-content">
-              <h4>Automatic Low Stock Detection</h4>
-              <p>The moment your data is ingested, every single item is checked against its configured threshold. Items below their minimum stock level are flagged with priority badges — Critical when dangerously low, High when approaching zero, Warning when trending down. No human review needed.</p>
-              <div className="hp-feat-accent" />
-            </div>
-          </div>
-
-          <div className="hp-feat-row">
-            <div className="hp-feat-num"><div className="hp-feat-num-val">03</div><div className="hp-feat-num-lbl">Configure</div></div>
-            <div className="hp-feat-content">
-              <h4>Granular Threshold Control</h4>
-              <p>Set unique minimum stock levels per item, per size, per color. A Black Medium Leather Bomber can have a threshold of 30 while a Cognac Small has 15 — each one independently configurable. Override the global default for any specific variant whenever you need to.</p>
-              <div className="hp-feat-accent" />
-            </div>
-          </div>
-
-          <div className="hp-feat-row hp-feat-reverse">
-            <div className="hp-feat-num"><div className="hp-feat-num-val">04</div><div className="hp-feat-num-lbl">Alert</div></div>
-            <div className="hp-feat-content">
-              <h4>Smart Email Alerts</h4>
-              <p>When low stock is detected, the system composes a detailed alert email — listing every item below threshold, its current stock vs required level, and the exact shortage amount. Sent automatically via Gmail SMTP to every configured recipient. Your team knows before customers notice.</p>
-              <div className="hp-feat-accent" />
-            </div>
-          </div>
-
-          <div className="hp-feat-row">
-            <div className="hp-feat-num"><div className="hp-feat-num-val">05</div><div className="hp-feat-num-lbl">Monitor</div></div>
-            <div className="hp-feat-content">
-              <h4>Live Dashboard & Key Items</h4>
-              <p>A real-time command center showing every Key Item, every active alert, and every stock level across your entire inventory. Filter by priority, sort by shortage severity, drill into any item's color and size breakdown. Updated the moment you upload a new report — zero delay.</p>
-              <div className="hp-feat-accent" />
-            </div>
-          </div>
-
-          <div className="hp-feat-row hp-feat-reverse">
-            <div className="hp-feat-num"><div className="hp-feat-num-val">06</div><div className="hp-feat-num-lbl">Secure</div></div>
-            <div className="hp-feat-content">
-              <h4>Protected Access</h4>
-              <p>Every feature sits behind password-protected authentication with session management. Only authorized team members can access the portal, upload inventory reports, configure thresholds, or manage email recipients. Built for enterprise-grade operations.</p>
-              <div className="hp-feat-accent" />
-            </div>
+          <div className="hp-feat-timeline">
+            {[
+              { num: '01', step: 'Upload', title: 'Excel Processing', desc: 'Drop any inventory spreadsheet into the system. It parses every row instantly — identifies Key Items by their KI00 season code, extracts all product variants, sizes, and colors, and structures everything into a searchable database.', tags: [{ label: '.xlsx', color: '#10b981' }, { label: 'Auto-Parse', color: '#3b82f6' }, { label: 'KI00 Detection', color: '#c9a84c' }] },
+              { num: '02', step: 'Detect', title: 'Low Stock Detection', desc: 'Every item is checked against its configured threshold the moment data is ingested. Items below minimum stock are flagged with priority badges — Critical, High, or Warning — ranked by severity. Zero manual review needed.', tags: [{ label: 'Critical', color: '#ff4d4d' }, { label: 'High', color: '#fb923c' }, { label: 'Warning', color: '#eab308' }] },
+              { num: '03', step: 'Configure', title: 'Threshold Control', desc: 'Set unique minimum stock levels per item, per size, per color. A Black Medium Bomber can have a threshold of 30 while a Cognac Small has 15 — each independently configurable. Override defaults for any variant.', tags: [{ label: 'Per-Item', color: '#c9a84c' }, { label: 'Per-Size', color: '#8b5cf6' }, { label: 'Per-Color', color: '#3b82f6' }] },
+              { num: '04', step: 'Alert', title: 'Email Notifications', desc: 'When low stock triggers, the system composes a detailed email — every item below threshold, current stock vs required, and exact shortage. Sent via Gmail SMTP to all configured recipients automatically.', tags: [{ label: 'Gmail SMTP', color: '#ff4d4d' }, { label: 'Auto-Send', color: '#10b981' }, { label: 'Multi-Recipient', color: '#3b82f6' }] },
+              { num: '05', step: 'Monitor', title: 'Live Dashboard', desc: 'A real-time command center — every Key Item, every alert, every stock level. Filter by priority, sort by shortage severity, drill into any item\'s color and size breakdown. Updates the moment you upload.', tags: [{ label: 'Real-Time', color: '#10b981' }, { label: 'Filterable', color: '#c9a84c' }, { label: 'Key Items', color: '#8b5cf6' }] },
+              { num: '06', step: 'Secure', title: 'Protected Access', desc: 'Password-protected login with session management. Only authorized team members can access the portal, upload reports, configure thresholds, or manage recipients. Enterprise-grade security by default.', tags: [{ label: 'Auth', color: '#3b82f6' }, { label: 'Sessions', color: '#10b981' }, { label: 'Role-Based', color: '#c9a84c' }] },
+            ].map((f, i) => (
+              <div key={i} className="hp-feat-item">
+                <div className="hp-feat-left">
+                  <div className="hp-feat-dot"><div className="hp-feat-dot-inner" /></div>
+                  <div className="hp-feat-step">{f.step}</div>
+                </div>
+                <div className="hp-feat-card">
+                  <div className="hp-feat-card-top">
+                    <h4>{f.title}</h4>
+                    <div className="hp-feat-card-num">{f.num}</div>
+                  </div>
+                  <p>{f.desc}</p>
+                  <div className="hp-feat-tags">
+                    {f.tags.map((t, j) => (
+                      <span key={j} className="hp-feat-tag" style={{ color: t.color, borderColor: `${t.color}30` }}>{t.label}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </Section>
