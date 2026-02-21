@@ -7,6 +7,8 @@
     "REACT_APP_API_BASE_URL": "https://danier-s-alert-system.onrender.com"
   },
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+    { "source": "/", "destination": "/landing.html" },
+    { "source": "/landing", "destination": "/landing.html" },
+    { "source": "/(upload|dashboard|thresholds|key-items|recipients|help|search)(.*)", "destination": "/index.html" }
   ]
 } 
