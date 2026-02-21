@@ -1,13 +1,9 @@
 import React from 'react';
 import { 
-  HelpCircle, 
-  Mail, 
-  Phone, 
-  Crown, 
+  Mail,
   Sparkles, 
   Gem,
   Star,
-  Heart,
   Shield,
   Zap,
   Users,
@@ -15,7 +11,9 @@ import {
   Globe,
   MessageCircle,
   Clock,
-  CheckCircle2
+  CheckCircle2,
+  Headphones,
+  LifeBuoy
 } from 'lucide-react';
 
 const HelpPage = () => {
@@ -30,7 +28,7 @@ const HelpPage = () => {
   const helpSections = [
     {
       title: 'Premium Support',
-      icon: <Crown className="w-6 h-6" />,
+      icon: <Award className="w-6 h-6" />,
       color: 'from-danier-gold to-luxury-champagne',
       items: [
         'Executive-level technical assistance',
@@ -93,13 +91,12 @@ const HelpPage = () => {
       <div className="text-center space-y-6">
         <div className="flex justify-center mb-8">
           <div className="relative group">
-            <div className="w-24 h-24 bg-gradient-fashion rounded-full shadow-fashion-3d flex items-center justify-center animate-tilt-3d hover:animate-glow-pulse transition-all duration-700">
-              <HelpCircle className="w-12 h-12 text-white animate-diamond-sparkle" />
+            <div style={{ width: '88px', height: '88px', background: 'rgba(201,168,76,0.08)', border: '2px solid rgba(201,168,76,0.2)', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} className="animate-float">
+              <Headphones style={{ width: '40px', height: '40px', color: '#c9a84c', strokeWidth: 1.5 }} />
             </div>
-            <div className="absolute -top-3 -right-3 w-10 h-10 bg-fashion-ruby rounded-full animate-pulse flex items-center justify-center shadow-diamond">
-              <Heart className="w-5 h-5 text-white animate-bounce-subtle" />
+            <div style={{ position: 'absolute', bottom: '-4px', right: '-4px', width: '28px', height: '28px', background: 'linear-gradient(135deg, #c9a84c, #e8c96a)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(201,168,76,0.4)' }}>
+              <LifeBuoy style={{ width: '14px', height: '14px', color: '#000' }} />
             </div>
-            <div className="absolute inset-0 rounded-full bg-gradient-fashion opacity-20 blur-xl animate-glow-pulse"></div>
           </div>
         </div>
         
