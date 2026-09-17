@@ -1,142 +1,106 @@
-# Inventory Monitoring System
+<div align="center">
 
-Enterprise-grade inventory monitoring and analytics system with automatic deployment to Render.
+# Danier Inventory Alert System
 
-## 🚀 Features
+**A retail operations tool for turning inventory data into actionable stock alerts and operational visibility.**
 
-- **Real-time Inventory Tracking**: Monitor stock levels, sales history, and reorder points
-- **Automated Alerts**: Email notifications for low stock and critical items
-- **Analytics Dashboard**: Business intelligence reports and performance metrics
-- **Multi-file Upload**: Support for Excel files with automatic processing
-- **Stable Server**: Health checks and database retry logic prevent crashes
+Built around a real internal retail workflow. This repository is a **sanitized public showcase** of the system and engineering approach — production credentials, internal data, and proprietary configuration are intentionally excluded.
 
-## 🛠️ Tech Stack
-
-- **Backend**: NestJS with TypeORM and PostgreSQL
-- **Frontend**: React with TypeScript
-- **Deployment**: Render (Backend) + Vercel (Frontend)
-- **Database**: PostgreSQL with connection pooling
-- **Email**: Nodemailer with Gmail SMTP
-
-## 📋 Prerequisites
-
-- Node.js 18+ 
-- PostgreSQL database
-- Gmail account for email alerts
-
-## 🚀 Quick Start
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/yourusername/inventory-monitoring-system.git
-cd inventory-monitoring-system
-```
-
-### 2. Backend Setup
-```bash
-cd backend
-npm install
-npm run build
-```
-
-### 3. Frontend Setup
-```bash
-cd frontend
-npm install
-npm start
-```
-
-## 🌐 Deployment
-
-### Automatic Deployment to Render
-
-This repository is configured for automatic deployment to Render. When you push changes to the `main` branch, Render will automatically:
-
-1. **Build the application** using the `render.yaml` configuration
-2. **Deploy the backend** with health checks and database retry logic
-3. **Update the live application** without downtime
-
-### Manual Deployment Steps
-
-1. **Connect to Render**:
-   - Go to [render.com](https://render.com)
-   - Connect your GitHub account
-   - Select this repository
-   - Choose "Web Service"
-
-2. **Configure Environment Variables**:
-   ```
-   NODE_ENV=production
-   PORT=10000
-   DATABASE_HOST=your-postgres-host
-   DATABASE_PORT=5432
-   DATABASE_NAME=your-database-name
-   DATABASE_USER=your-database-user
-   DATABASE_PASSWORD=your-database-password
-   SMTP_HOST=smtp.gmail.com
-   SMTP_PORT=587
-   SMTP_USER=your-email@gmail.com
-   SMTP_PASS=your-app-password
-   ```
-
-3. **Deploy**:
-   - Render will automatically build and deploy using the `render.yaml` configuration
-   - Health checks will ensure the server stays running
-
-## 🔧 Configuration
-
-### Health Check Endpoints
-- `GET /` - Root health check
-- `GET /health` - Detailed health status
-- `GET /api/docs` - API documentation
-
-### Database Configuration
-The system includes automatic retry logic:
-- **Retry Attempts**: 10
-- **Retry Delay**: 3 seconds
-- **Keep Connection Alive**: Enabled
-
-## 📊 API Endpoints
-
-- `GET /api/inventory` - Get inventory data
-- `GET /api/analytics` - Get analytics reports
-- `GET /api/alerts` - Get alert history
-- `POST /api/upload` - Upload Excel files
-
-## 🔍 Monitoring
-
-### Health Checks
-The application includes comprehensive health checks that prevent server crashes:
-- Immediate response endpoints (`/` and `/health`)
-- Database connection monitoring
-- Automatic retry logic for failed connections
-
-### Logs
-Monitor your application through Render's built-in logging system.
-
-## 🛡️ Security
-
-- Helmet.js for security headers
-- CORS configuration
-- Input validation with class-validator
-- Rate limiting with @nestjs/throttler
-
-## 📝 License
-
-MIT License - see LICENSE file for details.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Push to the branch
-5. Create a Pull Request
-
-## 📞 Support
-
-For support, please open an issue in the GitHub repository.
+</div>
 
 ---
 
-**Note**: This system is configured for automatic deployment. Any changes pushed to the main branch will automatically deploy to Render within minutes. 
+## Why it exists
+
+Inventory teams should not have to repeatedly inspect spreadsheets and dashboards just to discover that an important item is running low.
+
+This system was built to make that workflow more proactive: ingest inventory data, normalize it, surface the items that need attention, and send alerts to the people responsible for acting on them.
+
+## What it does
+
+```text
+Inventory files / operational data
+             │
+             ▼
+      validation + parsing
+             │
+             ▼
+      normalized inventory
+             │
+      ┌──────┴─────────┐
+      ▼                ▼
+ analytics / UI   alert evaluation
+                       │
+                       ▼
+                email notifications
+```
+
+Core capabilities include:
+
+- **Inventory monitoring** — tracks stock levels and operational inventory data
+- **Automated alerts** — identifies low-stock / attention-required items and sends notifications
+- **Analytics dashboard** — gives operators a quicker view of inventory state and trends
+- **File ingestion** — supports spreadsheet-driven operational workflows
+- **Operational reliability** — health checks, database retry handling, and defensive error paths
+
+## Architecture
+
+The application is split into a React frontend and API/backend services responsible for ingestion, inventory processing, persistence, analytics, and alert delivery.
+
+| Layer | Technology / responsibility |
+| --- | --- |
+| Frontend | React + TypeScript — dashboard and operator workflows |
+| API / services | Backend services for ingestion, inventory logic, analytics, and alerts |
+| Data | Relational persistence for inventory and operational state |
+| Notifications | SMTP-based alert delivery |
+| Deployment | Container / cloud deployment configuration and health monitoring |
+
+## Engineering focus
+
+The interesting part of this project was not just displaying inventory. It was making a small internal tool behave reliably enough for an operational workflow.
+
+### Reliable ingestion
+
+Uploaded data is validated and processed before it reaches the application state, so malformed files or partial inputs do not silently corrupt the workflow.
+
+### Alerting without blocking the core workflow
+
+Notification delivery is treated as an operational side effect rather than the entire application flow. Failures can be surfaced and retried without making the main inventory experience unusable.
+
+### Health and recovery
+
+The backend includes health endpoints and defensive database connection handling so deployment failures are easier to detect and transient connection problems do not immediately take the service down.
+
+### Separation of configuration
+
+Runtime configuration belongs in environment variables. The public repository contains only example values; credentials and production-specific settings are intentionally excluded.
+
+## Local setup
+
+```bash
+# clone
+git clone https://github.com/Sarthak-Sethi28/DANIER-S-ALERT-SYSTEM-.git
+cd DANIER-S-ALERT-SYSTEM-
+
+# configure local environment
+cp .env.example .env
+# edit .env with your own local values
+```
+
+Install and run the frontend/backend from their respective application directories using the package scripts included in the repository.
+
+> **Security note:** never commit `.env` files or real credentials. Use `.env.example` only as a configuration template.
+
+## Public showcase note
+
+This repo is intentionally **not a copy of a production environment**. It demonstrates the product workflow, architecture, and engineering decisions from a system built for a real retail use case while keeping internal data, live credentials, and business-specific configuration out of the public version.
+
+That distinction is deliberate: the goal here is to show how the system was designed and built without exposing the private environment it supported.
+
+## Project status
+
+The original system was built as an internal operational tool. This public repository is maintained as a portfolio / engineering showcase and may differ from the private production configuration.
+
+---
+
+Built by [Sarthak Sethi](https://sethisarthak.com) · more demos and projects at **[sethisarthak.com](https://sethisarthak.com)**
